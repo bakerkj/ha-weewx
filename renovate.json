@@ -44,6 +44,16 @@
       "datasourceTemplate": "repology",
       "versioningTemplate": "loose",
       "packageNameTemplate": "debian_13/{{depName}}"
+    },
+    {
+      "customType": "regex",
+      "description": "Tag-pinned WeeWX extensions installed from GitHub archive zips in the Dockerfile. Commit-SHA pins (matthewwall extensions) are intentionally not matched (no upstream tags) and tracked via scripts/check-updates.sh.",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": [
+        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose"
     }
   ],
   "packageRules": [
@@ -68,6 +78,17 @@
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["repology"],
       "groupName": "debian apt packages"
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["github-tags"],
+      "groupName": "weewx extensions"
+    },
+    {
+      "description": "rtgd's version is also baked into a hardcoded unzip PREFIX in the Dockerfile, so an automated URL bump would silently break the build. Track it manually via scripts/check-updates.sh.",
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["hoetzgit/weewx-realtime_gauge-data"],
+      "enabled": false
     }
   ]
 }
