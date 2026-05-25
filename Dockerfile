@@ -80,6 +80,20 @@ for name in sorted(os.listdir(src)):
     if os.path.isdir(s) and not os.path.exists(d):
         shutil.copytree(s, d)
         print(f"Copied stock skin {name} -> {d}")
+
+# WeeWX's stock user-package stubs (extensions.py + __init__.py). We build
+# bin/user with `weectl extension install` rather than `weectl station create`,
+# so these are never placed and weewxd logs "Cannot load user extensions: No
+# module named 'user.extensions'" at every startup. Copy them in without
+# clobbering anything an extension installs alongside.
+user_src = os.path.join(site_packages, "weewx_data", "bin", "user")
+user_dst = "/opt/weewx-data/bin/user"
+os.makedirs(user_dst, exist_ok=True)
+for name in ("extensions.py", "__init__.py"):
+    s, d = os.path.join(user_src, name), os.path.join(user_dst, name)
+    if os.path.exists(s) and not os.path.exists(d):
+        shutil.copy2(s, d)
+        print(f"Copied stock user stub {name} -> {d}")
 PYEOF
 
 # Build-time stub weewx.conf so weectl extension install knows where to drop
@@ -280,7 +294,7 @@ FROM addon AS test
 RUN set -eu; \
     weewxd --version; \
     python3 -c "import weewx_ha, paho.mqtt.client, pydantic"; \
-    PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.log_to_file, user.forecast, user.xstats"; \
+    PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats"; \
     grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
