@@ -1,36 +1,11 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
-# Stage 1 — builder: install uv, compile mysqlclient + any sdists into a
-# self-contained venv at /opt/weewx. Build-only deps (gcc, -dev headers) live
-# only in this layer and never reach the final image.
-# ---------------------------------------------------------------------------
-FROM ${BUILD_FROM} AS builder
-
-COPY --from=ghcr.io/astral-sh/uv:0.11.16 /uv /uvx /usr/local/bin/
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    default-libmysqlclient-dev=1.1.1 \
-    gcc=4:14.2.0-1 \
-    git=1:2.47.3-0+deb13u1 \
-    pkg-config=1.8.1-4 \
-    python3=3.13.5-1 \
-    python3-dev=3.13.5-1 \
- && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
-COPY pyproject.toml uv.lock .python-version ./
-ENV UV_PROJECT_ENVIRONMENT=/opt/weewx \
-    UV_LINK_MODE=copy \
-    UV_COMPILE_BYTECODE=1
-RUN uv sync --frozen --no-dev --no-install-project
-
-# ---------------------------------------------------------------------------
-# Stage 2 — runtime: minimal base + the prebuilt venv.
-#   python3, libmariadb3: interpreter + dynamic dep of compiled mysqlclient
-#   mariadb-client, bash, curl, git: db creation + weectl extension installs
-# uv is retained because run.sh uses `uv pip install` to add user-supplied
-# extras at startup.
+# Single-stage build, following WeeWX's recommended Debian layout: its heavy
+# dependencies (Pillow, Cheetah, pyephem, MySQLdb, pyserial, pyusb, paho,
+# pydantic) come from apt, and only weewx itself + felddy's weewx_ha are pip-
+# installed into a --system-site-packages venv. Both are pure Python, so there
+# is nothing to compile — no gcc/-dev headers, no builder stage, no uv.
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
 
@@ -40,14 +15,18 @@ LABEL \
     org.opencontainers.image.source="https://github.com/bakerkj/ha-weewx" \
     org.opencontainers.image.licenses="MIT"
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.16 /uv /uvx /usr/local/bin/
-
+# Only OS-level bits come from apt: python3 (the interpreter uv builds the venv
+# on), libusb (the C library pyusb binds at runtime for USB drivers), and the
+# runtime tools — mariadb-client-core (the `mariadb` CLI for DB setup; the full
+# mariadb-client metapackage drags in perl, ~120 MB, and weewx talks to the DB
+# via the library anyway), nginx (ingress), openssh-client / rsync (report
+# uploads), patch (build-time extension patching). Every Python library is
+# installed by uv below, as wheels — nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
-    git=1:2.47.3-0+deb13u1 \
-    libmariadb3=1:11.8.6-0+deb13u1 \
-    mariadb-client=1:11.8.6-0+deb13u1 \
+    libusb-1.0-0=2:1.0.28-1 \
+    mariadb-client-core=1:11.8.6-0+deb13u1 \
     nginx-light=1.26.3-3+deb13u5 \
     openssh-client=1:10.0p1-7+deb13u4 \
     patch=2.8-2 \
@@ -59,9 +38,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # never edits this — they put files in /config/www/ and nginx serves them.
 COPY nginx.conf /etc/nginx/nginx.conf
 
-COPY --from=builder /opt/weewx /opt/weewx
 ENV PATH="/opt/weewx/bin:$PATH" \
-    VIRTUAL_ENV="/opt/weewx"
+    VIRTUAL_ENV="/opt/weewx" \
+    UV_PROJECT_ENVIRONMENT="/opt/weewx"
+# uv is bind-mounted from its image for this layer only (never shipped in the
+# final image). `uv sync --frozen` builds the venv at /opt/weewx on the system
+# python3 and installs the locked deps from uv.lock (weewx + felddy + Pillow/
+# pydantic/Cheetah/pyephem/pyserial/pyusb/PyMySQL/paho) as wheels — nothing
+# compiles. pyproject.toml/uv.lock are bind-mounted, so they add no image layer.
+RUN --mount=from=ghcr.io/astral-sh/uv:0.11.16,source=/uv,target=/usr/local/bin/uv \
+    --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=/build/uv.lock \
+    --mount=type=bind,source=.python-version,target=/build/.python-version \
+    uv sync --frozen --no-dev --no-install-project \
+      --project /build --python /usr/bin/python3
 
 # ---------------------------------------------------------------------------
 # Prepare weewx data directory
