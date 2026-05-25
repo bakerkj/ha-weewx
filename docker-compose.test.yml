@@ -1,6 +1,6 @@
 services:
   mariadb:
-    image: mariadb:11
+    image: mariadb:12
     environment:
       MARIADB_ROOT_PASSWORD: rootpass
       MARIADB_DATABASE: weewx
