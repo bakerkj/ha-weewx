@@ -127,7 +127,7 @@ WEEWX_ROOT = /opt/weewx-data
         xtype_services   = weewx.wxxtypes.StdWXXTypes, weewx.wxxtypes.StdPressureCooker, weewx.wxxtypes.StdRainRater, weewx.wxxtypes.StdDelta
         archive_services = weewx.engine.StdArchive
         restful_services = weewx.restx.StdStationRegistry
-        report_services  = weewx.engine.StdPrint, weewx.engine.StdReport
+        report_services  = weewx.engine.StdReport
 
 
 ##############################################################################
