@@ -39,8 +39,11 @@ jobs:
         run: |
           npx --package renovate@43.141.6 -- renovate --dry-run --platform=local > renovate-dry-run.log 2>&1 || true
 
-          # Check for datasource lookup failures
-          errors=$(grep -i "no-result\|failed to look up" renovate-dry-run.log | grep -v "python-version" || true)
+          # Check for datasource lookup failures. Some deps legitimately have no
+          # repology project: python-version, and the Debian *binary* packages
+          # nginx-light / openssh-client (repology indexes their *source* names
+          # nginx / openssh). Exclude those known no-results from the gate.
+          errors=$(grep -i "no-result\|failed to look up" renovate-dry-run.log | grep -vE "python-version|nginx-light|openssh-client" || true)
           if [ -n "$errors" ]; then
             echo "::error::Renovate datasource lookup failures detected:"
             echo "$errors"
