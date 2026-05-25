@@ -7,10 +7,7 @@
   "version": "0.1.0",
   "arch": [
     "amd64",
-    "aarch64",
-    "armv7",
-    "armhf",
-    "i386"
+    "aarch64"
   ],
   "startup": "services",
   "init": false,

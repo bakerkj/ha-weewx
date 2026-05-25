@@ -1,4 +1,4 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
 # Stage 1 — builder: install uv, compile mysqlclient + any sdists into a
@@ -33,6 +33,12 @@ RUN uv sync --frozen --no-dev --no-install-project
 # extras at startup.
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
+
+LABEL \
+    org.opencontainers.image.title="WeeWX" \
+    org.opencontainers.image.description="WeeWX weather station server with bundled extensions, MQTT Home Assistant discovery, and nginx ingress web reports. Configured by editing weewx.conf." \
+    org.opencontainers.image.source="https://github.com/bakerkj/ha-weewx" \
+    org.opencontainers.image.licenses="MIT"
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.16 /uv /uvx /usr/local/bin/
 
