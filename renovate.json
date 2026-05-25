@@ -37,14 +37,13 @@
     },
     {
       "customType": "regex",
-      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' since Debian package names can't contain underscores (avoids matching Python kwargs like 'exist_ok=True' in heredocs).",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles, tracked against the Debian archive via the deb datasource (resolves binary package names directly — no per-package source mapping). depName excludes '_' since Debian package names can't contain underscores (avoids matching Python kwargs like 'exist_ok=True' in heredocs).",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": [
         "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
       ],
-      "datasourceTemplate": "repology",
-      "versioningTemplate": "loose",
-      "packageNameTemplate": "debian_13/{{depName}}"
+      "datasourceTemplate": "deb",
+      "versioningTemplate": "deb"
     },
     {
       "customType": "regex",
@@ -76,9 +75,15 @@
       "groupName": "home-assistant base images"
     },
     {
+      "description": "Resolve pinned Debian apt packages against the trixie archive (main + updates + security), matching the base-debian image's apt sources.",
       "matchManagers": ["custom.regex"],
-      "matchDatasources": ["repology"],
-      "groupName": "debian apt packages"
+      "matchDatasources": ["deb"],
+      "registryUrls": [
+        "https://deb.debian.org/debian?suite=trixie&components=main&binaryArch=amd64",
+        "https://deb.debian.org/debian?suite=trixie-updates&components=main&binaryArch=amd64",
+        "https://security.debian.org/debian-security?suite=trixie-security&components=main&binaryArch=amd64"
+      ],
+      "groupName": "apt packages"
     },
     {
       "matchManagers": ["custom.regex"],
