@@ -3,7 +3,7 @@ name = "ha-weewx"
 version = "0.1.0"
 description = "WeeWX Home Assistant add-on (runtime dependency lock)"
 readme = "README.md"
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 dependencies = [
     "weewx==5.3.1",
     "weewx-home-assistant @ git+https://github.com/felddy/weewx-home-assistant@v1.0.0",
