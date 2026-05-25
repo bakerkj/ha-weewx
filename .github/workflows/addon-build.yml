@@ -1,0 +1,99 @@
+name: addon-build
+
+# Single add-on at the repo root. Two modes:
+#   release : tag push shaped v<X>.<Y>.<Z>  -> build + PUSH to GHCR, tags = version + latest
+#   smoke   : any other push / PR           -> build only (push=false), tag = test
+# The published images back the `image:` key in config.json so Home Assistant
+# pulls a prebuilt image instead of building on-device.
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  discover:
+    name: Discover arches
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      mode: ${{ steps.matrix.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build matrix from config.json
+        id: matrix
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          mode="smoke"
+          version="test"
+          if [ "$EVENT" = "push" ] && [ "$REF_TYPE" = "tag" ]; then
+            case "$REF_NAME" in
+              v*.*.*)
+                mode="release"
+                version="${REF_NAME#v}"
+                ;;
+              *)
+                echo "tag '$REF_NAME' does not match v*.*.* -> skip"
+                echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+                echo "mode=skip" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+            esac
+          fi
+
+          matrix='{"include":['
+          first=true
+          arches=$(python3 -c "import json; print(' '.join(json.load(open('config.json'))['arch']))")
+          for arch in $arches; do
+            if [ "$arch" = "amd64" ]; then
+              runner="ubuntu-24.04"
+            elif [ "$arch" = "aarch64" ]; then
+              runner="ubuntu-24.04-arm"
+            else
+              continue
+            fi
+            if [ "$first" = true ]; then first=false; else matrix+=','; fi
+            matrix+="{\"arch\":\"$arch\",\"runner\":\"$runner\",\"version\":\"$version\"}"
+          done
+          matrix+=']}'
+          echo "mode: $mode"
+          echo "matrix: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: discover
+    if: needs.discover.outputs.mode != 'skip'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build add-on image
+        uses: home-assistant/builder/actions/build-image@2026.03.2
+        with:
+          arch: ${{ matrix.arch }}
+          image:
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-ha-weewx
+          image-tags: |
+            ${{ needs.discover.outputs.mode == 'release' && matrix.version || 'test' }}
+            ${{ needs.discover.outputs.mode == 'release' && 'latest' || '' }}
+          version: ${{ matrix.version }}
+          push:
+            ${{ needs.discover.outputs.mode == 'release' && 'true' || 'false' }}
+          load: "false"
+          context: .
+          cache-gha-scope: ha-weewx-${{ matrix.arch }}
+          cosign: "false"
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}

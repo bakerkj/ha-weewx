@@ -1,0 +1,17 @@
+# emoncms (matthewwall/weewx-emoncms 7c04113): when skip_upload is set its
+# process_record does `return` instead of raising AbortedPost, so the base
+# RESTThread loop logs a FALSE "Published record" though nothing was sent.
+# Raise AbortedPost like every other uploader so skip_upload logs "Skipped
+# record" and never reports a phantom success.
+--- a/bin/user/emoncms.py
++++ b/bin/user/emoncms.py
+@@ -281,8 +281,7 @@
+             record = weewx.units.to_std_system(record, self.unit_system)
+         url = self.get_url(record)
+         if self.skip_upload:
+-            loginf("skipping upload")
+-            return
++            raise weewx.restx.AbortedPost("skip_upload")
+         req = Request(url)
+         req.add_header("User-Agent", "weewx/%s" % weewx.__version__)
+         self.post_with_retries(req)

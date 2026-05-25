@@ -1,0 +1,22 @@
+# PurpleAirMonitor.new_archive_record() runs on every NEW_ARCHIVE_RECORD event
+# (e.g. every 60s) and inserts the latest fetched record. But the background
+# data thread only refreshes that record every `interval` seconds (default
+# 300). Between refreshes the same record is re-inserted with the same
+# dateTime, producing "UNIQUE constraint failed: archive.dateTime" errors.
+#
+# Track the last successfully-inserted dateTime and skip duplicates. Idempotent
+# even across addon restarts — the dedupe is in-process; on restart the
+# attribute is missing and `getattr(...,None)` falls through to a single
+# legitimate retry which the DB will then reject (still gracefully via the
+# existing weewx.manager exception handler) but only once per restart.
+--- a/bin/user/purpleair.py
++++ b/bin/user/purpleair.py
+@@ -317,7 +317,11 @@
+
+     def save_data(self, record):
+         """save data to database"""
++        if record['dateTime'] == getattr(self, '_last_inserted_ts', None):
++            logdbg("Skipping record: duplicate dateTime %d" % record['dateTime'])
++            return
+         self.dbm.addRecord(record)
++        self._last_inserted_ts = record['dateTime']

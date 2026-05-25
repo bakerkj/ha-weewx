@@ -1,0 +1,44 @@
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-checks:
+    name: Build-time self-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      # Self-contained checks baked into the Dockerfile `test` stage: binary
+      # runs, deps + user extensions import, patches applied, stock skins
+      # present, weewx-mqtt removed. No external services.
+      - name: Build + run self-contained checks
+        run: |
+          docker buildx build --target test \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            .
+
+  integration:
+    name: Integration e2e (amd64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      # Builds the add-on image + runs the pytest e2e suite via
+      # docker-compose.test.yml (MariaDB storage, MQTT discovery + state_class +
+      # availability, Seasons report), plus the syslog-spam guard.
+      - name: Build image + run pytest e2e
+        run: ./scripts/test.sh
+      - name: Upload e2e results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-results
+          path: test-results/junit.xml
+          if-no-files-found: ignore

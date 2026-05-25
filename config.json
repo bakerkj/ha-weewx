@@ -1,0 +1,36 @@
+{
+  "name": "WeeWX",
+  "slug": "weewx",
+  "description": "WeeWX weather station server with bundled extensions. Edit /config/weewx.conf directly (on the host: /addon_configs/<slug>_weewx/weewx.conf).",
+  "url": "https://github.com/bakerkj/ha-weewx",
+  "image": "ghcr.io/bakerkj/{arch}-ha-weewx",
+  "version": "0.1.0",
+  "arch": [
+    "amd64",
+    "aarch64",
+    "armv7",
+    "armhf",
+    "i386"
+  ],
+  "startup": "services",
+  "init": false,
+  "usb": true,
+  "host_network": true,
+  "ingress": true,
+  "ingress_port": 8099,
+  "panel_icon": "mdi:weather-partly-cloudy",
+  "panel_title": "WeeWX",
+  "map": [
+    "addon_config:rw",
+    "share:rw"
+  ],
+  "devices": [
+    "/dev/ttyUSB0",
+    "/dev/ttyUSB1",
+    "/dev/ttyUSB2",
+    "/dev/ttyS0",
+    "/dev/ttyS1",
+    "/dev/ttyACM0",
+    "/dev/ttyACM1"
+  ]
+}

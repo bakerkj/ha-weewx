@@ -1,0 +1,19 @@
+[project]
+name = "ha-weewx"
+version = "0.1.0"
+description = "WeeWX Home Assistant add-on (runtime dependency lock)"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "weewx==5.3.1",
+    "weewx-home-assistant @ git+https://github.com/felddy/weewx-home-assistant@v1.0.0",
+    "mysqlclient>=2.2.0",
+    "configobj>=5.0.9",
+    # Used by some bundled extensions (e.g. realtime-gauge-data) for Py2/3 compat.
+    "six>=1.16",
+    # HTTP client used by user.purpleair (and most other "uploader" extensions).
+    "requests>=2.32",
+]
+
+[tool.uv]
+package = false

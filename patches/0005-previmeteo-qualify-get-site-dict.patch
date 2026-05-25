@@ -1,0 +1,14 @@
+# previmeteo (previmeteo/weewx-previmeteo v0.1) calls bare get_site_dict(...),
+# which is undefined on WeeWX 5 (it lives in weewx.restx). Qualify it so the
+# service loads instead of crashing weewxd with NameError at import time.
+--- a/bin/user/previmeteo.py
++++ b/bin/user/previmeteo.py
+@@ -44,7 +44,7 @@
+
+         super(StdPrevimeteo, self).__init__(engine, config_dict)
+
+-        _ambient_dict = get_site_dict(
++        _ambient_dict = weewx.restx.get_site_dict(
+             config_dict, 'Previmeteo', 'station', 'password')
+         if _ambient_dict is None:
+             return

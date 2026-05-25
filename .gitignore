@@ -1,0 +1,18 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Snapshot of kaylee's /etc/weewx/ used as a reference while porting.
+# Contains credentials — never commit.
+kaylee-weewx/
+
+# Custom skins are user customizations, not part of the generic add-on.
+# Supplied at runtime (e.g. under /config), never baked into the image.
+skins/
+
+# pytest e2e junit output (docker-compose.test.yml / scripts/test.sh).
+test-results/

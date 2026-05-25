@@ -1,0 +1,30 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) publishes HA MQTT discovery without
+# a state_class, so Home Assistant keeps NO long-term statistics for the sensors.
+# Inject state_class in publish_discovery: measurement for live readings,
+# total_increasing for resetting rain/ET accumulators, and omit it for
+# timestamps, enums, and *BatteryStatus codes (the None is dropped by the
+# existing None-filter right below). felddy is a pip package in the venv, so this
+# patch is applied to the weewx_ha package dir, not /opt/weewx-data (see venv/ in
+# patches/README.md).
+--- a/config_publisher.py
++++ b/config_publisher.py
+@@ -153,6 +153,20 @@
+                 | self.device_description
+             )
+
++            # state_class drives Home Assistant long-term statistics:
++            #   measurement       -> live instantaneous readings (most sensors)
++            #   total_increasing  -> resetting accumulators (day/month/year rain & ET)
++            #   (omitted)         -> timestamps, enums, *BatteryStatus codes
++            _dc = payload.get("device_class")
++            if _dc in ("timestamp", "enum") or sensor_name.endswith("BatteryStatus"):
++                payload["state_class"] = None
++            elif sensor_name in (
++                "dayRain", "monthRain", "yearRain", "dayET", "monthET", "yearET"
++            ):
++                payload["state_class"] = "total_increasing"
++            else:
++                payload["state_class"] = "measurement"
++
+             # Remove any keys with None values
+             payload = {k: v for k, v in payload.items() if v is not None}

@@ -1,0 +1,17 @@
+# previmeteo (previmeteo/weewx-previmeteo v0.1) imports `Queue` unconditionally,
+# which only exists on Python 2. Wrap in a try/except so we get the Python 3
+# `queue` module under the same alias.
+--- a/bin/user/previmeteo.py
++++ b/bin/user/previmeteo.py
+@@ -8,7 +8,10 @@
+         password = PASSWORD
+ """
+
+-import Queue
++try:
++    import Queue
++except ImportError:
++    import queue as Queue
+ import syslog
+
+ import weewx

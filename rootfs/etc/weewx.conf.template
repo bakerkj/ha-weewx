@@ -1,0 +1,175 @@
+##############################################################################
+#   WeeWX configuration file (ha-weewx add-on starter template)
+#
+#   This file is copied to /config/weewx.conf on first add-on start. Edit it
+#   directly to configure your station, driver, database, reports, MQTT, and
+#   any add-on extensions. The add-on never overwrites it.
+#
+#   Reference docs: https://weewx.com/docs/5.3/usersguide/
+#
+#   To re-seed from this template, delete /config/weewx.conf and restart.
+##############################################################################
+
+# Where WeeWX looks for user modules and skins (baked into the image at build
+# time). Leave this alone unless you really know what you're doing.
+WEEWX_ROOT = /opt/weewx-data
+
+
+[Station]
+    location  = "Edit me in /config/weewx.conf"
+    latitude  = 0.0
+    longitude = 0.0
+    altitude  = 0, meter
+    station_type = Simulator
+
+
+##############################################################################
+#   Driver — replace [Simulator] with the section for your station driver.
+#   See https://weewx.com/docs/5.3/usersguide/hardware/ for supported drivers.
+##############################################################################
+
+[Simulator]
+    driver = weewx.drivers.simulator
+    mode   = simulator
+
+
+##############################################################################
+#   Reports — generated HTML lands under /config/www so the HA ingress panel
+#   can serve it. Override HTML_ROOT if you want it elsewhere.
+##############################################################################
+
+[StdReport]
+    SKIN_ROOT    = skins
+    HTML_ROOT    = /config/www
+    data_binding = wx_binding
+
+    [[SeasonsReport]]
+        skin   = Seasons
+        enable = True
+
+
+##############################################################################
+#   Unit conversion / calibration / quality control / archiving
+##############################################################################
+
+[StdConvert]
+    target_unit = METRICWX
+
+[StdCalibrate]
+    [[Corrections]]
+
+[StdQC]
+    [[MinMax]]
+        barometer   = 26, 32.5, inHg
+        outTemp     = -40, 120, degree_F
+        inTemp      = 10, 120, degree_F
+        outHumidity = 0, 100
+        inHumidity  = 0, 100
+        windSpeed   = 0, 120, mile_per_hour
+        rainRate    = 0, 10, inch_per_hour
+
+[StdArchive]
+    archive_interval = 300
+    archive_delay    = 15
+    no_catchup       = False
+    data_binding     = wx_binding
+
+
+##############################################################################
+#   Databases — default is SQLite under /config so it persists across image
+#   upgrades. Switch to MariaDB by changing wx_binding's database to
+#   archive_mysql and filling in [[archive_mysql]] credentials.
+##############################################################################
+
+[DataBindings]
+    [[wx_binding]]
+        database   = archive_sqlite
+        table_name = archive
+        manager    = weewx.manager.DaySummaryManager
+        schema     = schemas.wview_extended.schema
+
+[Databases]
+    [[archive_sqlite]]
+        database_name = /config/weewx.sdb
+        driver        = weedb.sqlite
+
+    [[archive_mysql]]
+        database_name = weewx
+        driver        = weedb.mysql
+        host          = core-mariadb
+        port          = 3306
+        user          = weewx
+        password      = changeme
+
+
+##############################################################################
+#   StdRESTful — HA Station Registry, Weather Underground, etc.
+#   Add the matching service entries to [Engine][[Services]] restful_services
+#   below to activate.
+##############################################################################
+
+[StdRESTful]
+    [[StationRegistry]]
+        register_this_station = False
+
+
+##############################################################################
+#   Engine services — base set only. To enable a bundled extension, add its
+#   service to the appropriate list AND configure its section above. See the
+#   add-on README for the list of bundled extensions and their service paths.
+##############################################################################
+
+[Engine]
+    [[Services]]
+        prep_services    = weewx.engine.StdTimeSynch
+        data_services    =
+        process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate
+        xtype_services   = weewx.wxxtypes.StdWXXTypes, weewx.wxxtypes.StdPressureCooker, weewx.wxxtypes.StdRainRater, weewx.wxxtypes.StdDelta
+        archive_services = weewx.engine.StdArchive
+        restful_services = weewx.restx.StdStationRegistry
+        report_services  = weewx.engine.StdPrint, weewx.engine.StdReport
+
+
+##############################################################################
+#   Logging — write to stdout so logs appear in the HA add-on log viewer.
+##############################################################################
+
+[Logging]
+    version = 1
+    disable_existing_loggers = False
+
+    # WeeWX's built-in default points the root logger at syslog (/dev/log),
+    # which does not exist in this container — that spams a "Logging error"
+    # traceback on every record. Override the root logger to log to stdout (the
+    # HA add-on log viewer) AND to a rotating file at /config/weewx.log, which
+    # survives restarts and is reachable on the host at
+    # /addon_configs/<addon-slug>/weewx.log for tracing history.
+    [[root]]
+        level    = INFO
+        handlers = console, rotate,
+
+    [[formatters]]
+        [[[standard]]]
+            format = "%(asctime)s  %(name)s %(levelname)s %(message)s"
+
+    [[handlers]]
+        [[[console]]]
+            class     = logging.StreamHandler
+            formatter = standard
+            stream    = ext://sys.stdout
+
+        # Durable, size-capped log file (5 x 10 MB) under /config so it persists
+        # and is visible from the Terminal/SSH add-on.
+        [[[rotate]]]
+            class       = logging.handlers.RotatingFileHandler
+            formatter   = standard
+            filename    = /config/weewx.log
+            maxBytes    = 10485760
+            backupCount = 5
+            encoding    = utf-8
+
+    [[loggers]]
+        [[[weewx]]]
+            level     = INFO
+            handlers  = console, rotate,
+            propagate = False

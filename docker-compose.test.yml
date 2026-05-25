@@ -1,0 +1,85 @@
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpass
+      MARIADB_DATABASE: weewx
+      MARIADB_USER: weewx
+      MARIADB_PASSWORD: weewxpass
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mariadb-admin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-prootpass",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./test/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_pub -h localhost -t healthcheck -m ok || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  weewx:
+    image: ha-weewx-test
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    # The add-on reads /config/weewx.conf as-is; this integration conf points
+    # storage at the mariadb service and MQTT discovery at the mosquitto one.
+    volumes:
+      - ./test/weewx.conf:/config/weewx.conf:ro
+    environment:
+      S6_KEEP_ENV: 1
+    # Healthy once weewxd has written its first archive record to MariaDB, so
+    # the e2e-tests container starts with data (and the report) already present.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mariadb -h mariadb -uweewx -pweewxpass weewx -N -e 'SELECT COUNT(*)
+          FROM archive' 2>/dev/null | grep -qE '[1-9]'",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 15s
+
+  # pytest e2e suite — asserts the headline behavior over the network (MariaDB
+  # storage, felddy HA MQTT discovery + state_class + availability, Seasons
+  # report via nginx). Run with:
+  #   docker compose -f docker-compose.test.yml up --build \
+  #     --abort-on-container-exit --exit-code-from e2e-tests
+  e2e-tests:
+    build:
+      context: ./e2e-tests
+    image: ha-weewx-e2e:test
+    depends_on:
+      weewx:
+        condition: service_healthy
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_USER: weewx
+      MARIADB_PASSWORD: weewxpass
+      MARIADB_DB: weewx
+      MQTT_HOST: mosquitto
+      WEEWX_URL: http://weewx:8099
+    volumes:
+      - ./test-results:/test-results

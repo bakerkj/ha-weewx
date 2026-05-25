@@ -1,0 +1,73 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["on sunday"],
+  "pre-commit": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Home Assistant add-on base images in Dockerfiles",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": [
+        "[\\s=](?<depName>ghcr\\.io/home-assistant/[^:]+):(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "GitHub runner versions in shell scripts and YAML within workflows",
+      "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "runner=\"(?<depName>ubuntu|macos|windows)-(?<currentValue>[\\w.-]+)\"",
+        "runs-on:\\s*(?<depName>ubuntu|macos|windows)-(?<currentValue>[\\w.-]+)"
+      ],
+      "datasourceTemplate": "github-runners"
+    },
+    {
+      "customType": "regex",
+      "description": "Renovate npm package version pinned in CI workflows",
+      "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": ["npx --package renovate@(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "renovate",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' since Debian package names can't contain underscores (avoids matching Python kwargs like 'exist_ok=True' in heredocs).",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": [
+        "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
+      ],
+      "datasourceTemplate": "repology",
+      "versioningTemplate": "loose",
+      "packageNameTemplate": "debian_13/{{depName}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit hooks"
+    },
+    {
+      "matchManagers": ["uv"],
+      "groupName": "python dependencies"
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["/home-assistant/"],
+      "groupName": "home-assistant base images"
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["repology"],
+      "groupName": "debian apt packages"
+    }
+  ]
+}

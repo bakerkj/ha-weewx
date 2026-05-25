@@ -1,0 +1,24 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-24.04
+    steps:
+      # RELEASE_PLEASE_TOKEN is a PAT so the release PR/tag it creates can
+      # trigger the addon-build publish workflow (a GITHUB_TOKEN-created tag
+      # would not). Tags are shaped v<X>.<Y>.<Z>; config.json version is bumped
+      # via the extra-files entry in release-please-config.json.
+      - uses: googleapis/release-please-action@v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
