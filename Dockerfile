@@ -175,6 +175,7 @@ RUN for url in \
       "https://github.com/matthewwall/weewx-exfoliation/archive/9f77f4d.zip" \
       "https://github.com/chaunceygardiner/weewx-forecast/archive/v4.1.zip" \
       "https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip" \
+      "https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip" \
       "https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip" \
       "https://github.com/matthewwall/weewx-owm/archive/297dd97.zip" \
       "https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip" \

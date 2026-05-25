@@ -41,7 +41,7 @@ On first start the add-on copies a starter `weewx.conf` template into
 - **`[StdReport]`** — `Seasons` skin, output written to `/config/www/` so the HA
   ingress panel automatically serves your reports.
 - **No extensions wired up** — see [Bundled extensions](#bundled-extensions)
-  below for how to enable any of the 17 pre-installed ones.
+  below for how to enable any of the 18 pre-installed ones.
 
 To re-seed from the template, delete `/config/weewx.conf` and restart.
 
@@ -142,24 +142,25 @@ applicable) `/opt/weewx-data/skins/`. To enable one, add its service path to the
 appropriate `*_services` entry in `[Engine] [[Services]]` and add its
 configuration section to `weewx.conf`.
 
-| Extension            | Service path                       | Service list       | Notes                                         |
-| -------------------- | ---------------------------------- | ------------------ | --------------------------------------------- |
-| weewx-home-assistant | `weewx_ha.Controller`              | `report_services`  | MQTT discovery for HA (felddy)                |
-| emoncms              | `user.emoncms.EmonCMS`             | `restful_services` | matthewwall                                   |
-| exfoliation          | _(skin only)_                      | —                  | Replacement skin                              |
-| forecast             | `user.forecast.NWSForecast` (etc.) | `archive_services` | Multiple forecast providers, chaunceygardiner |
-| fuzzy-archer         | _(skin only)_                      | —                  | Bootstrap-themed skin                         |
-| opensensemap         | `user.opensensemap.OpenSenseMap`   | `restful_services` | sbsrouteur                                    |
-| owm                  | `user.owm.OpenWeatherMap`          | `restful_services` | matthewwall                                   |
-| previmeteo           | `user.previmeteo.Previmeteo`       | `restful_services` | Patched for Python 3                          |
-| purpleair            | `user.purpleair.PurpleAirMonitor`  | `process_services` | bakerkj                                       |
-| realtime-gauge-data  | `user.rtgd.RealtimeGaugeData`      | `report_services`  | + RealtimeGauges skin                         |
-| thingspeak           | `user.thingspeak.ThingSpeak`       | `restful_services` | matthewwall                                   |
-| wcloud               | `user.wcloud.WeatherCloud`         | `restful_services` | matthewwall                                   |
-| wetter               | `user.wetter.Wetter`               | `restful_services` | matthewwall                                   |
-| windfinder           | `user.windfinder.WindFinder`       | `restful_services` | matthewwall                                   |
-| windguru             | `user.windguru.WindGuru`           | `restful_services` | claudobahn                                    |
-| windy                | `user.windy.Windy`                 | `restful_services` | matthewwall                                   |
+| Extension            | Service path                              | Service list       | Notes                                         |
+| -------------------- | ----------------------------------------- | ------------------ | --------------------------------------------- |
+| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`  | MQTT discovery for HA (felddy)                |
+| emoncms              | `user.emoncms.EmonCMS`                    | `restful_services` | matthewwall                                   |
+| exfoliation          | _(skin only)_                             | —                  | Replacement skin                              |
+| forecast             | `user.forecast.NWSForecast` (etc.)        | `archive_services` | Multiple forecast providers, chaunceygardiner |
+| fuzzy-archer         | _(skin only)_                             | —                  | Bootstrap-themed skin                         |
+| MQTTSubscribe        | `user.MQTTSubscribe.MQTTSubscribeService` | `data_services`    | Ingest data from MQTT topics, bellrichm       |
+| opensensemap         | `user.opensensemap.OpenSenseMap`          | `restful_services` | sbsrouteur                                    |
+| owm                  | `user.owm.OpenWeatherMap`                 | `restful_services` | matthewwall                                   |
+| previmeteo           | `user.previmeteo.Previmeteo`              | `restful_services` | Patched for Python 3                          |
+| purpleair            | `user.purpleair.PurpleAirMonitor`         | `process_services` | bakerkj                                       |
+| realtime-gauge-data  | `user.rtgd.RealtimeGaugeData`             | `report_services`  | + RealtimeGauges skin                         |
+| thingspeak           | `user.thingspeak.ThingSpeak`              | `restful_services` | matthewwall                                   |
+| wcloud               | `user.wcloud.WeatherCloud`                | `restful_services` | matthewwall                                   |
+| wetter               | `user.wetter.Wetter`                      | `restful_services` | matthewwall                                   |
+| windfinder           | `user.windfinder.WindFinder`              | `restful_services` | matthewwall                                   |
+| windguru             | `user.windguru.WindGuru`                  | `restful_services` | claudobahn                                    |
+| windy                | `user.windy.Windy`                        | `restful_services` | matthewwall                                   |
 
 ---
 
