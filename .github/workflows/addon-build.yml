@@ -80,10 +80,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # build-image injects BUILD_ARCH/BUILD_VERSION but NOT BUILD_FROM; our
+      # Dockerfile's `FROM ${BUILD_FROM}` needs it (the HA Supervisor supplies it
+      # on-device). Resolve the per-arch base image from build.yaml and pass it.
+      - name: Resolve base image for ${{ matrix.arch }}
+        id: base
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          bf=$(awk -v arch="$ARCH" '$1==arch":"{print $2; exit}' build.yaml)
+          test -n "$bf" || { echo "no build_from for $ARCH in build.yaml"; exit 1; }
+          echo "build_from=$bf" >> "$GITHUB_OUTPUT"
+
       - name: Build add-on image
         uses: home-assistant/builder/actions/build-image@2026.03.2
         with:
           arch: ${{ matrix.arch }}
+          build-args: |
+            BUILD_FROM=${{ steps.base.outputs.build_from }}
+          container-registry: ghcr.io
           image:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-ha-weewx
           image-tags: |
