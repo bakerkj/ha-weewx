@@ -30,8 +30,69 @@ print(int(configobj.ConfigObj("/config/weewx.conf")["StdArchive"]["archive_inter
 PY
 )" || true
 [[ "${archive_interval:-}" =~ ^[1-9][0-9]*$ ]] || archive_interval=300
-printf 'add_header Cache-Control "public, max-age=%s" always;\n' "$archive_interval" \
-  >/tmp/nginx-report-cache.conf
-echo "Report cache window: max-age=${archive_interval}s (from archive_interval)"
+
+# location-/ tier: HTML pages + the autoindex root. expire relative to each
+# file's mtime so a report is cacheable until its next regeneration.
+cat >/tmp/nginx-report-cache.conf <<EOF
+expires modified +${archive_interval}s;
+add_header Cache-Control "public" always;
+EOF
+
+# Per-period default tiers for static assets and chart PNGs. Static assets
+# (libraries/fonts/weather icons) change only on a skin update -> flat 1h. Chart
+# PNGs expire relative to mtime, keyed to how often WeeWX regenerates each
+# period: day plots every archive cycle, week/month hourly, year daily; an
+# unprefixed-PNG fallback is treated like a day plot. expires emits only
+# max-age, so a second add_header supplies "public" (caches merge the two).
+gen_default_cache() {
+  cat >/tmp/nginx-cache.conf <<'EOF'
+location ^~ /icons/ {
+    try_files $uri =404;
+    expires 1h;
+    add_header Cache-Control "public" always;
+}
+location ~* \.(?:js|css|woff2?|ttf|otf|eot|svg|ico)$ {
+    try_files $uri =404;
+    expires 1h;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/day[^/]*\.png$ {
+    expires modified +__ARCHIVE__s;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/(?:week|month)[^/]*\.png$ {
+    expires modified +3600s;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/year[^/]*\.png$ {
+    expires modified +86400s;
+    add_header Cache-Control "public" always;
+}
+location ~* \.png$ {
+    expires modified +__ARCHIVE__s;
+    add_header Cache-Control "public" always;
+}
+EOF
+  sed -i "s/__ARCHIVE__/${archive_interval}/g" /tmp/nginx-cache.conf
+}
+
+# A user can replace the whole asset/PNG tier set by dropping their own raw
+# nginx snippet at /config/nginx-cache.conf. The __ARCHIVE__ token is expanded
+# to archive_interval (same as the defaults) so an override can track it instead
+# of hardcoding a value; everything else is used as-is. Never let a typo brick
+# the add-on: if nginx -t rejects the full config, fall back to the generated
+# defaults and warn.
+override=/config/nginx-cache.conf
+if [[ -f "$override" ]]; then
+  sed "s/__ARCHIVE__/${archive_interval}/g" "$override" >/tmp/nginx-cache.conf
+  echo "Cache tiers: using override ${override} (archive_interval=${archive_interval}s)"
+  if ! nginx -t; then
+    echo "WARNING: ${override} failed validation; reverting to generated defaults." >&2
+    gen_default_cache
+  fi
+else
+  gen_default_cache
+  echo "Cache tiers: generated per-period defaults (archive_interval=${archive_interval}s)"
+fi
 
 nginx -t

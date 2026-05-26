@@ -133,6 +133,77 @@ shows in the HA sidebar with no extra configuration.
 You can also drop arbitrary static files (HTML, CSS, JS, images) into
 `/config/www/` and they will be served alongside.
 
+### Caching & compression
+
+Responses are compressed on the wire (brotli when the client offers it, gzip
+otherwise) and carry `Cache-Control`/`Expires` headers so a downstream caching
+proxy can serve reports without re-reading every file across the network. All
+tiers are `public`, and `ETag`/`Last-Modified` stay on, so anything past its
+window revalidates with a cheap `304` rather than a full re-download.
+
+Report files use `expires modified` — the window is measured from each file's
+**modification time**, so a chart is cacheable exactly until WeeWX next
+regenerates it, then revalidated. The default tiers:
+
+| Path                                      | Window                                 |
+| ----------------------------------------- | -------------------------------------- |
+| `gauge-data.txt`                          | `max-age=1` (rewritten every loop)     |
+| HTML pages + the directory index          | `archive_interval` (from `weewx.conf`) |
+| `day*.png` and any other `*.png`          | `archive_interval`                     |
+| `week*.png`, `month*.png`                 | 1 hour                                 |
+| `year*.png`                               | 24 hours                               |
+| `icons/`, `*.css`, `*.js`, fonts, `*.ico` | 1 hour (flat)                          |
+
+These PNG windows assume day plots regenerate every archive cycle, week/month
+hourly, and year daily — the cadence of the bundled exfoliation skin. A skin
+that regenerates plots on a different schedule (e.g. every archive cycle) can
+serve a stale chart with a too-long window; retune via the override below.
+
+### Tuning report caching
+
+To override the asset/PNG tiers, drop a raw nginx snippet at
+`/config/nginx-cache.conf`. It **replaces** the generated default set verbatim
+(the HTML/index tier and `gauge-data.txt` are configured separately and stay as
+above). It is validated with `nginx -t` on start; if it has an error the add-on
+logs a warning and falls back to the generated defaults, so a typo can't keep
+the add-on from starting.
+
+The `__ARCHIVE__` token expands to `[StdArchive] archive_interval` at startup
+(the same way the defaults are filled in), so a window can track your archive
+interval instead of hardcoding it.
+
+Start from the defaults and adjust. For example, to cache `year*.png` for a
+week:
+
+```nginx
+location ^~ /icons/ {
+    try_files $uri =404;
+    expires 1h;
+    add_header Cache-Control "public" always;
+}
+location ~* \.(?:js|css|woff2?|ttf|otf|eot|svg|ico)$ {
+    try_files $uri =404;
+    expires 1h;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/day[^/]*\.png$ {
+    expires modified +__ARCHIVE__s;  # tracks archive_interval
+    add_header Cache-Control "public" always;
+}
+location ~* ^/(?:week|month)[^/]*\.png$ {
+    expires modified +1h;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/year[^/]*\.png$ {
+    expires modified +7d;            # was 24h
+    add_header Cache-Control "public" always;
+}
+location ~* \.png$ {
+    expires modified +__ARCHIVE__s;
+    add_header Cache-Control "public" always;
+}
+```
+
 ---
 
 ## Bundled extensions
