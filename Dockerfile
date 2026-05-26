@@ -20,12 +20,15 @@ LABEL \
 # on), libusb (the C library pyusb binds at runtime for USB drivers), and the
 # runtime tools — mariadb-client-core (the `mariadb` CLI for DB setup; the full
 # mariadb-client metapackage drags in perl, ~120 MB, and weewx talks to the DB
-# via the library anyway), nginx (ingress), openssh-client / rsync (report
+# via the library anyway), nginx (ingress) plus its brotli filter module
+# (better-than-gzip compression of the report text payload; zstd is not
+# packaged for nginx in trixie), openssh-client / rsync (report
 # uploads), patch (build-time extension patching). Every Python library is
 # installed by uv below, as wheels — nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
+    libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libusb-1.0-0=2:1.0.28-1 \
     mariadb-client-core=1:11.8.6-0+deb13u1 \
     nginx-light=1.26.3-3+deb13u5 \
