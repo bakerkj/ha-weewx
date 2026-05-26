@@ -153,11 +153,21 @@ regenerates it, then revalidated. The default tiers:
 | `week*.png`, `month*.png`                 | 1 hour                                 |
 | `year*.png`                               | 24 hours                               |
 | `icons/`, `*.css`, `*.js`, fonts, `*.ico` | 1 hour (flat)                          |
+| `NOAA/` current month + year              | `archive_interval` (per request)       |
+| `NOAA/` past months + years               | 24 hours (immutable)                   |
 
 These PNG windows assume day plots regenerate every archive cycle, week/month
 hourly, and year daily — the cadence of the bundled exfoliation skin. A skin
 that regenerates plots on a different schedule (e.g. every archive cycle) can
 serve a stale chart with a too-long window; retune via the override below.
+
+The `NOAA/` text reports are handled by a small njs filter (the
+`ngx_http_js_module`) rather than a static rule. WeeWX rewrites only the current
+month and year summaries each cycle while every older file is immutable, but
+nginx can't tell them apart by name — it has no notion of "today". The filter
+checks each request against the current date, so the live summaries get the
+`archive_interval` window and the frozen history gets 24h, and it stays correct
+across month/year rollovers with no reload.
 
 ### Tuning report caching
 
