@@ -6,8 +6,9 @@ readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
     "weewx==5.3.1",
-    "weewx-home-assistant @ git+https://github.com/felddy/weewx-home-assistant@v1.0.0",
-    "mysqlclient>=2.2.0",
+    # felddy's weewx_ha as a release zip (not git+) so uv needs no git CLI.
+    "weewx-home-assistant @ https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip",
+    # weewx pulls PyMySQL itself for MariaDB/MySQL; no compiled mysqlclient.
     "configobj>=5.0.9",
     # Used by some bundled extensions (e.g. realtime-gauge-data) for Py2/3 compat.
     "six>=1.16",

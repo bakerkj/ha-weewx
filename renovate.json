@@ -47,13 +47,22 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX extensions installed from GitHub archive zips in the Dockerfile. Commit-SHA pins (matthewwall extensions) are intentionally not matched (no upstream tags) and tracked via scripts/check-updates.sh.",
-      "managerFilePatterns": ["/Dockerfile$/"],
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in the Dockerfile, and felddy's weewx_ha in pyproject.toml. Commit-SHA pins (matthewwall extensions) are intentionally not matched (no upstream tags) and tracked via scripts/check-updates.sh.",
+      "managerFilePatterns": ["/Dockerfile$/", "/pyproject\\.toml$/"],
       "matchStrings": [
         "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "uv build tool, bind-mounted into the Dockerfile build (RUN --mount=from=ghcr.io/astral-sh/uv:<version>). Renovate's docker manager doesn't parse --mount=from, so it's matched here.",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": ["astral-sh/uv:(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ],
   "packageRules": [
