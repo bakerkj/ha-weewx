@@ -1,11 +1,12 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
-# Single-stage build, following WeeWX's recommended Debian layout: its heavy
-# dependencies (Pillow, Cheetah, pyephem, MySQLdb, pyserial, pyusb, paho,
-# pydantic) come from apt, and only weewx itself + felddy's weewx_ha are pip-
-# installed into a --system-site-packages venv. Both are pure Python, so there
-# is nothing to compile — no gcc/-dev headers, no builder stage, no uv.
+# Single-stage build. apt provides only OS-level bits (python3, libusb, and the
+# mariadb/nginx/ssh/rsync runtime tools); every Python library — weewx, felddy's
+# weewx_ha, and their dependencies (Pillow, Cheetah, pyephem, pyserial, pyusb,
+# PyMySQL, paho, pydantic) — is installed by uv as wheels. Nothing compiles, so
+# there are no gcc/-dev headers and no separate builder stage; uv is bind-mounted
+# for the build only and is never shipped in the image.
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
 
