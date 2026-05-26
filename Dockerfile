@@ -157,6 +157,45 @@ c["Engine"] = {
         ),
     }
 }
+# Logging mirrors the runtime template exactly: stdout (the HA console) plus a
+# rotating /config/weewx.log. Without it, weectl's logging falls back to WeeWX's
+# syslog default (/dev/log) — absent in the build container — and spams a
+# "Logging error" traceback on every record during the extension installs. The
+# rotating handler needs /config (the runtime addon_config mount) to exist at
+# build time, so create it.
+import os
+
+os.makedirs("/config", exist_ok=True)
+c["Logging"] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "root": {"level": "INFO", "handlers": ["console", "rotate"]},
+    "formatters": {
+        "standard": {"format": "%(asctime)s  %(name)s %(levelname)s %(message)s"}
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "stream": "ext://sys.stdout",
+        },
+        "rotate": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "standard",
+            "filename": "/config/weewx.log",
+            "maxBytes": 10485760,
+            "backupCount": 5,
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "weewx": {
+            "level": "INFO",
+            "handlers": ["console", "rotate"],
+            "propagate": False,
+        }
+    },
+}
 c.filename = "/opt/weewx-data/weewx.conf"
 c.write()
 print("Generated build-time weewx.conf")
@@ -254,8 +293,9 @@ RUN set -eu && \
     done && \
     rm -rf /tmp/patches
 
-# Drop the build-time stub conf — runtime uses /config/weewx.conf only.
-RUN rm /opt/weewx-data/weewx.conf
+# Drop the build-time stub conf and the build-time log it produced — runtime
+# uses /config/weewx.conf only, and /config is the addon_config mount.
+RUN rm -f /opt/weewx-data/weewx.conf && rm -rf /config
 
 # ---------------------------------------------------------------------------
 # Bundled extra extension: log_to_file (per-record CSV file writer, bakerkj).
