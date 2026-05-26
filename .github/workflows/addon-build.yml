@@ -34,13 +34,16 @@ jobs:
           mode="smoke"
           version="test"
           if [ "$EVENT" = "push" ] && [ "$REF_TYPE" = "tag" ]; then
+            # release-please tags the (single) package with its component name,
+            # e.g. ha-weewx-v0.1.1; also accept a bare v0.1.1. Strip everything
+            # up to and including the last 'v' to get the version.
             case "$REF_NAME" in
-              v*.*.*)
+              v*.*.* | *-v*.*.*)
                 mode="release"
-                version="${REF_NAME#v}"
+                version="${REF_NAME##*v}"
                 ;;
               *)
-                echo "tag '$REF_NAME' does not match v*.*.* -> skip"
+                echo "tag '$REF_NAME' is not v*.*.* / *-v*.*.* -> skip"
                 echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
                 echo "mode=skip" >> "$GITHUB_OUTPUT"
                 exit 0
