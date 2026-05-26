@@ -1,0 +1,20 @@
+# rtgd (hoetzgit/weewx-realtime_gauge-data v0.6.0) Buffer.start_of_day_reset()
+# resets every obs in the static MANIFEST, but the Buffer (a dict) is only
+# populated with obs that actually appear in day_stats / loop packets. When a
+# station does not report a manifest obs — e.g. humidex when StdWXCalculate is
+# not computing it — self[obs] raises KeyError at the first midnight rollover
+# and the rtgd worker thread exits, freezing gauge-data.txt until a restart.
+# Guard the reset so missing obs are skipped (mirrors the `if x in self.buffer`
+# guards used elsewhere in this class).
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2824,7 +2824,8 @@
+         """
+
+         for obs in self.manifest:
+-            self[obs].day_reset()
++            if obs in self:
++                self[obs].day_reset()
+
+     def calc_windrun(self, packet):
+         """Calculate windrun given windSpeed."""
