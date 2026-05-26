@@ -15,13 +15,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
       # Self-contained checks baked into the Dockerfile `test` stage: binary
       # runs, deps + user extensions import, patches applied, stock skins
-      # present, weewx-mqtt removed. No external services.
+      # present, weewx-mqtt removed. No external services. The gha layer cache
+      # restores the base/apt/uv/extension layers between runs, so unchanged
+      # builds skip those steps (shared 'ha-weewx-test' scope with the e2e job).
       - name: Build + run self-contained checks
         run: |
           docker buildx build --target test \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            --cache-to type=gha,mode=max,scope=ha-weewx-test \
             .
 
   integration:
@@ -30,11 +35,22 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
-      # Builds the add-on image + runs the pytest e2e suite via
-      # docker-compose.test.yml (MariaDB storage, MQTT discovery + state_class +
-      # availability, Seasons report), plus the syslog-spam guard.
-      - name: Build image + run pytest e2e
-        run: ./scripts/test.sh
+      - uses: docker/setup-buildx-action@v3
+      # Pre-build the add-on image with the shared gha layer cache and load it
+      # as ha-weewx-test, so the layers (base/apt/uv/extensions) are restored
+      # between runs; then run the e2e with BUILD=0 to reuse that image.
+      - name: Build add-on image (cached)
+        run: |
+          docker buildx build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            --cache-to type=gha,mode=max,scope=ha-weewx-test \
+            -t ha-weewx-test --load .
+      # Runs the pytest e2e suite via docker-compose.test.yml (MariaDB storage,
+      # MQTT discovery + state_class + availability, Seasons report) against the
+      # prebuilt image, plus the syslog-spam guard.
+      - name: Run pytest e2e
+        run: BUILD=0 ./scripts/test.sh
       - name: Upload e2e results
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
