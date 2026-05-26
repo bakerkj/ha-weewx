@@ -172,8 +172,7 @@ The `__ARCHIVE__` token expands to `[StdArchive] archive_interval` at startup
 (the same way the defaults are filled in), so a window can track your archive
 interval instead of hardcoding it.
 
-Start from the defaults and adjust. For example, to cache `year*.png` for a
-week:
+Start from the defaults below and adjust the windows you need:
 
 ```nginx
 location ^~ /icons/ {
@@ -195,7 +194,7 @@ location ~* ^/(?:week|month)[^/]*\.png$ {
     add_header Cache-Control "public" always;
 }
 location ~* ^/year[^/]*\.png$ {
-    expires modified +7d;            # was 24h
+    expires modified +24h;
     add_header Cache-Control "public" always;
 }
 location ~* \.png$ {
