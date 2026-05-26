@@ -155,6 +155,7 @@ regenerates it, then revalidated. The default tiers:
 | `icons/`, `*.css`, `*.js`, fonts, `*.ico` | 1 hour (flat)                          |
 | `NOAA/` current month + year              | `archive_interval` (per request)       |
 | `NOAA/` past months + years               | 24 hours (immutable)                   |
+| `robots.txt`                              | 24 hours (flat)                        |
 
 These PNG windows assume day plots regenerate every archive cycle, week/month
 hourly, and year daily — the cadence of the bundled exfoliation skin. A skin
