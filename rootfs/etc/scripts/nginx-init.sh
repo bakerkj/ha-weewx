@@ -19,4 +19,19 @@ in <code>weewx.conf</code> after first-seed).</p>
 HTML
 fi
 
+# Derive the HTML/chart cache window from the user's [StdArchive] archive_interval
+# so a downstream caching proxy can serve reports between regenerations without a
+# round-trip. Use the venv python (it has configobj; /usr/bin/python3 does not).
+# Fall back to 300s if weewx.conf is absent or the key is missing/invalid.
+archive_interval="$(
+  /opt/weewx/bin/python3 - <<'PY' 2>/dev/null
+import configobj
+print(int(configobj.ConfigObj("/config/weewx.conf")["StdArchive"]["archive_interval"]))
+PY
+)" || true
+[[ "${archive_interval:-}" =~ ^[1-9][0-9]*$ ]] || archive_interval=300
+printf 'add_header Cache-Control "public, max-age=%s" always;\n' "$archive_interval" \
+  >/tmp/nginx-report-cache.conf
+echo "Report cache window: max-age=${archive_interval}s (from archive_interval)"
+
 nginx -t
