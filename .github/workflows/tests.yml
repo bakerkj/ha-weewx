@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # Self-contained checks baked into the Dockerfile `test` stage: binary
       # runs, deps + user extensions import, patches applied, stock skins
       # present, weewx-mqtt removed. No external services. The gha layer cache
@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # Pre-build the add-on image with the shared gha layer cache and load it
       # as ha-weewx-test, so the layers (base/apt/uv/extensions) are restored
       # between runs; then run the e2e with BUILD=0 to reuse that image.
