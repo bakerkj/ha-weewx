@@ -22,13 +22,15 @@ LABEL \
 # mariadb-client metapackage drags in perl, ~120 MB, and weewx talks to the DB
 # via the library anyway), nginx (ingress) plus its brotli filter module
 # (better-than-gzip compression of the report text payload; zstd is not
-# packaged for nginx in trixie), openssh-client / rsync (report
+# packaged for nginx in trixie) and njs (libnginx-mod-http-js, used for the
+# per-request NOAA Cache-Control filter), openssh-client / rsync (report
 # uploads), patch (build-time extension patching). Every Python library is
 # installed by uv below, as wheels — nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
+    libnginx-mod-http-js=0.8.9-1 \
     libusb-1.0-0=2:1.0.28-1 \
     mariadb-client-core=1:11.8.6-0+deb13u1 \
     nginx-light=1.26.3-3+deb13u5 \
@@ -341,6 +343,8 @@ RUN set -eu; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
     test -d /opt/weewx-data/skins/Seasons; \
     test ! -f /opt/weewx-data/bin/user/mqtt.py; \
+    test -f /usr/lib/nginx/modules/ngx_http_js_module.so; \
+    test -f /etc/nginx/njs/noaa.js; \
     echo "build-time self-checks passed"
 
 # Final stage = the add-on image. Keeps `test` off the default build path so the

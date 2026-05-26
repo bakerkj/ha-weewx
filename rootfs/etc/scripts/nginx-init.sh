@@ -38,6 +38,10 @@ expires modified +${archive_interval}s;
 add_header Cache-Control "public" always;
 EOF
 
+# Expose archive_interval to the NOAA njs header filter (nginx.conf) as an
+# nginx variable.
+printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-interval.conf
+
 # Per-period default tiers for static assets and chart PNGs. Static assets
 # (libraries/fonts/weather icons) change only on a skin update -> flat 1h. Chart
 # PNGs expire relative to mtime, keyed to how often WeeWX regenerates each
