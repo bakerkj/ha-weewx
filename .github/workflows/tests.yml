@@ -9,8 +9,28 @@ permissions:
   contents: read
 
 jobs:
+  # Build the image once and populate the shared gha layer cache. Every other
+  # job `needs:` this and only *reads* the cache, so the heavy layers (apt, the
+  # uv venv, the extensions) build once per run instead of up to 4x, and there
+  # is a single cache writer instead of two jobs racing to export.
+  build:
+    name: build image + warm cache
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Build add-on image + populate cache
+        run: |
+          docker buildx build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            --cache-to type=gha,mode=max,scope=ha-weewx-test \
+            .
+
   build-checks:
     name: Build-time self-checks
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -26,11 +46,11 @@ jobs:
           docker buildx build --target test \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
             --cache-from type=gha,scope=ha-weewx-test \
-            --cache-to type=gha,mode=max,scope=ha-weewx-test \
             .
 
   maria-mqtt:
     name: "e2e: maria + mqtt"
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -44,7 +64,6 @@ jobs:
           docker buildx build \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
             --cache-from type=gha,scope=ha-weewx-test \
-            --cache-to type=gha,mode=max,scope=ha-weewx-test \
             -t ha-weewx-test --load .
       # Runs the pytest e2e suite via docker-compose.test.yml (MariaDB storage,
       # MQTT discovery + state_class + availability, Seasons report) against the
@@ -61,6 +80,7 @@ jobs:
 
   nginx-cache:
     name: "e2e: nginx cache"
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -80,6 +100,7 @@ jobs:
 
   sqlite-template:
     name: "e2e: sqlite + template"
+    needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
