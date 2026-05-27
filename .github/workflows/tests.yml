@@ -58,3 +58,22 @@ jobs:
           name: e2e-results
           path: test-results/junit.xml
           if-no-files-found: ignore
+
+  cache:
+    name: nginx cache behavior
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      # Read the shared gha layer cache (the build-checks/integration jobs
+      # populate it); build + load the add-on image, then assert the nginx
+      # Cache-Control tiers, brotli/gzip, the NOAA njs filter, and the override.
+      - name: Build add-on image (cached)
+        run: |
+          docker buildx build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            -t ha-weewx-cache-test --load .
+      - name: Run cache tests
+        run: BUILD=0 IMAGE=ha-weewx-cache-test ./scripts/test-cache.sh
