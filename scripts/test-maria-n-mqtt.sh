@@ -5,9 +5,9 @@
 # pytest container; this script just orchestrates and adds the one check pytest
 # can't see: /dev/log syslog spam (stderr-only, never reaches the e2e container).
 #
-# Usage: scripts/test.sh            # build + e2e (amd64)
-#        BUILD=0 scripts/test.sh    # reuse the existing ha-weewx-test image
-#        ARCH=aarch64 scripts/test.sh
+# Usage: scripts/test-maria-n-mqtt.sh          # build + e2e (amd64)
+#        BUILD=0 scripts/test-maria-n-mqtt.sh  # reuse the existing ha-weewx-test image
+#        ARCH=aarch64 scripts/test-maria-n-mqtt.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

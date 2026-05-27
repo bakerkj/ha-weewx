@@ -29,8 +29,8 @@ jobs:
             --cache-to type=gha,mode=max,scope=ha-weewx-test \
             .
 
-  integration:
-    name: Integration e2e (amd64)
+  maria-mqtt:
+    name: "e2e: maria + mqtt"
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -50,7 +50,7 @@ jobs:
       # MQTT discovery + state_class + availability, Seasons report) against the
       # prebuilt image, plus the syslog-spam guard.
       - name: Run pytest e2e
-        run: BUILD=0 ./scripts/test.sh
+        run: BUILD=0 ./scripts/test-maria-n-mqtt.sh
       - name: Upload e2e results
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
@@ -59,8 +59,8 @@ jobs:
           path: test-results/junit.xml
           if-no-files-found: ignore
 
-  cache:
-    name: nginx cache behavior
+  nginx-cache:
+    name: "e2e: nginx cache"
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -78,8 +78,8 @@ jobs:
       - name: Run cache tests
         run: BUILD=0 IMAGE=ha-weewx-cache-test ./scripts/test-cache.sh
 
-  first-boot:
-    name: first-boot smoke (template + SQLite)
+  sqlite-template:
+    name: "e2e: sqlite + template"
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -94,6 +94,8 @@ jobs:
           docker buildx build \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
             --cache-from type=gha,scope=ha-weewx-test \
-            -t ha-weewx-firstboot-test --load .
-      - name: Run first-boot smoke test
-        run: BUILD=0 IMAGE=ha-weewx-firstboot-test ./scripts/test-firstboot.sh
+            -t ha-weewx-sqlite-template-test --load .
+      - name: Run sqlite + template e2e
+        run:
+          BUILD=0 IMAGE=ha-weewx-sqlite-template-test
+          ./scripts/test-sqlite-n-template.sh
