@@ -162,19 +162,22 @@ c["Engine"] = {
         ),
     }
 }
-# Logging mirrors the runtime template exactly: stdout (the HA console) plus a
-# rotating /config/weewx.log. Without it, weectl's logging falls back to WeeWX's
-# syslog default (/dev/log) — absent in the build container — and spams a
-# "Logging error" traceback on every record during the extension installs. The
-# rotating handler needs /config (the runtime addon_config mount) to exist at
-# build time, so create it.
+# Logging goes to stdout (the HA console) plus a rotating /config/weewx.log like
+# the runtime template, but at root level WARNING rather than INFO. Without a
+# [Logging] block, weectl falls back to WeeWX's syslog default (/dev/log) —
+# absent in the build container — and spams a "Logging error" traceback on every
+# record. WARNING additionally drops weectl's ~14-line INFO startup banner, which
+# it reprints on every extension install below (~200 lines of noise); the install
+# progress and any real warnings/errors still print. (weectl has no flag to
+# silence the banner — only the log level does.) The rotating handler needs
+# /config (the runtime addon_config mount) to exist at build time, so create it.
 import os
 
 os.makedirs("/config", exist_ok=True)
 c["Logging"] = {
     "version": 1,
     "disable_existing_loggers": False,
-    "root": {"level": "INFO", "handlers": ["console", "rotate"]},
+    "root": {"level": "WARNING", "handlers": ["console", "rotate"]},
     "formatters": {
         "standard": {"format": "%(asctime)s  %(name)s %(levelname)s %(message)s"}
     },
