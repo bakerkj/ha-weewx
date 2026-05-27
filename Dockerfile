@@ -344,6 +344,7 @@ RUN set -eu; \
     grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
+    grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
     test -d /opt/weewx-data/skins/Seasons; \
     test ! -f /opt/weewx-data/bin/user/mqtt.py; \
     test -f /usr/lib/nginx/modules/ngx_http_js_module.so; \

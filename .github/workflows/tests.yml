@@ -77,3 +77,23 @@ jobs:
             -t ha-weewx-cache-test --load .
       - name: Run cache tests
         run: BUILD=0 IMAGE=ha-weewx-cache-test ./scripts/test-cache.sh
+
+  first-boot:
+    name: first-boot smoke (template + SQLite)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      # Read the shared gha layer cache; build + load the add-on image, then run
+      # it with an empty /config and assert the default new-user path: the
+      # template seeds, weewxd runs on Simulator + SQLite, writes an archive
+      # record, and the Seasons report is generated and served by nginx.
+      - name: Build add-on image (cached)
+        run: |
+          docker buildx build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            -t ha-weewx-firstboot-test --load .
+      - name: Run first-boot smoke test
+        run: BUILD=0 IMAGE=ha-weewx-firstboot-test ./scripts/test-firstboot.sh
