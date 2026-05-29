@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.5...ha-weewx-v0.1.6) (2026-05-29)
+
+
+### Features
+
+* exit the addon when weewxd or nginx fails ([#41](https://github.com/bakerkj/ha-weewx/issues/41)) ([fc3c9ce](https://github.com/bakerkj/ha-weewx/commit/fc3c9ce4f7b8b56de7dd2e784c6c61cd15acd357))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.204.0 ([#42](https://github.com/bakerkj/ha-weewx/issues/42)) ([658c0a9](https://github.com/bakerkj/ha-weewx/commit/658c0a900614cf67fc55b2c4fe9bb43f60f33d58))
+
 ## [0.1.5](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.4...ha-weewx-v0.1.5) (2026-05-29)
 
 
