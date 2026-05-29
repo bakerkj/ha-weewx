@@ -1,0 +1,7 @@
+#!/command/with-contenv bash
+# nginx died -> bring the whole addon down so HA Supervisor restarts it
+# (rather than letting s6 silently restart nginx over and over inside a
+# container that's otherwise considered "running" by Supervisor). $1 is
+# nginx's exit code; $2 is the signal that killed it, if any.
+echo "watchdog: nginx exited (status=$1 signal=$2); bringing addon down" >&2
+exec s6-svscanctl -t /run/service

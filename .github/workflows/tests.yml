@@ -99,3 +99,23 @@ jobs:
         run:
           BUILD=0 IMAGE=ha-weewx-sqlite-template-test
           ./scripts/test-sqlite-n-template.sh
+
+  watchdog:
+    name: "e2e: watchdog"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      # Read the shared gha layer cache; build + load the add-on image, then
+      # verify: killing weewxd exits the container, killing nginx exits the
+      # container, and the HTTP-poll watchdog triggers an exit when its
+      # configured path stays stale.
+      - name: Build add-on image (cached)
+        run: |
+          docker buildx build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
+            --cache-from type=gha,scope=ha-weewx-test \
+            -t ha-weewx-watchdog-test --load .
+      - name: Run watchdog e2e
+        run: BUILD=0 IMAGE=ha-weewx-watchdog-test ./scripts/test-watchdog.sh

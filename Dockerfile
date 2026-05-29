@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx-light=1.26.3-3+deb13u5 \
     openssh-client=1:10.0p1-7+deb13u4 \
     patch=2.8-2 \
+    procps=2:4.0.4-9 \
     python3=3.13.5-1 \
     rsync=3.4.1+ds1-5+deb13u3 \
  && rm -rf /var/lib/apt/lists/*
@@ -359,6 +360,17 @@ RUN set -eu; \
     test ! -f /opt/weewx-data/bin/user/mqtt.py; \
     test -f /usr/lib/nginx/modules/ngx_http_js_module.so; \
     test -f /etc/nginx/njs/noaa.js; \
+    test -x /etc/s6-overlay/s6-rc.d/weewxd/finish; \
+    test -x /etc/s6-overlay/s6-rc.d/nginx/finish; \
+    grep -qF 's6-svscanctl -t /run/service' /etc/s6-overlay/s6-rc.d/weewxd/finish; \
+    grep -qF 's6-svscanctl -t /run/service' /etc/s6-overlay/s6-rc.d/nginx/finish; \
+    test -x /etc/s6-overlay/s6-rc.d/watchdog/run; \
+    test -x /etc/scripts/watchdog.py; \
+    [ "$(cat /etc/s6-overlay/s6-rc.d/watchdog/type)" = "longrun" ]; \
+    test -f /etc/s6-overlay/s6-rc.d/watchdog/dependencies.d/nginx; \
+    test -f /etc/s6-overlay/s6-rc.d/user/contents.d/watchdog; \
+    /opt/weewx/bin/python3 -c "import ast; ast.parse(open('/etc/scripts/watchdog.py').read())"; \
+    /opt/weewx/bin/python3 /etc/scripts/watchdog_selfcheck.py; \
     echo "build-time self-checks passed"
 
 # Final stage = the add-on image. Keeps `test` off the default build path so the

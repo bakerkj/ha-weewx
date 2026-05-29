@@ -1,0 +1,5 @@
+#!/command/with-contenv bash
+# Addon watchdog -- HTTP-probes a configurable URL through the addon's own
+# nginx and runs `s6-svscanctl -t` when the probe stays stale long enough.
+# See rootfs/etc/scripts/watchdog.py for the policy and defaults.
+exec /opt/weewx/bin/python3 /etc/scripts/watchdog.py
