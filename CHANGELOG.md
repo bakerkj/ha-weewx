@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.5](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.4...ha-weewx-v0.1.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* quote MariaDB reserved words in weedb instead of renaming forecast columns ([#40](https://github.com/bakerkj/ha-weewx/issues/40)) ([0e344bb](https://github.com/bakerkj/ha-weewx/commit/0e344bb3c644d087ac1f9bf5cf39c23a4e8284a0))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.202.0 ([#38](https://github.com/bakerkj/ha-weewx/issues/38)) ([afb13c2](https://github.com/bakerkj/ha-weewx/commit/afb13c20d568c029c8b3b43a1b3f4c1c81842700))
+* **deps:** update dependency renovate to v43.202.1 ([#39](https://github.com/bakerkj/ha-weewx/issues/39)) ([626beee](https://github.com/bakerkj/ha-weewx/commit/626beee4b5aa3a9649c3af4736bf9f9e29e67959))
+* **deps:** update ghcr.io/astral-sh/uv docker tag to v0.11.17 ([#36](https://github.com/bakerkj/ha-weewx/issues/36)) ([38ae580](https://github.com/bakerkj/ha-weewx/commit/38ae580a32de12189892bd7a791bc20875b88ec6))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.15.15 ([#37](https://github.com/bakerkj/ha-weewx/issues/37)) ([591ada8](https://github.com/bakerkj/ha-weewx/commit/591ada8b6b22bc202db378d0e84544ee4ea88e6e))
+
+
+### Tests
+
+* first-boot smoke test + rtgd guard build-check ([#32](https://github.com/bakerkj/ha-weewx/issues/32)) ([38c1ccd](https://github.com/bakerkj/ha-weewx/commit/38c1ccdc0aa92039b42f7be412a74d17242c0f2e))
+* rename e2e suite consistently + restore reworks + speed up ([#34](https://github.com/bakerkj/ha-weewx/issues/34)) ([717fa6f](https://github.com/bakerkj/ha-weewx/commit/717fa6fbcfa30ca8617bd25a804cd38a2e8e2909))
+
 ## [0.1.4](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.3...ha-weewx-v0.1.4) (2026-05-27)
 
 

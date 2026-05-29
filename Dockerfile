@@ -53,7 +53,7 @@ ENV PATH="/opt/weewx/bin:$PATH" \
 # python3 and installs the locked deps from uv.lock (weewx + felddy + Pillow/
 # pydantic/Cheetah/pyephem/pyserial/pyusb/PyMySQL/paho) as wheels — nothing
 # compiles. pyproject.toml/uv.lock are bind-mounted, so they add no image layer.
-RUN --mount=from=ghcr.io/astral-sh/uv:0.11.16,source=/uv,target=/usr/local/bin/uv \
+RUN --mount=from=ghcr.io/astral-sh/uv:0.11.17,source=/uv,target=/usr/local/bin/uv \
     --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/build/uv.lock \
     --mount=type=bind,source=.python-version,target=/build/.python-version \
