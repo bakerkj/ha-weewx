@@ -16,6 +16,18 @@ don't quite work as-is in our Python 3 / WeeWX 5 / addon environment.
   match the diff format.
 - Patches are applied with `patch -p1` from `/opt/weewx-data/`.
 
+## `weewx/` — patches for WeeWX core (`weedb`, `weewx`, …)
+
+WeeWX core itself is installed as a pip distribution in the `/opt/weewx` venv's
+`site-packages` and isn't reached by the `/opt/weewx-data` loop. The Dockerfile
+resolves the site-packages directory at build time from `weedb`
+(`python3 -c 'import os, weedb; print(os.path.dirname(os.path.dirname(weedb.__file__)))'`)
+so the patch is not tied to a Python version, then applies each
+`patches/weewx/*.patch` there with `patch -p1`. Paths are **relative to that
+site-packages directory** (a patch to `weedb/mysql.py` references it as
+`weedb/mysql.py`). Same `NNNN-short-description.patch` naming and leading `# `
+rationale comment.
+
 ## `venv/` — patches for pip-installed packages
 
 Some bundled pieces are installed as **pip packages in the venv at
