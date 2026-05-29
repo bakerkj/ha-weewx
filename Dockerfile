@@ -281,17 +281,25 @@ ADD https://raw.githubusercontent.com/weewx/weewx/v5.3.1/src/weewx_data/examples
 # ---------------------------------------------------------------------------
 # Apply patches. Each .patch is a unified diff applied with `patch -p1` in
 # lexical order; a single failure aborts the build. See patches/README.md.
-#   patches/*.patch      -> /opt/weewx-data (extensions installed there via
-#                           weectl); paths relative to /opt/weewx-data/.
-#   patches/venv/*.patch -> the weewx_ha pip package in the venv (felddy is
-#                           pip-installed, not under /opt/weewx-data); paths
-#                           relative to the weewx_ha package directory.
+#   patches/*.patch       -> /opt/weewx-data (extensions installed there via
+#                            weectl); paths relative to /opt/weewx-data/.
+#   patches/weewx/*.patch -> weewx core in the /opt/weewx venv's site-packages
+#                            (weedb, weewx, ...); paths relative to that dir.
+#   patches/venv/*.patch  -> the weewx_ha pip package in the venv (felddy is
+#                            pip-installed, not under /opt/weewx-data); paths
+#                            relative to the weewx_ha package directory.
 # ---------------------------------------------------------------------------
 COPY patches/ /tmp/patches/
 RUN set -eu && \
     for p in /tmp/patches/*.patch; do \
         echo "Applying (data) $(basename "$p")"; \
         patch --batch -d /opt/weewx-data -p1 < "$p"; \
+    done && \
+    WEEWX_LIB_DIR="$(python3 -c 'import os, weedb; print(os.path.dirname(os.path.dirname(weedb.__file__)))')" && \
+    for p in /tmp/patches/weewx/*.patch; do \
+        [ -e "$p" ] || continue; \
+        echo "Applying (weewx) $(basename "$p") -> $WEEWX_LIB_DIR"; \
+        patch --batch -d "$WEEWX_LIB_DIR" -p1 < "$p"; \
     done && \
     WEEWX_HA_DIR="$(python3 -c 'import os, weewx_ha; print(os.path.dirname(weewx_ha.__file__))')" && \
     for p in /tmp/patches/venv/*.patch; do \
@@ -345,6 +353,8 @@ RUN set -eu; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
     grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
+    grep -qF "ORDER BY dateTime DESC LIMIT 1\" % dbm.table_name" /opt/weewx-data/bin/user/forecast.py; \
+    grep -qF "(interval|desc|offset)" /opt/weewx/lib/python3.13/site-packages/weedb/mysql.py; \
     test -d /opt/weewx-data/skins/Seasons; \
     test ! -f /opt/weewx-data/bin/user/mqtt.py; \
     test -f /usr/lib/nginx/modules/ngx_http_js_module.so; \

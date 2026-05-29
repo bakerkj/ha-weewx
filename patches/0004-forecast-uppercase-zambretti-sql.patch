@@ -1,0 +1,22 @@
+# chaunceygardiner/weewx-forecast v4.1 emits one SQL statement that uses
+# lowercase SQL keywords (forecast.py:4409, the Zambretti SELECT):
+#   "... order by dateTime desc limit 1"
+# weewx core's weedb/mysql.py auto-backticks reserved words used as column
+# names — see patches/weewx/0001-weedb-mysql-quote-desc-offset.patch — and
+# would otherwise mangle the lowercase `desc` keyword here into `` `desc` ``,
+# producing invalid MariaDB syntax. Uppercase the statement so the rewriter
+# only acts on actual column names, never on direction keywords.
+#
+# SQLite is unaffected by the case change (both engines are case-insensitive
+# on SQL keywords).
+--- a/bin/user/forecast.py
++++ b/bin/user/forecast.py
+@@ -4406,7 +4406,7 @@
+         created timestamp and event timestamp."""
+         dbm_dict = weewx.manager.get_manager_dict_from_config(self.generator.config_dict, self.binding)
+         with weewx.manager.open_manager(dbm_dict) as dbm:
+-            sql = "select dateTime,zcode from %s where method = 'Zambretti' order by dateTime desc limit 1" % dbm.table_name
++            sql = "SELECT dateTime,zcode FROM %s WHERE method = 'Zambretti' ORDER BY dateTime DESC LIMIT 1" % dbm.table_name
+             for count in range(self.db_max_tries):
+                 try:
+                     record = dbm.getSql(sql)

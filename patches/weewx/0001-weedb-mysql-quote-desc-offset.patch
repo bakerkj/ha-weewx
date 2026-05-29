@@ -1,0 +1,30 @@
+# weedb (weewx core, /opt/weewx/lib/python3.X/site-packages/weedb) already
+# auto-backticks the reserved word `interval` (in the stock archive schema)
+# inside every SQL it sends to MariaDB. Extend that rewrite to also cover
+# `desc` and `offset` so the bundled chaunceygardiner/weewx-forecast extension
+# works on MariaDB without renaming its schema columns. The same rewrite is a
+# no-op on SQLite (this code path only fires for the MariaDB driver), so
+# stock-built forecast.sdb files keep the upstream column names and import
+# without any ALTER TABLE.
+#
+# Safety note: weewx core never emits lowercase `desc` or `offset` as SQL
+# keywords (ORDER BY ... DESC and LIMIT n OFFSET m are uppercase throughout),
+# so the rewrite has no false positives. The one lowercase `desc` keyword in
+# the wild — forecast.py:4409, the Zambretti SELECT — is uppercased by the
+# companion patches/0004-forecast-uppercase-zambretti-sql.patch.
+--- a/weedb/mysql.py
++++ b/weedb/mysql.py
+@@ -259,8 +259,11 @@
+
+         # MySQL uses '%s' as placeholders, so replace the ?'s with %s
+         mysql_string = sql_string.replace('?', '%s')
+-        # If it hasn't been done already, put backquotes around the reserved word 'interval'
+-        updated_sql = re.sub(r"(?<!`)\b(interval)\b(?!`)", r"`\1`", mysql_string)
++        # Backtick MariaDB-reserved words used as column names by weewx core's
++        # archive schema ('interval') and by the bundled forecast extension's
++        # schema ('desc', 'offset'). The negative lookbehind/ahead keeps the
++        # rewrite idempotent if the caller already quoted them.
++        updated_sql = re.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)", r"`\1`", mysql_string)
+
+         # Convert sql_tuple to a plain old tuple, just in case it actually
+         # derives from tuple, but overrides the string conversion (as is the
