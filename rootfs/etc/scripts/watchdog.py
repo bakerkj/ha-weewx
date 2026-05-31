@@ -98,6 +98,7 @@ def main() -> int:
     max_age = int(opts.get("watchdog_max_age_seconds") or 600)
     threshold = int(opts.get("watchdog_consecutive_failures") or 3)
     interval = int(opts.get("watchdog_interval_seconds") or 30)
+    grace = int(opts.get("watchdog_startup_grace_seconds") or 0)
 
     if not path:
         print(
@@ -114,10 +115,26 @@ def main() -> int:
 
     print(
         f"watchdog: enabled  path={path}  max_age={max_age}s  "
-        f"threshold={threshold}  interval={interval}s",
+        f"threshold={threshold}  interval={interval}s  grace={grace}s",
         file=sys.stderr,
         flush=True,
     )
+
+    if grace > 0:
+        # Don't probe at all until the addon has had time to come up. Without
+        # this, a fresh restart can find watchdog_path stale (mtime from before
+        # the restart) and trip the threshold before the first archive cycle
+        # has had a chance to refresh it -- a bootstrap deadlock where the
+        # watchdog kills the very process that would have refreshed its
+        # target. Pick grace > one full report-engine cycle of the target
+        # file's source (archive_interval for HTML/PNG, much smaller for
+        # /gauge-data.txt under rtgd).
+        print(
+            f"watchdog: sleeping {grace}s startup grace before first probe",
+            file=sys.stderr,
+            flush=True,
+        )
+        time.sleep(grace)
 
     failures = 0
     while True:

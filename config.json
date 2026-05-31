@@ -34,12 +34,14 @@
     "watchdog_path": "",
     "watchdog_max_age_seconds": 600,
     "watchdog_consecutive_failures": 3,
-    "watchdog_interval_seconds": 30
+    "watchdog_interval_seconds": 30,
+    "watchdog_startup_grace_seconds": 600
   },
   "schema": {
     "watchdog_path": "str?",
     "watchdog_max_age_seconds": "int(1,)",
     "watchdog_consecutive_failures": "int(1,)",
-    "watchdog_interval_seconds": "int(1,)"
+    "watchdog_interval_seconds": "int(1,)",
+    "watchdog_startup_grace_seconds": "int(0,)"
   }
 }
