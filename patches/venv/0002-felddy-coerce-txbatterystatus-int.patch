@@ -1,0 +1,27 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) treats txBatteryStatus as an int
+# bitmask in PacketPreprocessor.process_packet -- it bit-ANDs against (1 << i)
+# to split each station's per-channel battery state into separate sensors.
+# When the upstream data source delivers the field as a *float* (e.g.
+# MQTTSubscribe consuming a JSON payload that carries the value as "0.0",
+# which it parses with conversion_type=float by default), the bitwise op
+# raises `unsupported operand type(s) for &: 'float' and 'int'` and the
+# entire packet is dropped before HA discovery can publish it.
+# Coerce to int before the bitmask.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir, not /opt/weewx-data (see venv/ in patches/README.md).
+--- a/preprocessor.py
++++ b/preprocessor.py
+@@ -29,7 +29,11 @@
+         logger.debug("Pre-processing packet")
+         if "txBatteryStatus" in packet:
+             logger.debug("Processing txBatteryStatus")
+-            txBatteryStatus = packet["txBatteryStatus"]
++            # Davis stations publish txBatteryStatus as a numeric bitmask; some
++            # upstream sources (e.g. MQTTSubscribe consuming a JSON payload that
++            # carries the field as "0.0") deliver it as a float. The `&`
++            # below requires an int, so coerce.
++            txBatteryStatus = int(packet["txBatteryStatus"])
+             # txBatteryStatus is a bitmap.  Break bits into individual fields.
+             for i, field in enumerate(TX_BATTERY_STATUS_FIELDS):
+                 packet[field] = txBatteryStatus & (1 << i)
