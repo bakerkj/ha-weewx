@@ -12,6 +12,7 @@
   "startup": "services",
   "init": false,
   "usb": true,
+  "udev": true,
   "host_network": true,
   "ingress": true,
   "panel_icon": "mdi:weather-partly-cloudy",
