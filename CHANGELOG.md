@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.6...ha-weewx-v0.1.7) (2026-05-31)
+
+
+### Features
+
+* enable udev so /dev/serial/by-id/usb-* symlinks are exposed ([#44](https://github.com/bakerkj/ha-weewx/issues/44)) ([8c5313e](https://github.com/bakerkj/ha-weewx/commit/8c5313ecaf6fffcc44f4e6dda70032048ec5fd9e))
+
 ## [0.1.6](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.5...ha-weewx-v0.1.6) (2026-05-29)
 
 
