@@ -351,6 +351,7 @@ RUN set -eu; \
     python3 -c "import weewx_ha, paho.mqtt.client, pydantic"; \
     PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats"; \
     grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py; \
+    grep -qF 'int(packet["txBatteryStatus"])' /opt/weewx/lib/python3.13/site-packages/weewx_ha/preprocessor.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
     grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
