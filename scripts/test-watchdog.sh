@@ -129,7 +129,8 @@ cat >"$TMPDIR_OPTS/options.json" <<'JSON'
   "watchdog_path": "/does-not-exist.txt",
   "watchdog_max_age_seconds": 5,
   "watchdog_consecutive_failures": 2,
-  "watchdog_interval_seconds": 3
+  "watchdog_interval_seconds": 3,
+  "watchdog_startup_grace_seconds": 0
 }
 JSON
 run_phase "" -v "$TMPDIR_OPTS/options.json:/data/options.json:ro"

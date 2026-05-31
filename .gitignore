@@ -16,3 +16,6 @@ skins/
 
 # pytest e2e junit output (docker-compose.test.yml / scripts/test.sh).
 test-results/
+
+# Local-only credential drop-files, never to be committed.
+/t.txt
