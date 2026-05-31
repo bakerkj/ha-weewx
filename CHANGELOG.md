@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.8](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.7...ha-weewx-v0.1.8) (2026-05-31)
+
+
+### Features
+
+* watchdog_startup_grace_seconds avoids the bootstrap-deadlock kill ([#49](https://github.com/bakerkj/ha-weewx/issues/49)) ([d483fe1](https://github.com/bakerkj/ha-weewx/commit/d483fe12b9eb0f8669f4611f4bd67cc08f9297e9))
+
+
+### Bug Fixes
+
+* coerce txBatteryStatus to int in felddy preprocessor ([#48](https://github.com/bakerkj/ha-weewx/issues/48)) ([9d5fd2b](https://github.com/bakerkj/ha-weewx/commit/9d5fd2bb39ca636e229276ffc711ce246875c691))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.205.2 ([#46](https://github.com/bakerkj/ha-weewx/issues/46)) ([f825c65](https://github.com/bakerkj/ha-weewx/commit/f825c65f348edb0362d98891d622243c83633501))
+
 ## [0.1.7](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.6...ha-weewx-v0.1.7) (2026-05-31)
 
 
