@@ -1,0 +1,90 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) emits two families of cosmetic
+# WARNINGs at startup that aren't actually problems -- they're just felddy
+# logging "I had to guess metadata" or "this measurement has no unit":
+#
+#   weewx_ha.utils WARNING Guessed metadata for key 'X'
+#     -- emitted when get_key_config can't find X in KEY_CONFIG and falls
+#     through to the keyword-guess path. Fix: add explicit entries for
+#     the keys we know felddy will see.
+#
+#   weewx_ha.utils WARNING No unit found for measurement 'X' in unit system Y
+#     -- emitted when getStandardUnitType returns None. For binary_sensor
+#     entries (alarms, batteryStatus*) and sensor-type enums (forecastIcon,
+#     forecastRule), no unit is the correct answer -- felddy still publishes
+#     the entity correctly. Fix: extend get_unit_metadata to recognize
+#     "no unit by design" cases via a small helper.
+#
+# Changes:
+#   1. KEY_CONFIG: add rainAlarm (binary_sensor) and windrun (sensor,
+#      device_class=distance; weewx already knows the unit-group).
+#   2. NO_UNIT_KEYS sentinel + _key_has_no_unit() helper: looks up the key
+#      (with numeric-suffix-strip, matching get_key_config's lookup) and
+#      reports True for binary_sensor entries OR explicitly-listed enum
+#      keys. get_unit_metadata consults the helper before logging WARNING.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir, not /opt/weewx-data (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -51,6 +51,30 @@
+         raise ValueError(f"Invalid unit system value: {value}")
+
+
++# Measurements that are sensor-type entities (integration=sensor, the default)
++# but have no inherent unit of measurement -- they're enum/diagnostic values
++# (Davis Vantage forecast codes, etc.). Listed here so get_unit_metadata can
++# skip the "No unit found" warning for them.
++NO_UNIT_KEYS: set[str] = {
++    "forecastIcon",
++    "forecastRule",
++}
++
++
++def _key_has_no_unit(measurement_name: str) -> bool:
++    """True if the resolved KEY_CONFIG entry signals no unit by design.
++    Resolves via the same numeric-suffix-strip path as get_key_config so that
++    e.g. extraAlarm5 / batteryStatusChannel1 match their base entry."""
++    if measurement_name in NO_UNIT_KEYS:
++        return True
++    config = KEY_CONFIG.get(measurement_name)
++    if config is None:
++        m = re.match(r"(.*?)(\d+)$", measurement_name)
++        if m:
++            config = KEY_CONFIG.get(m.group(1))
++    return bool(config and config.get("integration") == "binary_sensor")
++
++
+ def get_unit_metadata(measurement_name: str, unit_system: UnitSystem) -> dict[str, Any]:
+     """Generate metadata for a measurement unit based on the unit system."""
+     (target_unit, target_group) = getStandardUnitType(
+@@ -66,6 +90,8 @@
+             (target_unit, _) = getStandardUnitType(int(unit_system), "ET")
+         elif measurement_name in {"sunrise", "sunset", "stormStart"}:
+             (target_unit, _) = getStandardUnitType(int(unit_system), "dateTime")
++        elif _key_has_no_unit(measurement_name):
++            pass  # binary_sensor / enum -- no unit by design, skip warning
+         else:
+             logger.warning(
+                 "No unit found for measurement '%s' in unit system %s",
+@@ -984,4 +1010,21 @@
+             "name": "Yearly Rainfall",
+         },
+     },
++    "rainAlarm": {
++        "integration": "binary_sensor",
++        "metadata": {
++            "enabled_by_default": False,
++            "icon": "mdi:weather-pouring",
++            "name": "Rain Alarm",
++            "payload_off": 0,
++            "payload_on": 1,
++        },
++    },
++    "windrun": {
++        "metadata": {
++            "device_class": "distance",
++            "icon": "mdi:wind-power",
++            "name": "Wind Run",
++        },
++    },
+ }
