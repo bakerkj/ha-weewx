@@ -1,0 +1,101 @@
+name: check-updates
+
+# Weekly bump-checker for SHA-pinned weewx extensions in the Dockerfile.
+# Renovate's custom.regex managers in renovate.json cover *tag-pinned* URLs;
+# this workflow fills the gap for *commit-SHA pins* (matthewwall extensions,
+# plus chaunceygardiner/weewx-rain24h and tkeffer/weewx-xaggs from PR #57),
+# which Renovate has no datasource for.
+#
+# Runs scripts/check-sha-pin-updates.py, which queries each repo's default
+# branch via the GitHub API, rewrites the Dockerfile (and scripts/check-
+# updates.sh) in place, and prints a machine-readable bump list. If any
+# bumps were applied, the workflow opens or updates a single bundled PR --
+# bundling matches Renovate's existing "weewx extensions" group in
+# renovate.json line 99-101 so the merge story stays the same.
+
+on:
+  schedule:
+    # Fridays 22:00 UTC -- aligns with the "before 6pm on friday" /
+    # America/New_York schedule already used by renovate.json. (EDT = UTC-4,
+    # so 22:00 UTC == 18:00 EDT; EST = UTC-5, so 22:00 UTC == 17:00 EST.)
+    - cron: "0 22 * * 5"
+  workflow_dispatch: # manual trigger from the Actions UI
+
+permissions:
+  contents: write # peter-evans/create-pull-request creates a branch
+  pull-requests: write # ... and opens the PR
+
+jobs:
+  bump:
+    name: Bump SHA-pinned extensions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Detect and apply SHA bumps
+        id: detect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/check-sha-pin-updates.py > /tmp/bumps.json
+          if [[ "$(cat /tmp/bumps.json)" == "[]" ]]; then
+            echo "has_bumps=false" >> "$GITHUB_OUTPUT"
+            echo "No bumps needed -- every SHA-pinned extension is current."
+          else
+            echo "has_bumps=true" >> "$GITHUB_OUTPUT"
+            cat /tmp/bumps.json
+          fi
+
+      - name: Render PR body
+        if: steps.detect.outputs.has_bumps == 'true'
+        run: |
+          python3 - <<'PY' > /tmp/pr-body.md
+          import json
+          bumps = json.load(open("/tmp/bumps.json"))
+          print("## Summary")
+          print()
+          print("Automated bumps for SHA-pinned weewx extensions in the Dockerfile.")
+          print()
+          print(
+              "Renovate's custom.regex managers in `renovate.json` handle "
+              "tag-pinned URLs; this PR comes from `.github/workflows/check-"
+              "updates.yml` calling `scripts/check-sha-pin-updates.py` "
+              "weekly, which covers the SHA-pinned URLs Renovate has no "
+              "datasource for."
+          )
+          print()
+          print("| extension | from | to |")
+          print("| --- | --- | --- |")
+          for b in bumps:
+              owner, repo = b["owner"], b["repo"]
+              f, t = b["from"], b["to"]
+              print(
+                  f"| [`{owner}/{repo}`]"
+                  f"(https://github.com/{owner}/{repo}/compare/{f}...{t}) "
+                  f"| `{f}` | `{t}` |"
+              )
+          print()
+          print(
+              "If any bump breaks the build, CI on this PR will catch it "
+              "before merge."
+          )
+          PY
+
+      - name: Open or update PR
+        if: steps.detect.outputs.has_bumps == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/sha-pinned-extension-bumps
+          title: "chore(deps): bump SHA-pinned weewx extensions"
+          body-path: /tmp/pr-body.md
+          commit-message: |
+            chore(deps): bump SHA-pinned weewx extensions
+
+            Automated bump via .github/workflows/check-updates.yml calling
+            scripts/check-sha-pin-updates.py. See PR body for the bump table.
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
