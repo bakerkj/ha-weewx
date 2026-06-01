@@ -1,0 +1,81 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) translates weewx unit names
+# to HA-compatible unit_of_measurement strings via the UNIT_METADATA dict
+# in utils.py. Any weewx unit name MISSING from that dict falls through to
+# the raw weewx name -- which Home Assistant then rejects if it isn't on
+# HA's allowed-units list for the entity's device_class. The discovery
+# message is silently dropped and the entity stays unavailable, even
+# though felddy publishes the state topic on every cycle.
+#
+# A systematic sweep of every KEY_CONFIG entry that declares a
+# device_class, over all three unit systems (METRIC, METRICWX, US),
+# validated against the canonical homeassistant.components.sensor.const
+# DEVICE_CLASS_UNITS mapping (HA 2026.1.3) surfaces these missing
+# translations:
+#
+#   1. 'mile' (group_distance, US units)
+#      Affected: windrun, lightning_distance
+#      HA `distance` device_class requires 'mi'.
+#
+#   2. 'inch_per_hour' (group_rainrate, US units)
+#      Affected: rainRate, snowRate
+#      HA `precipitation_intensity` device_class requires 'in/h'.
+#
+#   3. 'cm_per_hour' (group_rainrate, METRIC units)
+#      Affected: rainRate, snowRate
+#      HA `precipitation_intensity` device_class does NOT accept any
+#      cm/_ unit. Translate to 'mm/h' and multiply the raw weewx
+#      cm-per-hour value by 10 in the value_template (1 cm = 10 mm).
+#
+#   4. 'microgram_per_meter_cubed' (group_concentration, all systems)
+#      Affected: pm1_0, pm2_5, pm10_0
+#      HA's pm1 / pm25 / pm10 device classes accept 'μg/m³' (Greek mu +
+#      superscript 3), not the spelled-out weewx name.
+#
+# Out of scope (separate upstream felddy issues; tracked in PR description):
+#   - o3 / so2 emit 'ppm' but HA's ozone/sulphur_dioxide device classes
+#     accept only 'μg/m³'. Fixing requires felddy to change the device
+#     class OR provide a value-conversion table (concentration depends
+#     on molecular weight).
+#   - rms / vecavg emit '<speed>_per_hour2' / '_per_second2' (squared
+#     time units) — looks like felddy concatenates a '2' suffix when
+#     deriving variance/RMS quantities. Real felddy bug, not just a
+#     missing translation.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -162,6 +162,10 @@
+
+ UNIT_METADATA: dict[str, dict[str, Optional[str]]] = {
+     "cm": {"unit_of_measurement": "cm", "value_template": "{{ value | round(2) }}"},
++    "cm_per_hour": {
++        "unit_of_measurement": "mm/h",
++        "value_template": "{{ (value | float * 10) | round(2) }}",
++    },
+     "degree_C": {
+         "unit_of_measurement": "°C",
+         "value_template": "{{ value | round(1) }}",
+@@ -187,6 +191,10 @@
+     "hour": {"unit_of_measurement": "h", "value_template": "{{ value | round(2) }}"},
+     "inHg": {"unit_of_measurement": "inHg", "value_template": "{{ value | round(2) }}"},
+     "inch": {"unit_of_measurement": "in", "value_template": "{{ value | round(2) }}"},
++    "inch_per_hour": {
++        "unit_of_measurement": "in/h",
++        "value_template": "{{ value | round(2) }}",
++    },
+     "kPa": {"unit_of_measurement": "kPa", "value_template": "{{ value | round(2) }}"},
+     "kilowatt": {
+         "unit_of_measurement": "kW",
+@@ -209,6 +217,11 @@
+         "unit_of_measurement": "m/s",
+         "value_template": "{{ value | round(1) }}",
+     },
++    "microgram_per_meter_cubed": {
++        "unit_of_measurement": "μg/m³",
++        "value_template": "{{ value | round(2) }}",
++    },
++    "mile": {"unit_of_measurement": "mi", "value_template": "{{ value | round(2) }}"},
+     "mile_per_hour": {
+         "unit_of_measurement": "mph",
+         "value_template": "{{ value | round(1) }}",
