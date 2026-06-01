@@ -191,7 +191,7 @@ c["Logging"] = {
         "rotate": {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "standard",
-            "filename": "/config/weewx.log",
+            "filename": "/config/log/weewx.log",
             "maxBytes": 10485760,
             "backupCount": 5,
             "encoding": "utf-8",

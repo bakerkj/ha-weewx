@@ -42,7 +42,7 @@ bad() {
 dexec() { docker exec "$CTR" "$@"; }
 archive_count() {
   dexec /opt/weewx/bin/python3 -c 'import sqlite3
-try: print(sqlite3.connect("/config/weewx.sdb").execute("SELECT COUNT(*) FROM archive").fetchone()[0])
+try: print(sqlite3.connect("/config/db/weewx.sdb").execute("SELECT COUNT(*) FROM archive").fetchone()[0])
 except Exception: print("noschema")' 2>/dev/null
 }
 
@@ -66,7 +66,7 @@ if [[ -n "$seeded" ]] && dexec grep -q "station_type = Simulator" /config/weewx.
 else
   bad "template was not seeded"
 fi
-[[ -n "$schema" ]] && ok "SQLite DB + archive table created (/config/weewx.sdb)" || bad "SQLite archive table not created"
+[[ -n "$schema" ]] && ok "SQLite DB + archive table created (/config/db/weewx.sdb)" || bad "SQLite archive table not created"
 
 # --- Phase 2: shorten the interval and restart, then exercise the cycle ---
 echo "### Phase 2: set archive_interval=15s, restart, run the archive+report cycle"
