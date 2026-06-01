@@ -360,6 +360,8 @@ RUN set -eu; \
     grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF '"rain24h"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
+    python3 -c "from weewx_ha.utils import UNIT_METADATA; \
+assert UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}', UNIT_METADATA['uv_index']"; \
     test -f /opt/weewx-data/bin/user/rain24h.py; \
     test -f /opt/weewx-data/bin/user/xaggs.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
@@ -383,6 +385,135 @@ RUN set -eu; \
     /opt/weewx/bin/python3 -c "import ast; ast.parse(open('/etc/scripts/watchdog.py').read())"; \
     /opt/weewx/bin/python3 /etc/scripts/watchdog_selfcheck.py; \
     echo "build-time self-checks passed"
+
+# Comprehensive felddy unit/device_class sweep: assert that for every
+# KEY_CONFIG entry that declares a device_class, get_unit_metadata returns
+# a unit_of_measurement that Home Assistant actually accepts for that
+# device_class -- across all three unit systems (METRIC, METRICWX, US).
+# Catches the cases patches/venv/0006 fixes AND any future regression
+# (a new KEY_CONFIG entry, a new weewx unit, a new HA device_class
+# restriction) at build time, before anyone deploys an image that
+# silently fails HA discovery validation.
+#
+# Reads HA's canonical DEVICE_CLASS_UNITS mapping FROM HOME ASSISTANT
+# ITSELF (pinned to the version the supervisor ships) rather than from
+# a hand-copied table — so the test stays in sync with HA's actual
+# allowed-units list automatically as HA evolves.
+# Latest HA release whose pip metadata still permits Python 3.13 (the
+# addon's venv python). HA 2026.3.0+ requires Python 3.14.2; the
+# DEVICE_CLASS_UNITS mapping changes very rarely so a slightly-older
+# pin is fine for this test. Live deployments run whatever the
+# supervisor ships -- the test asserts a NECESSARY (not sufficient)
+# condition: felddy emits HA-known unit names.
+ARG HA_VERSION=2026.1.3
+# Full install (with deps) -- importing homeassistant.components.sensor.const
+# triggers a cascade through homeassistant.util / homeassistant.const that
+# pulls in propcache, voluptuous, etc. The install is ~250 MB but lives only
+# in this test layer, never shipped to the addon image. gcc is needed for a
+# couple of small C-extension wheels that don't ship binary builds for our
+# build platform; install it from apt then remove after the uv pip install.
+RUN --mount=from=ghcr.io/astral-sh/uv:0.11.17,source=/uv,target=/usr/local/bin/uv \
+    apt-get update && apt-get install -y --no-install-recommends gcc python3-dev \
+    && uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}" \
+    && apt-get purge -y gcc python3-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# PYTHONPATH=/opt/weewx-data/bin so the sweep can import bundled extensions
+# whose module-level code registers obs_group_dict entries -- specifically
+# user.rain24h sets weewx.units.obs_group_dict['rain24h'] = 'group_rain' at
+# import time. Without this, get_unit_metadata("rain24h", ...) returns None
+# and the sweep silently skips rain24h (a real validation hole) rather than
+# checking that the rain24h discovery payload gets a HA-valid unit.
+RUN PYTHONPATH=/opt/weewx-data/bin python3 - <<'PYEOF'
+import sys
+
+# Import bundled extensions whose module-level code registers obs_group_dict
+# entries. Each such import must happen BEFORE any get_unit_metadata call
+# for a key the extension contributes a unit for.
+import user.rain24h  # registers 'rain24h' -> 'group_rain'  # noqa: F401
+
+from weewx_ha.utils import UnitSystem, get_unit_metadata, KEY_CONFIG
+
+# KEY_CONFIG TEMPLATE-base entries: felddy keeps these so get_key_config can
+# strip numeric suffixes (extraTemp5 -> extraTemp -> friendly name "Extra
+# Temperature 5"). The base name itself NEVER appears as a real measurement
+# in a loop packet, so calling get_unit_metadata on it correctly returns no
+# unit AND correctly emits a "No unit found" WARNING -- but that warning is
+# noise here because we'd never check the base key in production. Skip them.
+# (Do NOT silence the logger -- those warnings catch real issues like a
+# missed obs_group_dict registration. Skipping at the iteration layer
+# preserves real-warning visibility.)
+TEMPLATE_BASE_KEYS = {
+    "extraHumid", "extraTemp", "leafTemp", "leafWet",
+    "soilMoist", "soilTemp", "windburn",
+}
+from homeassistant.components.sensor.const import DEVICE_CLASS_UNITS
+
+# DEVICE_CLASS_UNITS maps SensorDeviceClass enum -> set of allowed units.
+# Each unit in the set is a str, a StrEnum member, or None ("no unit").
+# Normalize to {device_class_string: {unit_string, ...}} for direct
+# comparison against felddy's unit_of_measurement strings.
+HA_ALLOWED = {}
+for dc, units in DEVICE_CLASS_UNITS.items():
+    dc_name = dc.value if hasattr(dc, "value") else str(dc)
+    HA_ALLOWED[dc_name] = {
+        (u.value if hasattr(u, "value") else u)
+        for u in units
+        if u is not None
+    }
+
+# Known upstream felddy bugs NOT in scope for patches/venv/0006 -- they
+# need different fixes (device_class change, concentration conversion,
+# or a felddy code change), not a UNIT_METADATA addition. Tracked
+# separately; revisit when those PRs land.
+SKIP_KEYS = {
+    "o3",       # device_class=ozone, emits 'ppm'; HA wants µg/m³
+    "so2",      # device_class=sulphur_dioxide, emits 'ppm'; HA wants µg/m³
+    "rms",      # device_class=wind_speed, emits '<speed>_per_hour2'
+    "vecavg",   # device_class=wind_speed, emits '<speed>_per_hour2'
+}
+
+bad = []
+checked = 0
+skipped_dc = set()
+skipped_keys = set()
+for key, cfg in KEY_CONFIG.items():
+    if key in TEMPLATE_BASE_KEYS:
+        # Skip BEFORE calling get_unit_metadata so we don't emit a noisy
+        # "No unit found" WARNING for an entry that never appears as a real
+        # measurement.
+        continue
+    dc = cfg.get("metadata", {}).get("device_class")
+    if not dc:
+        continue
+    if dc not in HA_ALLOWED:
+        # enum / timestamp / binary device_class -- HA does no unit check
+        skipped_dc.add(dc)
+        continue
+    if key in SKIP_KEYS:
+        skipped_keys.add(key)
+        continue
+    for us in UnitSystem:
+        meta = get_unit_metadata(key, us)
+        unit = meta.get("unit_of_measurement")
+        if unit is None:
+            continue  # explicitly None is fine (e.g. unix_epoch)
+        checked += 1
+        if unit not in HA_ALLOWED[dc]:
+            bad.append((key, dc, us.name, unit))
+
+if bad:
+    print("FAIL: felddy emits HA-invalid unit_of_measurement for these combos:")
+    for row in bad:
+        print(f"  key={row[0]:20s} device_class={row[1]:25s} unit_system={row[2]:8s} bad_unit={row[3]!r}")
+    sys.exit(1)
+print(
+    f"felddy unit/device_class sweep OK: {checked} (key, unit_system) combos "
+    f"checked against homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
+)
+if skipped_dc:
+    print(f"  (device_classes with no unit validation: {sorted(skipped_dc)})")
+if skipped_keys:
+    print(f"  (known-broken keys skipped: {sorted(skipped_keys)})")
+PYEOF
 
 # Final stage = the add-on image. Keeps `test` off the default build path so the
 # HA builder / `docker build` produce the add-on image, not the test layer.

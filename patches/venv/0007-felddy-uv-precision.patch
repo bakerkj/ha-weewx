@@ -1,0 +1,30 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) sets UNIT_METADATA['uv_index']
+# to round(0) -- it strips ALL decimals from the UV index value when applied
+# as the discovery payload's value_template on HA's side. The underlying
+# weewx loop-packet value is a real float with 0.1 native precision from
+# Davis Vantage hardware (single-byte register scaled by 10, range 0.0-25.5
+# in 0.1 increments), confirmed by broker-side sample: weather/UV publishes
+# '6.5'-style values.
+#
+# round(0) is the outlier here -- every other precision-bearing UNIT_METADATA
+# entry uses round(1) (temperatures, speeds) or round(2) (pressures, distances).
+# The integer-rounded entries (degree_compass, lux, percent, percent_battery)
+# are values that are conventionally integer; UV at 0.1 increments is not.
+#
+# Bump uv_index's value_template to round(1) so the hardware-native precision
+# reaches HA. round(2) and above would just append misleading trailing zeros
+# (e.g. '6.50') implying precision the sensor doesn't actually deliver.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -232,7 +232,7 @@
+     "unix_epoch": {"unit_of_measurement": None},
+     "uv_index": {
+         "unit_of_measurement": None,
+-        "value_template": "{{ value | round(0) }}",
++        "value_template": "{{ value | round(1) }}",
+     },
+     "volt": {"unit_of_measurement": "V", "value_template": "{{ value | round(2) }}"},
+     "watt": {"unit_of_measurement": "W", "value_template": "{{ value | round(2) }}"},
