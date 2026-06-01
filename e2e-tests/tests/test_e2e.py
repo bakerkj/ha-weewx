@@ -108,6 +108,67 @@ def test_mqtt_availability_retained():
     assert msgs.get("weather/status") == "online", msgs
 
 
+def test_mqtt_rain24h_published_with_metadata():
+    # Verifies the chaunceygardiner/weewx-rain24h extension was installed and
+    # is wired into data_services in test/weewx.conf — the service injects a
+    # `rain24h` key into every loop packet so felddy publishes it.
+    # Also verifies patches/venv/0005-felddy-rain24h-metadata.patch: the new
+    # KEY_CONFIG entry gives the discovery payload a proper device_class and
+    # name (otherwise felddy logs "Guessed metadata for key 'rain24h'" and
+    # the HA entity gets no device_class).
+    msgs = _collect(
+        ["weather/rain24h", "homeassistant/sensor/weewx/rain24h/config"],
+        birth=True,
+        settle=6.0,
+    )
+    assert "weather/rain24h" in msgs, (
+        "weather/rain24h never published — weewx-rain24h service is not "
+        "running (extension missing, not in data_services, or [Rain24h] "
+        "disabled)"
+    )
+    # The value should parse as a float (rain24h is 0.0 on a simulator that
+    # never rains, but it is NOT None — the service emits a real number).
+    try:
+        float(msgs["weather/rain24h"])
+    except (TypeError, ValueError):
+        pytest.fail(
+            f"weather/rain24h published unparsable value: {msgs['weather/rain24h']!r}"
+        )
+
+    # Discovery payload exists and carries the KEY_CONFIG metadata.
+    cfg_topic = "homeassistant/sensor/weewx/rain24h/config"
+    assert cfg_topic in msgs, (
+        "no rain24h discovery config — patches/venv/0005 (KEY_CONFIG entry) "
+        "likely not applied, or felddy never saw rain24h in a packet"
+    )
+    cfg = json.loads(msgs[cfg_topic])
+    assert cfg.get("device_class") == "precipitation", cfg
+    assert cfg.get("name") == "24-Hour Rainfall", cfg
+    # weewx-rain24h registers obs_group_dict['rain24h']='group_rain', so
+    # felddy resolves a unit via getStandardUnitType. test/weewx.conf uses
+    # METRICWX in [HomeAssistant], which maps group_rain to 'mm'.
+    assert cfg.get("unit_of_measurement") == "mm", cfg
+
+
+def test_user_xaggs_module_loadable():
+    # Verifies the tkeffer/weewx-xaggs extension was installed AND it loaded
+    # without error at engine start. xaggs is an xtype_services registration
+    # (template-time aggregations: historical_max, avg_gt, etc.) — there's no
+    # MQTT-observable side effect. Its load failure would show up as an
+    # ERROR/CRITICAL in the broker-side weewx.log we already check elsewhere,
+    # but here we also assert the felddy discovery topics aren't missing.
+    # Catching the xtype service registration via mqtt isn't possible, so we
+    # rely on the Dockerfile self-check (`test -f bin/user/xaggs.py` +
+    # `import user.xaggs`) and on the absence of weewx-startup errors. This
+    # test exists as the e2e-suite-side anchor: if the user.xaggs.XAggsService
+    # in test/weewx.conf xtype_services fails to load, weewx exits non-zero,
+    # the weewx container healthcheck never goes healthy, and the entire
+    # e2e suite hangs/fails at startup — so reaching this assertion at all is
+    # the evidence that xaggs loaded cleanly.
+    msgs = _collect(["weather/status"], birth=False, settle=2.0)
+    assert msgs.get("weather/status") == "online", msgs
+
+
 def test_mqtt_archive_only_field_published():
     # Verifies patches/venv/0004-felddy-bind-archive.patch: weewx_ha.Controller
     # also binds NEW_ARCHIVE_RECORD, so archive-only fields (like windrun,

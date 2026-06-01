@@ -1,0 +1,26 @@
+# Add felddy KEY_CONFIG entry for rain24h so the entity gets a proper
+# device_class + nice name in Home Assistant, and felddy no longer logs
+# "Guessed metadata for key 'rain24h'" at startup.
+#
+# rain24h is produced by the chaunceygardiner/weewx-rain24h extension which
+# we bundle (Dockerfile). It registers
+#   weewx.units.obs_group_dict['rain24h'] = 'group_rain'
+# so felddy's getStandardUnitType returns the right unit (in / mm) — only
+# the metadata is missing.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -1010,4 +1010,11 @@
+             "name": "Wind Run",
+         },
+     },
++    "rain24h": {
++        "metadata": {
++            "device_class": "precipitation",
++            "icon": "mdi:weather-rainy",
++            "name": "24-Hour Rainfall",
++        },
++    },
+ }
