@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.9](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.8...ha-weewx-v0.1.9) (2026-06-01)
+
+
+### Features
+
+* split /config into /config/db (SQLite) + /config/log (log files) ([#52](https://github.com/bakerkj/ha-weewx/issues/52)) ([91099f1](https://github.com/bakerkj/ha-weewx/commit/91099f1a1bcdf2602e9c24eb8ecb0a5d6d5276a3))
+
+
+### Bug Fixes
+
+* **watchdog:** halt the container via kill -TERM 1, not s6-svscanctl ([#50](https://github.com/bakerkj/ha-weewx/issues/50)) ([b37bcf3](https://github.com/bakerkj/ha-weewx/commit/b37bcf36f52bf8e19110f95abb1855aa9f5305f6))
+
 ## [0.1.8](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.7...ha-weewx-v0.1.8) (2026-05-31)
 
 
