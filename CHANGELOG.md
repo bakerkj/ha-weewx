@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.9...ha-weewx-v0.1.10) (2026-06-01)
+
+
+### Bug Fixes
+
+* **felddy:** silence cosmetic startup warnings via KEY_CONFIG + unit helper ([#53](https://github.com/bakerkj/ha-weewx/issues/53)) ([a89ee97](https://github.com/bakerkj/ha-weewx/commit/a89ee97d85138a0a46d04aafb0a5b442daaf7e97))
+
 ## [0.1.9](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.8...ha-weewx-v0.1.9) (2026-06-01)
 
 
