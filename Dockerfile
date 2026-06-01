@@ -53,7 +53,7 @@ ENV PATH="/opt/weewx/bin:$PATH" \
 # python3 and installs the locked deps from uv.lock (weewx + felddy + Pillow/
 # pydantic/Cheetah/pyephem/pyserial/pyusb/PyMySQL/paho) as wheels — nothing
 # compiles. pyproject.toml/uv.lock are bind-mounted, so they add no image layer.
-RUN --mount=from=ghcr.io/astral-sh/uv:0.11.17,source=/uv,target=/usr/local/bin/uv \
+RUN --mount=from=ghcr.io/astral-sh/uv:0.11.18,source=/uv,target=/usr/local/bin/uv \
     --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/build/uv.lock \
     --mount=type=bind,source=.python-version,target=/build/.python-version \
@@ -412,7 +412,7 @@ ARG HA_VERSION=2026.1.3
 # in this test layer, never shipped to the addon image. gcc is needed for a
 # couple of small C-extension wheels that don't ship binary builds for our
 # build platform; install it from apt then remove after the uv pip install.
-RUN --mount=from=ghcr.io/astral-sh/uv:0.11.17,source=/uv,target=/usr/local/bin/uv \
+RUN --mount=from=ghcr.io/astral-sh/uv:0.11.18,source=/uv,target=/usr/local/bin/uv \
     apt-get update && apt-get install -y --no-install-recommends gcc python3-dev \
     && uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}" \
     && apt-get purge -y gcc python3-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
