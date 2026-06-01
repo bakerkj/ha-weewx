@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.11](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.10...ha-weewx-v0.1.11) (2026-06-01)
+
+
+### Features
+
+* bundle weewx-rain24h + weewx-xaggs with felddy metadata + tests ([#57](https://github.com/bakerkj/ha-weewx/issues/57)) ([942f9b0](https://github.com/bakerkj/ha-weewx/commit/942f9b094cc2ef8b8f3155323b93738e4ebf3fc4))
+
+
+### Bug Fixes
+
+* **felddy:** bind NEW_ARCHIVE_RECORD so archive-only fields reach MQTT ([#55](https://github.com/bakerkj/ha-weewx/issues/55)) ([d6bf635](https://github.com/bakerkj/ha-weewx/commit/d6bf6355ff942df70491421b66bd23f2af15b7f0))
+* **felddy:** preserve UV index hardware precision (round 0 -&gt; 1) ([#59](https://github.com/bakerkj/ha-weewx/issues/59)) ([52b2a85](https://github.com/bakerkj/ha-weewx/commit/52b2a85867626113f174753d59029d41023b3cd8))
+* **felddy:** unit_of_measurement fixes via HA-DEVICE_CLASS_UNITS sweep ([#58](https://github.com/bakerkj/ha-weewx/issues/58)) ([3b88c89](https://github.com/bakerkj/ha-weewx/commit/3b88c89e80e3496bff49ec2c54637daed3cb3b2e))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.207.4 ([#62](https://github.com/bakerkj/ha-weewx/issues/62)) ([9747b5b](https://github.com/bakerkj/ha-weewx/commit/9747b5babd0876a810ad7053100a80bc563ddb21))
+* **deps:** update ghcr.io/astral-sh/uv docker tag to v0.11.18 ([#63](https://github.com/bakerkj/ha-weewx/issues/63)) ([b18b044](https://github.com/bakerkj/ha-weewx/commit/b18b0446e23d8cd32d0994168977e3c5d5b96aad))
+
+
+### Continuous Integration
+
+* **renovate:** track SHA-pinned weewx extensions via git-refs datasource ([#61](https://github.com/bakerkj/ha-weewx/issues/61)) ([c22c420](https://github.com/bakerkj/ha-weewx/commit/c22c420c388b8204b1ad04418deba05b30804feb))
+
 ## [0.1.10](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.9...ha-weewx-v0.1.10) (2026-06-01)
 
 
