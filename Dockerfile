@@ -225,12 +225,14 @@ RUN for url in \
       "https://github.com/matthewwall/weewx-owm/archive/297dd97.zip" \
       "https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip" \
       "https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip" \
+      "https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip" \
       "https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip" \
       "https://github.com/matthewwall/weewx-wcloud/archive/83ee792.zip" \
       "https://github.com/matthewwall/weewx-wetter/archive/50a7f68.zip" \
       "https://github.com/matthewwall/weewx-windfinder/archive/07ccbc3.zip" \
       "https://github.com/claudobahn/weewx-windguru/archive/c0a9b04.zip" \
       "https://github.com/matthewwall/weewx-windy/archive/0.3.zip" \
+      "https://github.com/tkeffer/weewx-xaggs/archive/d361456.zip" \
     ; do \
         echo ""; \
         echo "=== Installing: $url ==="; \
@@ -349,7 +351,7 @@ FROM addon AS test
 RUN set -eu; \
     weewxd --version; \
     python3 -c "import weewx_ha, paho.mqtt.client, pydantic"; \
-    PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats"; \
+    PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs"; \
     grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py; \
     grep -qF 'int(packet["txBatteryStatus"])' /opt/weewx/lib/python3.13/site-packages/weewx_ha/preprocessor.py; \
     grep -qF 'NO_UNIT_KEYS' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
@@ -357,6 +359,9 @@ RUN set -eu; \
     grep -qF '"windrun"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
     grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
+    grep -qF '"rain24h"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
+    test -f /opt/weewx-data/bin/user/rain24h.py; \
+    test -f /opt/weewx-data/bin/user/xaggs.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
     grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
