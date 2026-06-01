@@ -4,7 +4,10 @@ set -euo pipefail
 
 WEEWX_CONF="/config/weewx.conf"
 
-mkdir -p /config
+# Subdirs the bundled template references for SQLite DBs and log files. Make
+# sure they exist before weewxd starts so it doesn't fail to open the SDBs or
+# the RotatingFileHandler at first boot.
+mkdir -p /config /config/db /config/log
 
 # Seed weewx.conf from the bundled template on first start. Subsequent starts
 # leave the file alone — edit it directly to change WeeWX configuration.

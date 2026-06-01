@@ -90,7 +90,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 [Databases]
     [[archive_sqlite]]
-        database_name = /config/weewx.sdb
+        database_name = /config/db/weewx.sdb
         driver        = weedb.sqlite
 
     [[archive_mysql]]
@@ -141,9 +141,9 @@ WEEWX_ROOT = /opt/weewx-data
     # WeeWX's built-in default points the root logger at syslog (/dev/log),
     # which does not exist in this container — that spams a "Logging error"
     # traceback on every record. Override the root logger to log to stdout (the
-    # HA add-on log viewer) AND to a rotating file at /config/weewx.log, which
-    # survives restarts and is reachable on the host at
-    # /addon_configs/<addon-slug>/weewx.log for tracing history.
+    # HA add-on log viewer) AND to a rotating file at /config/log/weewx.log,
+    # which survives restarts and is reachable on the host at
+    # /addon_configs/<addon-slug>/log/weewx.log for tracing history.
     [[root]]
         level    = INFO
         handlers = console, rotate,
@@ -158,12 +158,12 @@ WEEWX_ROOT = /opt/weewx-data
             formatter = standard
             stream    = ext://sys.stdout
 
-        # Durable, size-capped log file (5 x 10 MB) under /config so it persists
-        # and is visible from the Terminal/SSH add-on.
+        # Durable, size-capped log file (5 x 10 MB) under /config/log/ so it
+        # persists and is visible from the Terminal/SSH add-on.
         [[[rotate]]]
             class       = logging.handlers.RotatingFileHandler
             formatter   = standard
-            filename    = /config/weewx.log
+            filename    = /config/log/weewx.log
             maxBytes    = 10485760
             backupCount = 5
             encoding    = utf-8
