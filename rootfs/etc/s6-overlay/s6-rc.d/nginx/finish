@@ -1,7 +1,10 @@
 #!/command/with-contenv bash
-# nginx died -> bring the whole addon down so HA Supervisor restarts it
-# (rather than letting s6 silently restart nginx over and over inside a
-# container that's otherwise considered "running" by Supervisor). $1 is
-# nginx's exit code; $2 is the signal that killed it, if any.
+# nginx died -> bring the whole addon down so HA Supervisor restarts it.
+# See weewxd/finish for the rationale; tl;dr send SIGTERM to PID 1
+# (s6-overlay's init) which propagates correctly to container exit,
+# rather than running `s6-svscanctl -t /run/service` which only halts
+# the inner scandir and races a longrun respawn.
+#
+# $1 is nginx's exit code; $2 is the signal that killed it, if any.
 echo "watchdog: nginx exited (status=$1 signal=$2); bringing addon down" >&2
-exec s6-svscanctl -t /run/service
+exec kill -TERM 1
