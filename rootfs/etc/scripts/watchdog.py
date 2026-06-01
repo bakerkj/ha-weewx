@@ -9,9 +9,9 @@ Reads its options from /data/options.json (HA Supervisor mounts this for the
 addon at runtime). Periodically GETs `http://localhost:8099${watchdog_path}`
 through the addon's own nginx and verifies the response's Last-Modified is
 within `watchdog_max_age_seconds` of now. After
-`watchdog_consecutive_failures` consecutive failures, terminates the s6
-supervisor via `s6-svscanctl -t /run/service`, causing the container to
-exit -- HA Supervisor's "Watchdog" toggle will then restart the addon.
+`watchdog_consecutive_failures` consecutive failures, sends SIGTERM to PID 1
+(s6-overlay's init), which tears down the supervisor cleanly and exits the
+container -- HA Supervisor's "Watchdog" toggle will then restart the addon.
 
 Disabled when `watchdog_path` is empty (the default), in which case the
 service sits idle and never fires.
@@ -28,13 +28,13 @@ from __future__ import annotations
 import email.utils
 import http.client
 import json
-import subprocess
+import os
+import signal
 import sys
 import time
 
 
 OPTIONS_PATH = "/data/options.json"
-SCANDIR = "/run/service"
 
 
 def load_options() -> dict:
@@ -85,11 +85,18 @@ def probe(path: str, max_age: int) -> tuple[bool, str]:
 
 
 def halt(reason: str) -> None:
+    # Send SIGTERM to PID 1 (s6-overlay's init) -- the documented way to
+    # tear down the whole supervisor and exit the container cleanly. See
+    # rootfs/etc/s6-overlay/s6-rc.d/{weewxd,nginx}/finish for the matching
+    # rationale (and why we no longer use s6-svscanctl -t /run/service).
     print(
-        f"watchdog: {reason}; bringing addon down (s6-svscanctl -t {SCANDIR})",
+        f"watchdog: {reason}; bringing addon down (SIGTERM -> PID 1)",
         file=sys.stderr,
     )
-    subprocess.run(["s6-svscanctl", "-t", SCANDIR], check=False)
+    try:
+        os.kill(1, signal.SIGTERM)
+    except Exception as exc:
+        print(f"watchdog: kill -TERM 1 failed: {exc!r}", file=sys.stderr)
 
 
 def main() -> int:
@@ -156,8 +163,8 @@ def main() -> int:
             )
             if failures >= threshold:
                 halt(f"{failures} consecutive watchdog failures on {path}")
-                # s6-svscanctl will tear down the tree shortly; sleep
-                # briefly so we don't busy-loop while it does so.
+                # PID 1 will tear down the tree shortly; sleep briefly
+                # so we don't busy-loop while it does so.
                 time.sleep(30)
                 return 0
         time.sleep(interval)

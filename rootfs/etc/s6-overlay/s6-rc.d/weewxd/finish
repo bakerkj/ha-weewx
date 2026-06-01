@@ -1,7 +1,15 @@
 #!/command/with-contenv bash
-# weewxd died -> bring the whole addon down so HA Supervisor restarts it
-# (rather than letting s6 silently restart weewxd over and over inside a
-# container that's otherwise considered "running" by Supervisor). $1 is
-# weewxd's exit code; $2 is the signal that killed it, if any.
+# weewxd died -> bring the whole addon down so HA Supervisor restarts it.
+# Send SIGTERM to PID 1 (s6-overlay's init) -- that's the documented way to
+# tear the supervisor down cleanly; PID 1 catches SIGTERM, stops the
+# remaining longruns in order, and exits, which makes the container exit.
+#
+# Why not `s6-svscanctl -t /run/service`: that halts the INNER scandir but
+# doesn't always propagate to the OUTER PID 1 (the s6-overlay-init
+# wrapping the scandir). In the HA Supervisor environment that gap leaves
+# the container alive and s6 races a respawn against the halt, so weewxd
+# keeps coming back up instead of the addon exiting cleanly.
+#
+# $1 is weewxd's exit code; $2 is the signal that killed it, if any.
 echo "watchdog: weewxd exited (status=$1 signal=$2); bringing addon down" >&2
-exec s6-svscanctl -t /run/service
+exec kill -TERM 1

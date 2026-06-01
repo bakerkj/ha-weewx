@@ -363,8 +363,8 @@ RUN set -eu; \
     test -f /etc/nginx/njs/noaa.js; \
     test -x /etc/s6-overlay/s6-rc.d/weewxd/finish; \
     test -x /etc/s6-overlay/s6-rc.d/nginx/finish; \
-    grep -qF 's6-svscanctl -t /run/service' /etc/s6-overlay/s6-rc.d/weewxd/finish; \
-    grep -qF 's6-svscanctl -t /run/service' /etc/s6-overlay/s6-rc.d/nginx/finish; \
+    grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/weewxd/finish; \
+    grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/nginx/finish; \
     test -x /etc/s6-overlay/s6-rc.d/watchdog/run; \
     test -x /etc/scripts/watchdog.py; \
     [ "$(cat /etc/s6-overlay/s6-rc.d/watchdog/type)" = "longrun" ]; \
