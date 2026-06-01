@@ -355,6 +355,8 @@ RUN set -eu; \
     grep -qF 'NO_UNIT_KEYS' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
     grep -qF '"rainAlarm"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
     grep -qF '"windrun"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
+    grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
+    grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
     grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
     grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
