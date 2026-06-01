@@ -360,6 +360,8 @@ RUN set -eu; \
     grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
     grep -qF '"rain24h"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
+    python3 -c "from weewx_ha.utils import UNIT_METADATA; \
+assert UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}', UNIT_METADATA['uv_index']"; \
     test -f /opt/weewx-data/bin/user/rain24h.py; \
     test -f /opt/weewx-data/bin/user/xaggs.py; \
     grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
