@@ -106,3 +106,28 @@ def test_mqtt_availability_retained():
     # Availability is published retained on connect, so no birth needed.
     msgs = _collect(["weather/status"], birth=False, settle=2.0)
     assert msgs.get("weather/status") == "online", msgs
+
+
+def test_mqtt_archive_only_field_published():
+    # Verifies patches/venv/0004-felddy-bind-archive.patch: weewx_ha.Controller
+    # also binds NEW_ARCHIVE_RECORD, so archive-only fields (like windrun,
+    # which weewx.wxxtypes.StdWXXTypes computes only on archive records, not
+    # on loop packets) reach the broker as state topics. Without the patch,
+    # `weather/windrun` is never published — felddy's discovery config for it
+    # exists but no state arrives, and the HA entity stays "unavailable".
+    #
+    # test/weewx.conf configures archive_interval=15s and
+    # [StdWXCalculate][[Calculations]] windrun = software, so windrun lands
+    # in every archive record. We wait for one archive cycle's worth (plus
+    # buffer) and assert weather/windrun shows up with a parseable value.
+    msgs = _collect(["weather/windrun"], birth=False, settle=25.0)
+    assert "weather/windrun" in msgs, (
+        "weather/windrun never published — bind-archive patch likely missing "
+        "(felddy is processing only loop packets, not archive records)"
+    )
+    # And the value should be a real number, not 'None'.
+    val = msgs["weather/windrun"]
+    try:
+        float(val)
+    except (TypeError, ValueError):
+        pytest.fail(f"weather/windrun published unparsable value: {val!r}")
