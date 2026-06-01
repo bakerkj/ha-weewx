@@ -1,0 +1,67 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) only binds NEW_LOOP_PACKET, so
+# archive-only aggregated fields (windrun, sunshineDur, etc.) never reach the
+# MQTT broker — felddy registers a discovery config for them on first sight
+# (because they show up briefly in the seed packet) but no state topic is ever
+# published, leaving the HA entity permanently "unavailable".
+#
+# Bind NEW_ARCHIVE_RECORD too. Process archive records via the exact same
+# preprocessor → state_publisher → config_publisher pipeline. Loop publishes
+# (every ~2.5s on a Davis Vantage) continue to keep fast-changing fields fresh;
+# the archive binding fires once per archive_interval (default 300s) and the
+# more recent loop value always wins on the broker.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/controller.py
++++ b/controller.py
+@@ -13,7 +13,7 @@
+
+ # Third-Party Libraries
+ import paho.mqtt.client as mqtt
+-from weewx import NEW_LOOP_PACKET  # type: ignore
++from weewx import NEW_ARCHIVE_RECORD, NEW_LOOP_PACKET  # type: ignore
+ from weewx.engine import StdEngine, StdService  # type: ignore
+
+ from . import ConfigPublisher, PacketPreprocessor, StatePublisher
+@@ -83,8 +83,15 @@
+             self.config.unit_system,
+         )
+
+-        # Register the callbacks for loop packets
++        # Register the callbacks for loop packets and archive records.
++        # Loop packets carry fast-changing measurements (every ~2.5s on
++        # a Davis Vantage); archive records arrive once per archive_interval
++        # and carry aggregated fields (e.g. windrun) that the driver does
++        # not emit on the loop. Binding both makes archive-only fields
++        # reachable via MQTT discovery without losing loop-packet freshness
++        # for fields present in both (loop publishes are more recent and win).
+         self.bind(NEW_LOOP_PACKET, self.on_weewx_loop)
++        self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)
+
+     def init_mqtt_client(self, mqtt_config: MQTTConfig):
+         """Initialize the MQTT client."""
+@@ -208,6 +215,25 @@
+         else:
+             logger.warning("MQTT client is not connected, skipping packet processing")
+
++    def on_weewx_archive(self, event):
++        """Handle callback for WeeWX archive records.
++
++        Archive records carry aggregated fields that are not present in
++        loop packets (e.g. windrun, sunshineDur). Processing them the
++        same way as loop packets surfaces those fields to the MQTT
++        broker. Loop publishes continue to keep faster-changing fields
++        fresh; the most recent state-topic publish wins, so the archive
++        binding never overrides a more current loop value.
++        """
++        logger.debug("Received WeeWX archive record")
++        if self.mqtt_client.is_connected():
++            preprocessor_future = self.executor.submit(
++                self.packet_preprocessor.process_packet, event.record
++            )
++            preprocessor_future.add_done_callback(self.preprocessor_complete)
++        else:
++            logger.warning("MQTT client is not connected, skipping archive record")
++
+     def shutDown(self):
+         """Shutdown the controller.
