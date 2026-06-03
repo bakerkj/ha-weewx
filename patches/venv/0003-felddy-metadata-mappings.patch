@@ -1,6 +1,7 @@
-# felddy (felddy/weewx-home-assistant v1.0.0) emits two families of cosmetic
-# WARNINGs at startup that aren't actually problems -- they're just felddy
-# logging "I had to guess metadata" or "this measurement has no unit":
+# felddy (felddy/weewx-home-assistant v1.0.0) emits three families of
+# cosmetic startup messages that aren't actually problems -- they're just
+# felddy logging "I had to guess metadata", "this measurement has no
+# unit", or "explicit unit mapping took the fallback branch":
 #
 #   weewx_ha.utils WARNING Guessed metadata for key 'X'
 #     -- emitted when get_key_config can't find X in KEY_CONFIG and falls
@@ -14,6 +15,15 @@
 #     the entity correctly. Fix: extend get_unit_metadata to recognize
 #     "no unit by design" cases via a small helper.
 #
+#   weewx_ha.utils INFO Guessed unit 'X' for measurement Y
+#     -- emitted whenever the cascade in get_unit_metadata explicitly
+#     maps Y to another unit-group (Y endswith "ET" -> ET's unit; Y in
+#     {sunrise, sunset, stormStart} -> dateTime's unit). These are
+#     EXPLICIT MAPPINGS, not guesses, so the INFO line is misleading and
+#     noisy. Fix: demote that one logger.info to logger.debug. The
+#     "No unit found" WARNING above it -- the real "I don't know"
+#     signal -- is unchanged.
+#
 # Changes:
 #   1. KEY_CONFIG: add rainAlarm (binary_sensor) and windrun (sensor,
 #      device_class=distance; weewx already knows the unit-group).
@@ -21,6 +31,7 @@
 #      (with numeric-suffix-strip, matching get_key_config's lookup) and
 #      reports True for binary_sensor entries OR explicitly-listed enum
 #      keys. get_unit_metadata consults the helper before logging WARNING.
+#   3. Demote the trailing "Guessed unit" logger.info -> logger.debug.
 #
 # felddy is a pip package in the venv, so this patch is applied to the
 # weewx_ha package dir, not /opt/weewx-data (see venv/ in patches/README.md).
@@ -66,6 +77,15 @@
          else:
              logger.warning(
                  "No unit found for measurement '%s' in unit system %s",
+@@ -73,7 +99,7 @@
+                 unit_system,
+             )
+         if target_unit:
+-            logger.info(
++            logger.debug(
+                 "Guessed unit '%s' for measurement %s", target_unit, measurement_name
+             )
+
 @@ -984,4 +1010,21 @@
              "name": "Yearly Rainfall",
          },
