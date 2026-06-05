@@ -81,6 +81,11 @@ check "ext: windguru module present" test -f "$WEEWX_BIN/user/windguru.py"
 check "ext: windy module present" test -f "$WEEWX_BIN/user/windy.py"
 check "ext: xaggs module present" test -f "$WEEWX_BIN/user/xaggs.py"
 
+# rtgd is installed by build/install_rtgd.py (not weectl — its install.py
+# uses distutils). Assert both pieces survived.
+check "ext: rtgd module present" test -f "$WEEWX_BIN/user/rtgd.py"
+check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeGauges
+
 # Bundled-extension patches: assert the post-patch hunk is on disk.
 check "patch: previmeteo get_site_dict" has 'weewx.restx.get_site_dict' "$WEEWX_BIN/user/previmeteo.py"
 check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/user/emoncms.py"
