@@ -61,6 +61,11 @@ CONF
   echo "current year" >"$WORK/config/www/NOAA/NOAA-$CY.txt"
   echo "current month" >"$WORK/config/www/NOAA/NOAA-$CYM.txt"
   echo "ancient" >"$WORK/config/www/NOAA/NOAA-2020.txt"
+  # The njs filter decides "fresh vs. immutable" from the file's mtime (parsed
+  # out of the ETag), so the rollover-rewrite case stays correct independent of
+  # the container TZ. Age the ancient NOAA file's mtime to match what its
+  # 2020-era filename implies, the way a real WeeWX-on-disk archive would look.
+  touch -d "2020-12-31 12:00:00 UTC" "$WORK/config/www/NOAA/NOAA-2020.txt"
   [[ -n "$override" ]] && cp "$override" "$WORK/config/nginx-cache.conf"
   return 0
 }
