@@ -47,7 +47,7 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, the xstats ADD in the Dockerfile, and the rtgd URL in build/install_rtgd.py.",
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd URL in build/install_rtgd.py. The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/pyproject\\.toml$/",
@@ -56,6 +56,16 @@
       ],
       "matchStrings": [
         "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Tag-pinned files fetched via raw.githubusercontent.com — the xstats ADD in the Dockerfile (single source file pulled from a tag rather than a /archive/<tag>.zip). Tracked against github-tags so a new weewx release bumps the pin.",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": [
+        "raw\\.githubusercontent\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)/"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose"

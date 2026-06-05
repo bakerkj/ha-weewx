@@ -197,11 +197,16 @@ class LogToFileThread(weewx.restx.RESTThread):
             tokens = self._format_tokens(us_record)
             if self._should_write(us_record["dateTime"], tokens):
                 self._write_line(us_record["dateTime"], tokens)
-        except OSError:
-            # I/O errors get logged but do not kill the thread — RESTThread
-            # restarts us anyway, but losing one record is preferable to a
-            # restart loop.
-            log.exception("LogToFile: failed to write %s", self.path)
+        except Exception:
+            # Catch-all by design: I/O errors, %-format ValueErrors from
+            # _format_one (e.g. a string slipping into "%d" for
+            # txBatteryStatus), and KeyError / weewx.UnknownType from
+            # weewx.units.as_value_tuple (extension obs with no unit-group
+            # entry) all escape otherwise and kill the RESTThread worker,
+            # which then restarts in a tight loop. RESTThread would restart
+            # us anyway, but silently dropping one malformed record is
+            # preferable to a restart-loop log storm.
+            log.exception("LogToFile: process_record failed for record")
 
     # ----------------------------------------------------------------------
     # internals

@@ -34,14 +34,67 @@ check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
 check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs'
 
-# MQTT publisher (by felddy) patches applied
-check "patch: MQTT publisher (by felddy): state_class" has '"state_class"' "$WEEWX_HA/config_publisher.py"
+# MQTT publisher (by felddy) patches applied.
+#
+# The three highest-value patches (state_class, NO_UNIT_KEYS, NEW_ARCHIVE
+# bind) are verified by python behaviour assertions rather than literal
+# substring greps: importing the patched module / AST-parsing the patched
+# source proves the patch is structurally in place, not just that the
+# token appears somewhere in the file. The remaining six still use the
+# `has` substring check — they're lower-impact constants/keys where a
+# token-match catches the realistic regression (an accidentally dropped
+# entry) without needing the heavier scaffolding.
+check "patch: MQTT publisher (by felddy): state_class injected in publish_discovery" \
+  python3 -c "
+import ast, pathlib, sys
+src = pathlib.Path('$WEEWX_HA/config_publisher.py').read_text()
+tree = ast.parse(src)
+fn = next((n for n in ast.walk(tree)
+           if isinstance(n, ast.FunctionDef) and n.name == 'publish_discovery'), None)
+assert fn is not None, 'publish_discovery not found'
+ok = any(
+    isinstance(t, ast.Subscript)
+    and isinstance(t.value, ast.Name) and t.value.id == 'payload'
+    and isinstance(t.slice, ast.Constant) and t.slice.value == 'state_class'
+    for node in ast.walk(fn)
+    if isinstance(node, ast.Assign)
+    for t in node.targets
+)
+sys.exit(0 if ok else 1)
+"
 check "patch: MQTT publisher (by felddy): txBatteryStatus int" has 'int(packet["txBatteryStatus"])' "$WEEWX_HA/preprocessor.py"
-check "patch: MQTT publisher (by felddy): NO_UNIT_KEYS" has 'NO_UNIT_KEYS' "$WEEWX_HA/utils.py"
+check "patch: MQTT publisher (by felddy): NO_UNIT_KEYS exported with forecast keys" \
+  python3 -c "
+from weewx_ha.utils import NO_UNIT_KEYS
+import sys
+sys.exit(0 if isinstance(NO_UNIT_KEYS, set) and {'forecastIcon', 'forecastRule'} <= NO_UNIT_KEYS else 1)
+"
 check "patch: MQTT publisher (by felddy): rainAlarm key" has '"rainAlarm"' "$WEEWX_HA/utils.py"
 check "patch: MQTT publisher (by felddy): windrun key" has '"windrun"' "$WEEWX_HA/utils.py"
 check "patch: MQTT publisher (by felddy): rain24h key" has '"rain24h"' "$WEEWX_HA/utils.py"
-check "patch: MQTT publisher (by felddy): NEW_ARCHIVE bind" has 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' "$WEEWX_HA/controller.py"
+check "patch: MQTT publisher (by felddy): NEW_ARCHIVE_RECORD bound to on_weewx_archive" \
+  python3 -c "
+import ast, pathlib, sys
+src = pathlib.Path('$WEEWX_HA/controller.py').read_text()
+tree = ast.parse(src)
+ok = False
+for node in ast.walk(tree):
+    if not isinstance(node, ast.Call):
+        continue
+    f = node.func
+    if not (isinstance(f, ast.Attribute) and f.attr == 'bind'
+            and isinstance(f.value, ast.Name) and f.value.id == 'self'):
+        continue
+    if len(node.args) != 2:
+        continue
+    a0, a1 = node.args
+    if (isinstance(a0, ast.Name) and a0.id == 'NEW_ARCHIVE_RECORD'
+        and isinstance(a1, ast.Attribute) and a1.attr == 'on_weewx_archive'
+        and isinstance(a1.value, ast.Name) and a1.value.id == 'self'):
+        ok = True
+        break
+sys.exit(0 if ok else 1)
+"
 check "patch: MQTT publisher (by felddy): on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
 check "patch: MQTT publisher (by felddy): uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
 
