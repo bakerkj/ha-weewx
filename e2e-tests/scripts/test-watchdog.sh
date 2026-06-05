@@ -8,10 +8,10 @@
 # poison the next. The watchdog uses /data/options.json as HA Supervisor
 # would; we mount a synthetic file for Phase 3.
 #
-# Usage: scripts/test-watchdog.sh                       # build + test
-#        BUILD=0 IMAGE=ha-weewx-test scripts/test-watchdog.sh
+# Usage: e2e-tests/scripts/test-watchdog.sh                       # build + test
+#        BUILD=0 IMAGE=ha-weewx-test e2e-tests/scripts/test-watchdog.sh
 set -uo pipefail
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 
 IMAGE="${IMAGE:-ha-weewx-watchdog-test}"
 PORT="${PORT:-18099}"

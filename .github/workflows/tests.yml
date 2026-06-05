@@ -140,7 +140,7 @@ jobs:
       # served by nginx. MQTT/discovery/rain24h/xaggs are covered in the
       # `mqtt` job below.
       - name: Run pytest e2e (mariadb)
-        run: BUILD=0 ./scripts/test-mariadb.sh
+        run: BUILD=0 ./e2e-tests/scripts/test-mariadb.sh
       - name: Save docker images for cache
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
@@ -200,7 +200,7 @@ jobs:
       # share a session-scoped subscriber — one bounded wait covers them
       # all instead of per-test settle sleeps.
       - name: Run pytest e2e (mqtt)
-        run: BUILD=0 ./scripts/test-mqtt.sh
+        run: BUILD=0 ./e2e-tests/scripts/test-mqtt.sh
       - name: Save docker images for cache
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
@@ -236,7 +236,7 @@ jobs:
           cache-from: |
             type=gha,scope=ha-weewx-test
       - name: Run cache tests
-        run: BUILD=0 IMAGE=ha-weewx-cache-test ./scripts/test-cache.sh
+        run: BUILD=0 IMAGE=ha-weewx-cache-test ./e2e-tests/scripts/test-cache.sh
 
   sqlite-template:
     name: "e2e: sqlite + template"
@@ -262,7 +262,7 @@ jobs:
       - name: Run sqlite + template e2e
         run:
           BUILD=0 IMAGE=ha-weewx-sqlite-template-test
-          ./scripts/test-sqlite-n-template.sh
+          ./e2e-tests/scripts/test-sqlite-n-template.sh
 
   watchdog:
     name: "e2e: watchdog"
@@ -286,4 +286,6 @@ jobs:
           cache-from: |
             type=gha,scope=ha-weewx-test
       - name: Run watchdog e2e
-        run: BUILD=0 IMAGE=ha-weewx-watchdog-test ./scripts/test-watchdog.sh
+        run:
+          BUILD=0 IMAGE=ha-weewx-watchdog-test
+          ./e2e-tests/scripts/test-watchdog.sh

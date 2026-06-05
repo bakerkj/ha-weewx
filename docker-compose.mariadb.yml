@@ -27,7 +27,7 @@ services:
       mariadb:
         condition: service_healthy
     volumes:
-      - ./test/mariadb/weewx.conf:/config/weewx.conf:ro
+      - ./e2e-tests/configs/mariadb/weewx.conf:/config/weewx.conf:ro
     environment:
       S6_KEEP_ENV: 1
     # Healthy once weewxd has written its first archive record to MariaDB.
