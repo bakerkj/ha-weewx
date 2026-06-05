@@ -6,7 +6,7 @@
 Addon hang-detection watchdog.
 
 Reads its options from /data/options.json (HA Supervisor mounts this for the
-addon at runtime). Periodically GETs `http://localhost:8099${watchdog_path}`
+addon at runtime). Periodically HEADs `http://localhost:8099${watchdog_path}`
 through the addon's own nginx and verifies the response's Last-Modified is
 within `watchdog_max_age_seconds` of now. After
 `watchdog_consecutive_failures` consecutive failures, sends SIGTERM to PID 1
@@ -63,6 +63,14 @@ def probe(path: str, max_age: int) -> tuple[bool, str]:
             pass
     if resp.status >= 400:
         return False, f"HTTP {resp.status} {resp.reason}"
+    # Confirm the response came from THIS addon's nginx before trusting any
+    # freshness signal. The addon runs host_network: true so port 8099 is
+    # shared with the host; if some other process held :8099 first, our
+    # nginx never started and we'd be probing whatever DID. nginx.conf adds
+    # this header on every response from the ingress server{}; its absence
+    # means we're talking to an impostor.
+    if not resp.getheader("X-Ha-Weewx-Addon"):
+        return False, "not our nginx -- port collision on :8099?"
     lm = resp.getheader("Last-Modified")
     if not lm:
         # Without Last-Modified there's no way to verify freshness, which is
@@ -92,11 +100,30 @@ def halt(reason: str) -> None:
     print(
         f"watchdog: {reason}; bringing addon down (SIGTERM -> PID 1)",
         file=sys.stderr,
+        flush=True,
     )
     try:
         os.kill(1, signal.SIGTERM)
     except Exception as exc:
-        print(f"watchdog: kill -TERM 1 failed: {exc!r}", file=sys.stderr)
+        print(f"watchdog: kill -TERM 1 failed: {exc!r}", file=sys.stderr, flush=True)
+
+    # Give s6-overlay 30s to tear the supervision tree down cleanly, then
+    # escalate. If a longrun ignores SIGTERM (or s6's stop sequence is wedged
+    # on a hung finish script), returning here lets s6 see the watchdog's
+    # "clean exit" and restart it -- which would just re-fire SIGTERM in a
+    # loop while the container never actually exits. SIGKILL to PID 1 forces
+    # the container runtime to reap the whole process tree.
+    time.sleep(30)
+    print(
+        "watchdog: SIGTERM did not bring the container down within 30s; "
+        "escalating to SIGKILL on PID 1",
+        file=sys.stderr,
+        flush=True,
+    )
+    try:
+        os.kill(1, signal.SIGKILL)
+    except Exception as exc:
+        print(f"watchdog: kill -KILL 1 failed: {exc!r}", file=sys.stderr, flush=True)
 
 
 def main() -> int:
@@ -178,10 +205,10 @@ def main() -> int:
                 flush=True,
             )
             if failures >= threshold:
+                # halt() handles the SIGTERM -> 30s grace -> SIGKILL sequence
+                # against PID 1. Once it returns, PID 1 is either gone or
+                # being force-reaped; nothing useful left for us to do.
                 halt(f"{failures} consecutive watchdog failures on {path}")
-                # PID 1 will tear down the tree shortly; sleep briefly
-                # so we don't busy-loop while it does so.
-                time.sleep(30)
                 return 0
         time.sleep(interval)
 
