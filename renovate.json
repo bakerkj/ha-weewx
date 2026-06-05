@@ -47,8 +47,12 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in the Dockerfile, and felddy's weewx_ha in pyproject.toml.",
-      "managerFilePatterns": ["/Dockerfile$/", "/pyproject\\.toml$/"],
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt and the Dockerfile, and felddy's weewx_ha in pyproject.toml.",
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/pyproject\\.toml$/",
+        "/build/extensions\\.txt$/"
+      ],
       "matchStrings": [
         "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
       ],
@@ -58,7 +62,7 @@
     {
       "customType": "regex",
       "description": "SHA-pinned WeeWX deps on default branch 'master'. None of these repos tag releases; tracked via git-refs against the branch HEAD. Renovate writes the full 40-char SHA on bump (GitHub archive URLs accept either 7 or 40). The companion rule below handles repos whose default branch is 'main'.",
-      "managerFilePatterns": ["/Dockerfile$/"],
+      "managerFilePatterns": ["/Dockerfile$/", "/build/extensions\\.txt$/"],
       "matchStrings": [
         "github\\.com/(?<depName>matthewwall/weewx-emoncms)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>matthewwall/weewx-exfoliation)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
@@ -78,7 +82,7 @@
     {
       "customType": "regex",
       "description": "SHA-pinned WeeWX deps on default branch 'main'. See the 'master' companion rule above for the rationale.",
-      "managerFilePatterns": ["/Dockerfile$/"],
+      "managerFilePatterns": ["/Dockerfile$/", "/build/extensions\\.txt$/"],
       "matchStrings": [
         "github\\.com/(?<depName>chaunceygardiner/weewx-rain24h)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
       ],
