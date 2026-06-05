@@ -153,6 +153,7 @@ regenerates it, then revalidated. The default tiers:
 | `week*.png`, `month*.png`                 | 1 hour                                 |
 | `year*.png`                               | 24 hours                               |
 | `icons/`, `*.css`, `*.js`, fonts, `*.ico` | 1 hour (flat)                          |
+| `NOAA/` directory listing                 | `archive_interval` (per request)       |
 | `NOAA/` current month + year              | `archive_interval` (per request)       |
 | `NOAA/` past months + years               | 24 hours (immutable)                   |
 | `robots.txt`                              | 24 hours (flat)                        |
