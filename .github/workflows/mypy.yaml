@@ -19,4 +19,4 @@ jobs:
           python-version: "3.13"
           cache-dependency-glob: "uv.lock"
           cache-suffix: mypy
-      - run: uv run mypy extensions tests
+      - run: uv run mypy build extensions tests

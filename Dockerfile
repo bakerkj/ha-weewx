@@ -67,148 +67,18 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.19,source=/uv,target=/usr/local/bin/u
 # ---------------------------------------------------------------------------
 RUN mkdir -p /opt/weewx-data/user /opt/weewx-data/skins
 
-# Copy WeeWX's stock skins (Seasons, Standard, Mobile, …) out of the package
-# data dir into WEEWX_ROOT/skins. The default template enables SeasonsReport,
-# and weewxd resolves SKIN_ROOT relative to WEEWX_ROOT — without this, a default
-# install crashes with "skins/Seasons: No such file or directory". Existing
-# (extension-installed) skins are never overwritten.
-RUN python3 - <<'PYEOF'
-import os, shutil, weewx
-
-site_packages = os.path.dirname(os.path.dirname(weewx.__file__))
-src = os.path.join(site_packages, "weewx_data", "skins")
-dst = "/opt/weewx-data/skins"
-for name in sorted(os.listdir(src)):
-    s, d = os.path.join(src, name), os.path.join(dst, name)
-    if os.path.isdir(s) and not os.path.exists(d):
-        shutil.copytree(s, d)
-        print(f"Copied stock skin {name} -> {d}")
-
-# WeeWX's stock user-package stubs (extensions.py + __init__.py). We build
-# bin/user with `weectl extension install` rather than `weectl station create`,
-# so these are never placed and weewxd logs "Cannot load user extensions: No
-# module named 'user.extensions'" at every startup. Copy them in without
-# clobbering anything an extension installs alongside.
-user_src = os.path.join(site_packages, "weewx_data", "bin", "user")
-user_dst = "/opt/weewx-data/bin/user"
-os.makedirs(user_dst, exist_ok=True)
-for name in ("extensions.py", "__init__.py"):
-    s, d = os.path.join(user_src, name), os.path.join(user_dst, name)
-    if os.path.exists(s) and not os.path.exists(d):
-        shutil.copy2(s, d)
-        print(f"Copied stock user stub {name} -> {d}")
-PYEOF
+# Seed stock skins (Seasons, Standard, Mobile, …) and stock user-package
+# stubs (extensions.py, __init__.py) into WEEWX_ROOT. See build/seed_skins.py
+# for the rationale and the existing-entry preservation contract.
+RUN --mount=type=bind,source=build/seed_skins.py,target=/build/seed_skins.py \
+    python3 /build/seed_skins.py
 
 # Build-time stub weewx.conf so weectl extension install knows where to drop
-# user modules (WEEWX_ROOT/bin/user/) and skins (WEEWX_ROOT/skins/). Removed
-# at the end of the build — runtime uses /config/weewx.conf only.
-RUN python3 - <<'PYEOF'
-import configobj
-
-c = configobj.ConfigObj()
-c["WEEWX_ROOT"] = "/opt/weewx-data"
-c["Station"] = {
-    "station_type": "Simulator",
-    "location": "Build",
-    "latitude": "0",
-    "longitude": "0",
-    "altitude": "0, meter",
-}
-c["Simulator"] = {"driver": "weewx.drivers.simulator", "mode": "simulator"}
-c["StdRESTful"] = {"StationRegistry": {"register_this_station": "False"}}
-c["StdReport"] = {
-    "HTML_ROOT": "/tmp/html",
-    "SKIN_ROOT": "skins",
-    "data_binding": "wx_binding",
-}
-c["StdConvert"] = {"target_unit": "METRICWX"}
-c["StdCalibrate"] = {"Corrections": {}}
-c["StdQC"] = {"MinMax": {}}
-c["StdArchive"] = {
-    "archive_interval": "300",
-    "archive_delay": "15",
-    "no_catchup": "False",
-    "data_binding": "wx_binding",
-}
-c["DataBindings"] = {
-    "wx_binding": {
-        "database": "archive_sqlite",
-        "table_name": "archive",
-        "manager": "weewx.manager.DaySummaryManager",
-        "schema": "schemas.wview_extended.schema",
-    }
-}
-c["Databases"] = {
-    "archive_sqlite": {
-        "database_name": "/tmp/weewx-build.sdb",
-        "driver": "weedb.sqlite",
-    }
-}
-c["Engine"] = {
-    "Services": {
-        "prep_services": "weewx.engine.StdTimeSynch",
-        "data_services": "",
-        "process_services": (
-            "weewx.engine.StdConvert, weewx.engine.StdCalibrate, "
-            "weewx.engine.StdQC, weewx.wxservices.StdWXCalculate"
-        ),
-        "xtype_services": (
-            "weewx.wxxtypes.StdWXXTypes, weewx.wxxtypes.StdPressureCooker, "
-            "weewx.wxxtypes.StdRainRater, weewx.wxxtypes.StdDelta"
-        ),
-        "archive_services": "weewx.engine.StdArchive",
-        "restful_services": "weewx.restx.StdStationRegistry",
-        "report_services": (
-            "weewx.engine.StdPrint, weewx.engine.StdReport, weewx_ha.Controller"
-        ),
-    }
-}
-# Logging goes to stdout (the HA console) plus a rotating /config/weewx.log like
-# the runtime template, but at root level WARNING rather than INFO. Without a
-# [Logging] block, weectl falls back to WeeWX's syslog default (/dev/log) —
-# absent in the build container — and spams a "Logging error" traceback on every
-# record. WARNING additionally drops weectl's ~14-line INFO startup banner, which
-# it reprints on every extension install below (~200 lines of noise); the install
-# progress and any real warnings/errors still print. (weectl has no flag to
-# silence the banner — only the log level does.) The rotating handler needs
-# /config (the runtime addon_config mount) to exist at build time, so create it.
-import os
-
-os.makedirs("/config", exist_ok=True)
-c["Logging"] = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "root": {"level": "WARNING", "handlers": ["console", "rotate"]},
-    "formatters": {
-        "standard": {"format": "%(asctime)s  %(name)s %(levelname)s %(message)s"}
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "standard",
-            "stream": "ext://sys.stdout",
-        },
-        "rotate": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "standard",
-            "filename": "/config/log/weewx.log",
-            "maxBytes": 10485760,
-            "backupCount": 5,
-            "encoding": "utf-8",
-        },
-    },
-    "loggers": {
-        "weewx": {
-            "level": "INFO",
-            "handlers": ["console", "rotate"],
-            "propagate": False,
-        }
-    },
-}
-c.filename = "/opt/weewx-data/weewx.conf"
-c.write()
-print("Generated build-time weewx.conf")
-PYEOF
+# user modules and skins. Removed at the end of the build — runtime uses
+# /config/weewx.conf only. See build/seed_build_conf.py for full rationale
+# (incl. why /config must exist at build time and why root logger is WARNING).
+RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_conf.py \
+    python3 /build/seed_build_conf.py
 
 # ---------------------------------------------------------------------------
 # Install extensions (pinned versions).
@@ -244,34 +114,11 @@ RUN for url in \
 
 # ---------------------------------------------------------------------------
 # realtime-gauge-data: manual install — install.py uses distutils (removed
-# in Python 3.12) and old WeeWX 3/4 ExtensionInstaller API.
-# Files: bin/user/rtgd.py + skins/RealtimeGauges/
+# in Python 3.12) and old WeeWX 3/4 ExtensionInstaller API. The script
+# unpacks bin/user/rtgd.py + skins/RealtimeGauges/ directly from the zip.
 # ---------------------------------------------------------------------------
-RUN python3 - <<'PYEOF'
-import io, os, urllib.request, zipfile
-
-URL    = "https://github.com/hoetzgit/weewx-realtime_gauge-data/archive/v0.6.0.zip"
-PREFIX = "weewx-realtime_gauge-data-0.6.0/"
-print(f"Manually installing realtime-gauge-data from {URL}")
-
-with urllib.request.urlopen(URL) as r:
-    data = r.read()
-
-with zipfile.ZipFile(io.BytesIO(data)) as z:
-    for name in z.namelist():
-        if name == PREFIX + "bin/user/rtgd.py":
-            dest = "/opt/weewx-data/bin/user/rtgd.py"
-            with open(dest, "wb") as f:
-                f.write(z.read(name))
-            print(f"  Copied {name} -> {dest}")
-        elif name.startswith(PREFIX + "skins/RealtimeGauges/") and not name.endswith("/"):
-            rel  = name[len(PREFIX + "skins/RealtimeGauges/"):]
-            dest = os.path.join("/opt/weewx-data/skins/RealtimeGauges", rel)
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            with open(dest, "wb") as f:
-                f.write(z.read(name))
-            print(f"  Copied {name} -> {dest}")
-PYEOF
+RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py \
+    python3 /build/install_rtgd.py
 
 # ---------------------------------------------------------------------------
 # xstats: extended-statistics search-list extension shipped with WeeWX as an
@@ -417,103 +264,11 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.19,source=/uv,target=/usr/local/bin/u
     && uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}" \
     && apt-get purge -y gcc python3-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 # PYTHONPATH=/opt/weewx-data/bin so the sweep can import bundled extensions
-# whose module-level code registers obs_group_dict entries -- specifically
-# user.rain24h sets weewx.units.obs_group_dict['rain24h'] = 'group_rain' at
-# import time. Without this, get_unit_metadata("rain24h", ...) returns None
-# and the sweep silently skips rain24h (a real validation hole) rather than
-# checking that the rain24h discovery payload gets a HA-valid unit.
-RUN PYTHONPATH=/opt/weewx-data/bin python3 - <<'PYEOF'
-import sys
-
-# Import bundled extensions whose module-level code registers obs_group_dict
-# entries. Each such import must happen BEFORE any get_unit_metadata call
-# for a key the extension contributes a unit for.
-import user.rain24h  # registers 'rain24h' -> 'group_rain'  # noqa: F401
-
-from weewx_ha.utils import UnitSystem, get_unit_metadata, KEY_CONFIG
-
-# KEY_CONFIG TEMPLATE-base entries: felddy keeps these so get_key_config can
-# strip numeric suffixes (extraTemp5 -> extraTemp -> friendly name "Extra
-# Temperature 5"). The base name itself NEVER appears as a real measurement
-# in a loop packet, so calling get_unit_metadata on it correctly returns no
-# unit AND correctly emits a "No unit found" WARNING -- but that warning is
-# noise here because we'd never check the base key in production. Skip them.
-# (Do NOT silence the logger -- those warnings catch real issues like a
-# missed obs_group_dict registration. Skipping at the iteration layer
-# preserves real-warning visibility.)
-TEMPLATE_BASE_KEYS = {
-    "extraHumid", "extraTemp", "leafTemp", "leafWet",
-    "soilMoist", "soilTemp", "windburn",
-}
-from homeassistant.components.sensor.const import DEVICE_CLASS_UNITS
-
-# DEVICE_CLASS_UNITS maps SensorDeviceClass enum -> set of allowed units.
-# Each unit in the set is a str, a StrEnum member, or None ("no unit").
-# Normalize to {device_class_string: {unit_string, ...}} for direct
-# comparison against felddy's unit_of_measurement strings.
-HA_ALLOWED = {}
-for dc, units in DEVICE_CLASS_UNITS.items():
-    dc_name = dc.value if hasattr(dc, "value") else str(dc)
-    HA_ALLOWED[dc_name] = {
-        (u.value if hasattr(u, "value") else u)
-        for u in units
-        if u is not None
-    }
-
-# Known upstream felddy bugs NOT in scope for patches/venv/0006 -- they
-# need different fixes (device_class change, concentration conversion,
-# or a felddy code change), not a UNIT_METADATA addition. Tracked
-# separately; revisit when those PRs land.
-SKIP_KEYS = {
-    "o3",       # device_class=ozone, emits 'ppm'; HA wants µg/m³
-    "so2",      # device_class=sulphur_dioxide, emits 'ppm'; HA wants µg/m³
-    "rms",      # device_class=wind_speed, emits '<speed>_per_hour2'
-    "vecavg",   # device_class=wind_speed, emits '<speed>_per_hour2'
-}
-
-bad = []
-checked = 0
-skipped_dc = set()
-skipped_keys = set()
-for key, cfg in KEY_CONFIG.items():
-    if key in TEMPLATE_BASE_KEYS:
-        # Skip BEFORE calling get_unit_metadata so we don't emit a noisy
-        # "No unit found" WARNING for an entry that never appears as a real
-        # measurement.
-        continue
-    dc = cfg.get("metadata", {}).get("device_class")
-    if not dc:
-        continue
-    if dc not in HA_ALLOWED:
-        # enum / timestamp / binary device_class -- HA does no unit check
-        skipped_dc.add(dc)
-        continue
-    if key in SKIP_KEYS:
-        skipped_keys.add(key)
-        continue
-    for us in UnitSystem:
-        meta = get_unit_metadata(key, us)
-        unit = meta.get("unit_of_measurement")
-        if unit is None:
-            continue  # explicitly None is fine (e.g. unix_epoch)
-        checked += 1
-        if unit not in HA_ALLOWED[dc]:
-            bad.append((key, dc, us.name, unit))
-
-if bad:
-    print("FAIL: felddy emits HA-invalid unit_of_measurement for these combos:")
-    for row in bad:
-        print(f"  key={row[0]:20s} device_class={row[1]:25s} unit_system={row[2]:8s} bad_unit={row[3]!r}")
-    sys.exit(1)
-print(
-    f"felddy unit/device_class sweep OK: {checked} (key, unit_system) combos "
-    f"checked against homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
-)
-if skipped_dc:
-    print(f"  (device_classes with no unit validation: {sorted(skipped_dc)})")
-if skipped_keys:
-    print(f"  (known-broken keys skipped: {sorted(skipped_keys)})")
-PYEOF
+# whose module-level code registers obs_group_dict entries (currently:
+# user.rain24h -> 'group_rain'). See build/check_felddy_units.py for the
+# full rationale, TEMPLATE_BASE_KEYS, and known-broken SKIP_KEYS list.
+RUN --mount=type=bind,source=build/check_felddy_units.py,target=/build/check_felddy_units.py \
+    PYTHONPATH=/opt/weewx-data/bin python3 /build/check_felddy_units.py
 
 # Final stage = the add-on image. Keeps `test` off the default build path so the
 # HA builder / `docker build` produce the add-on image, not the test layer.
