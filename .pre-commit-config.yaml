@@ -26,6 +26,16 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        files: ^(extensions|tests)/.*\.py$
+        pass_filenames: false
+        args: [extensions, tests]
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
     hooks:
