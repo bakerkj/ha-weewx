@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Install every WeeWX extension listed in extensions.txt via
-# `weectl extension install`. A failed install is warned-about but does
-# NOT abort the build — a broken extension should not prevent the image
-# from being usable.
+# `weectl extension install`. A failed install aborts the build — silent
+# skips let a broken/missing extension ship in the image undetected, and
+# the in-image self-checks only assert presence of a handful of these.
 #
 # Expects:
 #   /build/extensions.txt   — one URL per line; '#' comments allowed
@@ -11,7 +11,7 @@
 # Bind-mounted into the Dockerfile RUN that consumes it; see Dockerfile
 # for the corresponding --mount lines.
 
-set -u
+set -euo pipefail
 
 LIST="${1:-/build/extensions.txt}"
 
@@ -23,9 +23,7 @@ while IFS= read -r url; do
   esac
   echo
   echo "=== Installing: ${url} ==="
-  if ! weectl extension install "${url}" \
+  weectl extension install "${url}" \
     --config /opt/weewx-data/weewx.conf \
-    --yes; then
-    echo "WARNING: weectl extension install failed for $(basename "${url}") — skipping"
-  fi
+    --yes
 done <"${LIST}"
