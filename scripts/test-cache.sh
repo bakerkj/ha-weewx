@@ -141,6 +141,7 @@ exact /robots.txt 86400         # flat 24h despite 60-day-old mtime
 exact "/NOAA/NOAA-$CY.txt" 120  # current year  -> njs archive_interval
 exact "/NOAA/NOAA-$CYM.txt" 120 # current month -> njs archive_interval
 exact /NOAA/NOAA-2020.txt 86400 # immutable     -> njs 24h
+exact /NOAA/ 120                # autoindex listing -> njs archive_interval
 exact /gauge-data.txt 1
 enc /index.html "br,gzip" br
 enc /index.html "gzip" gzip
