@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.13](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.12...ha-weewx-v0.1.13) (2026-06-05)
+
+
+### Bug Fixes
+
+* **log_to_file:** widen exception net in process_record ([#112](https://github.com/bakerkj/ha-weewx/issues/112)) ([76ce22e](https://github.com/bakerkj/ha-weewx/commit/76ce22e6031644fc5672d445de7be34d5871d5d2))
+* **nginx:** harden cache layer (NOAA TZ bug, override denylist, docs) ([#116](https://github.com/bakerkj/ha-weewx/issues/116)) ([15a060b](https://github.com/bakerkj/ha-weewx/commit/15a060bfea9d5c4d6e2c3ec4084f1a887e088416))
+* **watchdog:** fingerprint nginx, escalate to SIGKILL, correct docstring ([#115](https://github.com/bakerkj/ha-weewx/issues/115)) ([a633229](https://github.com/bakerkj/ha-weewx/commit/a633229abb85201d89997ec9663b36851b449cdd))
+
+
+### Miscellaneous Chores
+
+* **build:** tighten plumbing — comments, guards, AST asserts ([#117](https://github.com/bakerkj/ha-weewx/issues/117)) ([5ab5216](https://github.com/bakerkj/ha-weewx/commit/5ab5216d2a05aead55b15cae7be84f413ff3fd45))
+* **deps:** update dependency renovate to v43.214.0 ([#118](https://github.com/bakerkj/ha-weewx/issues/118)) ([c333205](https://github.com/bakerkj/ha-weewx/commit/c33320525b790954f7e89aeb5c9aa42f1b534055))
+
+
+### Code Refactoring
+
+* consolidate e2e test infra under e2e-tests/ ([#119](https://github.com/bakerkj/ha-weewx/issues/119)) ([e8be2ef](https://github.com/bakerkj/ha-weewx/commit/e8be2ef899fa016dd4a5388661ddbf1f67325633))
+
+
+### Continuous Integration
+
+* tighten e2e timing and avoid gha cache scope contention ([#114](https://github.com/bakerkj/ha-weewx/issues/114)) ([a3260bf](https://github.com/bakerkj/ha-weewx/commit/a3260bf204aafecc5ae23b9105b45fd56a36c74f))
+
 ## [0.1.12](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.11...ha-weewx-v0.1.12) (2026-06-05)
 
 
