@@ -114,6 +114,10 @@ jobs:
           for f in /tmp/docker-images/*.tar; do
             [ -f "$f" ] && docker load -i "$f"
           done
+      # Reader-only on the shared 'ha-weewx-test' gha scope. The
+      # build-checks job is the sole writer for this scope — concurrent
+      # cache-to from multiple jobs caused thrash (non-deterministic apt
+      # layer blobs re-uploaded as different digests).
       - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
@@ -124,8 +128,6 @@ jobs:
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
           cache-from: |
             type=gha,scope=ha-weewx-test
-          cache-to: |
-            type=gha,mode=max,scope=ha-weewx-test
       # MariaDB-backed e2e: archive rows land in MariaDB, Seasons report
       # served by nginx. MQTT/discovery/rain24h/xaggs are covered in the
       # `mqtt` job below.
@@ -171,6 +173,8 @@ jobs:
           for f in /tmp/docker-images/*.tar; do
             [ -f "$f" ] && docker load -i "$f"
           done
+      # Reader-only on the shared 'ha-weewx-test' gha scope (see the
+      # mariadb job above for rationale).
       - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
@@ -181,8 +185,6 @@ jobs:
             BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
           cache-from: |
             type=gha,scope=ha-weewx-test
-          cache-to: |
-            type=gha,mode=max,scope=ha-weewx-test
       # MQTT-backed e2e against the MQTT publisher's (by felddy) HA
       # discovery surface. Storage
       # is SQLite (MariaDB-as-backend is covered by the `mariadb` job),
