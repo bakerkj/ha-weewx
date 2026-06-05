@@ -127,6 +127,22 @@ def main() -> int:
         flush=True,
     )
 
+    if 0 < grace < max_age:
+        # A grace shorter than the freshness window will trip on the very
+        # first probe if the target file's mtime predates the restart by
+        # more than `grace` seconds, even though weewxd / rtgd are
+        # perfectly healthy — they just haven't had time to refresh the
+        # target yet. This is almost always a misconfiguration.
+        print(
+            f"watchdog: WARNING grace={grace}s is shorter than "
+            f"max_age={max_age}s; the watchdog will likely trip on the "
+            f"first probe before weewxd has had a chance to refresh "
+            f"{path}. Set watchdog_startup_grace_seconds >= "
+            f"watchdog_max_age_seconds.",
+            file=sys.stderr,
+            flush=True,
+        )
+
     if grace > 0:
         # Don't probe at all until the addon has had time to come up. Without
         # this, a fresh restart can find watchdog_path stale (mtime from before
