@@ -250,22 +250,43 @@ def test_writes_visible_to_external_reader_before_thread_exits(
 # --------------------------------------------------------------------------
 
 
-def test_record_with_unformattable_field_does_not_crash(
-    thread_factory, archive_us, tmp_path, caplog
-):
-    """The catch-all in process_record swallows formatting errors and logs
-    them; this pins that behaviour so the upcoming refactor knows it must
-    keep (or deliberately change) that contract."""
+def test_io_error_does_not_crash_worker(thread_factory, archive_us, tmp_path, caplog):
+    """An I/O error during write must be logged but not propagate — RESTThread
+    would otherwise restart the worker in a tight loop."""
     import logging
 
     path = str(tmp_path / "log.txt")
     t = thread_factory(path=path)
     rec = _us_record(outTemp=72.5)
-    # path is unwritable directory => open() inside process_record raises
+    # path is in a nonexistent directory => open() inside process_record raises
     t.path = str(tmp_path / "nonexistent_subdir" / "log.txt")
     with caplog.at_level(logging.ERROR, logger="log_to_file"):
         t.process_record(rec, archive_us)
     assert any("LogToFile" in rec.message for rec in caplog.records)
+
+
+def test_formatting_error_does_not_crash_worker(
+    thread_factory, archive_us, tmp_path, caplog
+):
+    """A %-style format failure inside _format_one (e.g. a string value
+    against a numeric "%d" format from FIELD_MAP) must be caught and logged,
+    not allowed to escape process_record and kill the RESTThread worker."""
+    import logging
+
+    path = str(tmp_path / "log.txt")
+    t = thread_factory(path=path)
+    # txBatteryStatus is in FIELD_MAP with fmt="%d"; a string value triggers
+    # a real TypeError from "%d" % ("bogus",) when _format_one applies the
+    # override. This is the actual production hazard the widened catch
+    # targets — and it must NOT escape process_record.
+    rec = _us_record(txBatteryStatus="bogus")
+    with caplog.at_level(logging.ERROR, logger="log_to_file"):
+        # Must not raise.
+        t.process_record(rec, archive_us)
+    assert any(
+        "LogToFile" in r.message and "process_record" in r.message
+        for r in caplog.records
+    ), [r.message for r in caplog.records]
 
 
 # --------------------------------------------------------------------------
