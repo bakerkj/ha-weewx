@@ -8,55 +8,96 @@
 # Two phases:
 #   1) Cheap in-image asserts: binary version, dep imports, patch hunks
 #      present, bundled extensions installed, stock skins present,
-#      weewx-mqtt removed, s6 services + watchdog wired.
+#      weewx-mqtt removed, s6 services + watchdog wired. Each assert is
+#      named via the `check` helper; all of them run, failures are
+#      summarized at the end (one bad assert no longer hides the others).
 #   2) Felddy unit/device_class sweep against a transient homeassistant
 #      install. Heavy (gcc + ~250 MB pip install) — uses uv with the
 #      cache dir bind-mounted from the host (CI: gha-cached via
 #      actions/cache), so wheels are reused between runs when HA_VERSION
 #      is unchanged.
 
-set -euo pipefail
+set -uo pipefail
 
 HA_VERSION="${HA_VERSION:-2026.1.3}"
 
 # --- 1. in-image self-checks ---------------------------------------------
-weewxd --version
-python3 -c "import weewx_ha, paho.mqtt.client, pydantic"
-PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs"
-grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py
-grep -qF 'int(packet["txBatteryStatus"])' /opt/weewx/lib/python3.13/site-packages/weewx_ha/preprocessor.py
-grep -qF 'NO_UNIT_KEYS' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py
-grep -qF '"rainAlarm"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py
-grep -qF '"windrun"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py
-grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py
-grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py
-grep -qF '"rain24h"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py
-python3 -c "from weewx_ha.utils import UNIT_METADATA; assert UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}', UNIT_METADATA['uv_index']"
-test -f /opt/weewx-data/bin/user/rain24h.py
-test -f /opt/weewx-data/bin/user/xaggs.py
-grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py
-grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py
-grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py
-grep -qF "ORDER BY dateTime DESC LIMIT 1\" % dbm.table_name" /opt/weewx-data/bin/user/forecast.py
-grep -qF "(interval|desc|offset)" /opt/weewx/lib/python3.13/site-packages/weedb/mysql.py
-test -d /opt/weewx-data/skins/Seasons
-test ! -f /opt/weewx-data/bin/user/mqtt.py
-test -f /usr/lib/nginx/modules/ngx_http_js_module.so
-test -f /etc/nginx/njs/noaa.js
-test -x /etc/s6-overlay/s6-rc.d/weewxd/finish
-test -x /etc/s6-overlay/s6-rc.d/nginx/finish
-grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/weewxd/finish
-grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/nginx/finish
-test -x /etc/s6-overlay/s6-rc.d/watchdog/run
-test -x /etc/scripts/watchdog.py
-[ "$(cat /etc/s6-overlay/s6-rc.d/watchdog/type)" = "longrun" ]
-test -f /etc/s6-overlay/s6-rc.d/watchdog/dependencies.d/nginx
-test -f /etc/s6-overlay/s6-rc.d/user/contents.d/watchdog
-/opt/weewx/bin/python3 -c "import ast; ast.parse(open('/etc/scripts/watchdog.py').read())"
-/opt/weewx/bin/python3 /etc/scripts/watchdog_selfcheck.py
-echo "build-time self-checks passed"
+
+fail=0
+check() {
+  local name="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    printf 'PASS  %s\n' "$name"
+  else
+    printf 'FAIL  %s\n' "$name"
+    fail=1
+  fi
+}
+has() { grep -qF "$1" "$2"; }               # literal substring
+type_equals() { [ "$(cat "$1")" = "$2" ]; } # file content == value
+
+WEEWX_HA=/opt/weewx/lib/python3.13/site-packages/weewx_ha
+WEEDB=/opt/weewx/lib/python3.13/site-packages/weedb
+WEEWX_BIN=/opt/weewx-data/bin
+S6=/etc/s6-overlay/s6-rc.d
+
+# binary + import health
+check "weewxd binary runs" weewxd --version
+check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
+check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs'
+
+# felddy (weewx_ha) patches applied
+check "patch: felddy state_class" has '"state_class"' "$WEEWX_HA/config_publisher.py"
+check "patch: felddy txBatteryStatus int" has 'int(packet["txBatteryStatus"])' "$WEEWX_HA/preprocessor.py"
+check "patch: felddy NO_UNIT_KEYS" has 'NO_UNIT_KEYS' "$WEEWX_HA/utils.py"
+check "patch: felddy rainAlarm key" has '"rainAlarm"' "$WEEWX_HA/utils.py"
+check "patch: felddy windrun key" has '"windrun"' "$WEEWX_HA/utils.py"
+check "patch: felddy rain24h key" has '"rain24h"' "$WEEWX_HA/utils.py"
+check "patch: felddy NEW_ARCHIVE bind" has 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' "$WEEWX_HA/controller.py"
+check "patch: felddy on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
+check "patch: felddy uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
+
+# bundled extensions installed + their patches
+check "ext: rain24h module present" test -f "$WEEWX_BIN/user/rain24h.py"
+check "ext: xaggs module present" test -f "$WEEWX_BIN/user/xaggs.py"
+check "patch: previmeteo get_site_dict" has 'weewx.restx.get_site_dict' "$WEEWX_BIN/user/previmeteo.py"
+check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/user/emoncms.py"
+check "patch: rtgd obs-in-self guard" has 'if obs in self:' "$WEEWX_BIN/user/rtgd.py"
+check "patch: forecast Zambretti SQL" has 'ORDER BY dateTime DESC LIMIT 1" % dbm.table_name' "$WEEWX_BIN/user/forecast.py"
+check "patch: weedb mysql reserved kw" has '(interval|desc|offset)' "$WEEDB/mysql.py"
+
+# stock skin + accidentally-installed extension
+check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
+check "weewx-mqtt NOT installed" test ! -f "$WEEWX_BIN/user/mqtt.py"
+
+# nginx
+check "nginx: njs module" test -f /usr/lib/nginx/modules/ngx_http_js_module.so
+check "nginx: noaa.js filter" test -f /etc/nginx/njs/noaa.js
+
+# s6 service wiring
+check "s6: weewxd finish executable" test -x "$S6/weewxd/finish"
+check "s6: nginx finish executable" test -x "$S6/nginx/finish"
+check "s6: weewxd finish kills init" has 'kill -TERM 1' "$S6/weewxd/finish"
+check "s6: nginx finish kills init" has 'kill -TERM 1' "$S6/nginx/finish"
+check "s6: watchdog run executable" test -x "$S6/watchdog/run"
+check "s6: watchdog script executable" test -x /etc/scripts/watchdog.py
+check "s6: watchdog type=longrun" type_equals "$S6/watchdog/type" longrun
+check "s6: watchdog depends on nginx" test -f "$S6/watchdog/dependencies.d/nginx"
+check "s6: watchdog in user contents" test -f "$S6/user/contents.d/watchdog"
+check "watchdog: script parses" /opt/weewx/bin/python3 -c "import ast; ast.parse(open('/etc/scripts/watchdog.py').read())"
+check "watchdog: selfcheck passes" /opt/weewx/bin/python3 /etc/scripts/watchdog_selfcheck.py
+
+if [ "$fail" -ne 0 ]; then
+  echo
+  echo "=== one or more in-image self-checks FAILED — see FAIL lines above ==="
+  exit 1
+fi
+echo
+echo "=== in-image self-checks passed ==="
 
 # --- 2. felddy unit/device_class sweep against transient HA install ------
+set -e
 # gcc + python3-dev for the couple of small wheels HA pulls in
 # (propcache, etc.) that don't ship platform binaries for our arch.
 apt-get update
