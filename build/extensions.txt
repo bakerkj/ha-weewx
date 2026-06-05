@@ -20,36 +20,52 @@
 
 # install: bin/user/emoncms.py
 https://github.com/matthewwall/weewx-emoncms/archive/7c04113.zip
+
 # install: skins/exfoliation
 https://github.com/matthewwall/weewx-exfoliation/archive/9f77f4d.zip
+
 # install: bin/user/forecast.py
 # install: skins/forecast
 https://github.com/chaunceygardiner/weewx-forecast/archive/v4.1.zip
+
 # install: skins/Bootstrap
 https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip
+
 # install: bin/user/MQTTSubscribe.py
 https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip
+
 # install: bin/user/opensensemap.py
 https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip
+
 # install: bin/user/owm.py
 https://github.com/matthewwall/weewx-owm/archive/297dd97.zip
+
 # install: bin/user/previmeteo.py
 https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip
+
 # install: bin/user/purpleair.py
 https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip
+
 # install: bin/user/rain24h.py
 https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip
+
 # install: bin/user/thingspeak.py
 https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip
+
 # install: bin/user/wcloud.py
 https://github.com/matthewwall/weewx-wcloud/archive/83ee792.zip
+
 # install: bin/user/wetter.py
 https://github.com/matthewwall/weewx-wetter/archive/50a7f68.zip
+
 # install: bin/user/windfinder.py
 https://github.com/matthewwall/weewx-windfinder/archive/07ccbc3.zip
+
 # install: bin/user/windguru.py
 https://github.com/claudobahn/weewx-windguru/archive/c0a9b04.zip
+
 # install: bin/user/windy.py
 https://github.com/matthewwall/weewx-windy/archive/0.3.zip
+
 # install: bin/user/xaggs.py
 https://github.com/tkeffer/weewx-xaggs/archive/d361456.zip
