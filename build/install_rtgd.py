@@ -11,10 +11,9 @@ chokes on it. We just unpack the two pieces directly:
   - ``skins/RealtimeGauges/`` (whole directory tree)
 
 The top-level directory inside a GitHub archive zip varies with the ref
-(tag vs SHA), so we discover it from the zip itself rather than hardcoding
-the version twice — a URL bump alone used to leave a stale prefix and
-silently install nothing. A post-unpack sanity check fails the build if
-no expected files were copied.
+(tag vs SHA), so we discover it from the zip itself rather than coupling
+the unpack to a specific version string. A post-unpack sanity check
+fails the build if no expected files were copied.
 """
 
 import io

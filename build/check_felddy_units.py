@@ -1,34 +1,25 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Comprehensive felddy unit/device_class sweep.
+"""felddy MQTT publisher -> Home Assistant unit validation.
 
-For every ``KEY_CONFIG`` entry that declares a ``device_class``, assert
-that ``get_unit_metadata`` returns a ``unit_of_measurement`` that Home
-Assistant actually accepts for that device_class — across all three unit
-systems (METRIC, METRICWX, US).
+For every ``KEY_CONFIG`` entry felddy publishes with a ``device_class``,
+verify the discovery payload's ``unit_of_measurement`` is one Home
+Assistant accepts -- across all three weewx unit systems (METRIC,
+METRICWX, US).
 
-Catches the cases ``patches/venv/0006`` fixes AND any future regression
-(a new ``KEY_CONFIG`` entry, a new weewx unit, a new HA device_class
-restriction) at build time, before anyone deploys an image that silently
-fails HA discovery validation.
+``DEVICE_CLASS_UNITS`` is imported from homeassistant itself rather
+than hand-copied, so the allowed-units mapping stays in sync as HA
+evolves. Necessary but not sufficient: HA may reject a discovery
+payload for reasons unrelated to unit names, and live supervisors run
+whatever HA version they ship (which may differ from the HA pin used
+here).
 
-Reads HA's canonical ``DEVICE_CLASS_UNITS`` mapping FROM HOME ASSISTANT
-ITSELF (pinned to the version the supervisor ships) rather than from a
-hand-copied table — so the test stays in sync with HA's actual
-allowed-units list automatically as HA evolves.
-
-The check asserts a NECESSARY (not sufficient) condition: felddy emits
-HA-known unit names. Live deployments run whatever the supervisor ships;
-the HA pin in the test layer can lag slightly.
-
-PYTHONPATH must include ``/opt/weewx-data/bin`` so this script can import
-bundled extensions whose module-level code registers ``obs_group_dict``
-entries — specifically ``user.rain24h`` sets
-``weewx.units.obs_group_dict['rain24h'] = 'group_rain'`` at import time.
-Without that, ``get_unit_metadata("rain24h", ...)`` returns ``None`` and
-the sweep silently skips ``rain24h`` (a real validation hole) rather than
-checking that the rain24h discovery payload gets a HA-valid unit.
+``PYTHONPATH`` must include ``/opt/weewx-data/bin`` so this script can
+import ``user.rain24h``, whose module-level code registers
+``weewx.units.obs_group_dict['rain24h'] = 'group_rain'``. Without it,
+``get_unit_metadata("rain24h", ...)`` returns ``None`` and ``rain24h``
+is silently skipped instead of validated.
 """
 
 import sys
@@ -123,7 +114,7 @@ def main() -> None:
             )
         sys.exit(1)
     print(
-        f"felddy unit/device_class sweep OK: {checked} (key, unit_system) combos "
+        f"felddy -> HA unit validation OK: {checked} (key, unit_system) combos "
         f"checked against homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
     )
     if skipped_dc:
