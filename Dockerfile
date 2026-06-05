@@ -185,91 +185,9 @@ COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
 # ---------------------------------------------------------------------------
 COPY rootfs/ /
 
-# ---------------------------------------------------------------------------
-# Self-contained build-time checks. Run with:
-#   docker buildx build --target test --build-arg BUILD_FROM=<base> .
-# No external services — validates the image was assembled correctly (binary
-# runs, venv + user extensions import, patches applied, stock skins copied,
-# weewx-mqtt removed). NOT on the default build path: BuildKit only builds the
-# final stage's dependencies, so the HA builder and `docker build` produce the
-# add-on image (the trailing `FROM addon`) without this layer.
-# ---------------------------------------------------------------------------
-FROM addon AS test
-RUN set -eu; \
-    weewxd --version; \
-    python3 -c "import weewx_ha, paho.mqtt.client, pydantic"; \
-    PYTHONPATH=/opt/weewx-data/bin python3 -c "import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs"; \
-    grep -qF '"state_class"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/config_publisher.py; \
-    grep -qF 'int(packet["txBatteryStatus"])' /opt/weewx/lib/python3.13/site-packages/weewx_ha/preprocessor.py; \
-    grep -qF 'NO_UNIT_KEYS' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
-    grep -qF '"rainAlarm"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
-    grep -qF '"windrun"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
-    grep -qF 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
-    grep -qF 'def on_weewx_archive(self, event):' /opt/weewx/lib/python3.13/site-packages/weewx_ha/controller.py; \
-    grep -qF '"rain24h"' /opt/weewx/lib/python3.13/site-packages/weewx_ha/utils.py; \
-    python3 -c "from weewx_ha.utils import UNIT_METADATA; \
-assert UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}', UNIT_METADATA['uv_index']"; \
-    test -f /opt/weewx-data/bin/user/rain24h.py; \
-    test -f /opt/weewx-data/bin/user/xaggs.py; \
-    grep -qF 'weewx.restx.get_site_dict' /opt/weewx-data/bin/user/previmeteo.py; \
-    grep -qF 'AbortedPost("skip_upload")' /opt/weewx-data/bin/user/emoncms.py; \
-    grep -qF 'if obs in self:' /opt/weewx-data/bin/user/rtgd.py; \
-    grep -qF "ORDER BY dateTime DESC LIMIT 1\" % dbm.table_name" /opt/weewx-data/bin/user/forecast.py; \
-    grep -qF "(interval|desc|offset)" /opt/weewx/lib/python3.13/site-packages/weedb/mysql.py; \
-    test -d /opt/weewx-data/skins/Seasons; \
-    test ! -f /opt/weewx-data/bin/user/mqtt.py; \
-    test -f /usr/lib/nginx/modules/ngx_http_js_module.so; \
-    test -f /etc/nginx/njs/noaa.js; \
-    test -x /etc/s6-overlay/s6-rc.d/weewxd/finish; \
-    test -x /etc/s6-overlay/s6-rc.d/nginx/finish; \
-    grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/weewxd/finish; \
-    grep -qF 'kill -TERM 1' /etc/s6-overlay/s6-rc.d/nginx/finish; \
-    test -x /etc/s6-overlay/s6-rc.d/watchdog/run; \
-    test -x /etc/scripts/watchdog.py; \
-    [ "$(cat /etc/s6-overlay/s6-rc.d/watchdog/type)" = "longrun" ]; \
-    test -f /etc/s6-overlay/s6-rc.d/watchdog/dependencies.d/nginx; \
-    test -f /etc/s6-overlay/s6-rc.d/user/contents.d/watchdog; \
-    /opt/weewx/bin/python3 -c "import ast; ast.parse(open('/etc/scripts/watchdog.py').read())"; \
-    /opt/weewx/bin/python3 /etc/scripts/watchdog_selfcheck.py; \
-    echo "build-time self-checks passed"
-
-# Comprehensive felddy unit/device_class sweep: assert that for every
-# KEY_CONFIG entry that declares a device_class, get_unit_metadata returns
-# a unit_of_measurement that Home Assistant actually accepts for that
-# device_class -- across all three unit systems (METRIC, METRICWX, US).
-# Catches the cases patches/venv/0006 fixes AND any future regression
-# (a new KEY_CONFIG entry, a new weewx unit, a new HA device_class
-# restriction) at build time, before anyone deploys an image that
-# silently fails HA discovery validation.
-#
-# Reads HA's canonical DEVICE_CLASS_UNITS mapping FROM HOME ASSISTANT
-# ITSELF (pinned to the version the supervisor ships) rather than from
-# a hand-copied table — so the test stays in sync with HA's actual
-# allowed-units list automatically as HA evolves.
-# Latest HA release whose pip metadata still permits Python 3.13 (the
-# addon's venv python). HA 2026.3.0+ requires Python 3.14.2; the
-# DEVICE_CLASS_UNITS mapping changes very rarely so a slightly-older
-# pin is fine for this test. Live deployments run whatever the
-# supervisor ships -- the test asserts a NECESSARY (not sufficient)
-# condition: felddy emits HA-known unit names.
-ARG HA_VERSION=2026.1.3
-# Full install (with deps) -- importing homeassistant.components.sensor.const
-# triggers a cascade through homeassistant.util / homeassistant.const that
-# pulls in propcache, voluptuous, etc. The install is ~250 MB but lives only
-# in this test layer, never shipped to the addon image. gcc is needed for a
-# couple of small C-extension wheels that don't ship binary builds for our
-# build platform; install it from apt then remove after the uv pip install.
-RUN --mount=from=ghcr.io/astral-sh/uv:0.11.19,source=/uv,target=/usr/local/bin/uv \
-    apt-get update && apt-get install -y --no-install-recommends gcc python3-dev \
-    && uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}" \
-    && apt-get purge -y gcc python3-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
-# PYTHONPATH=/opt/weewx-data/bin so the sweep can import bundled extensions
-# whose module-level code registers obs_group_dict entries (currently:
-# user.rain24h -> 'group_rain'). See build/check_felddy_units.py for the
-# full rationale, TEMPLATE_BASE_KEYS, and known-broken SKIP_KEYS list.
-RUN --mount=type=bind,source=build/check_felddy_units.py,target=/build/check_felddy_units.py \
-    PYTHONPATH=/opt/weewx-data/bin python3 /build/check_felddy_units.py
-
-# Final stage = the add-on image. Keeps `test` off the default build path so the
-# HA builder / `docker build` produce the add-on image, not the test layer.
-FROM addon
+# Build-time self-checks live in Dockerfile.test — kept out of this file
+# so the HA builder / `docker build` produce the add-on image with no
+# test concerns. Run with:
+#   docker buildx build -t ha-weewx . && \
+#       docker buildx build --build-arg BASE_IMAGE=ha-weewx \
+#           -f Dockerfile.test .

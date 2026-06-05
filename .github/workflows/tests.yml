@@ -34,21 +34,46 @@ jobs:
     name: Build-time self-checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      HA_VERSION: "2026.1.3"
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      # Self-contained checks baked into the Dockerfile `test` stage: binary
-      # runs, deps + user extensions import, patches applied, stock skins
-      # present, weewx-mqtt removed. No external services. The gha layer cache
-      # restores the base/apt/uv/extension layers between runs, so unchanged
-      # builds skip those steps (shared 'ha-weewx-test' scope with the e2e job).
-      - name: Build + run self-contained checks
+      # uv cache stores the homeassistant wheel set + its dep tree;
+      # keyed on HA_VERSION so a bump cleanly invalidates. Re-mounted
+      # into the docker run below so the in-container `uv pip install`
+      # reuses them — no second buildx build needed.
+      - uses: actions/cache@v5.0.5
+        with:
+          path: ~/.cache/uv
+          key: uv-ha-${{ env.HA_VERSION }}-${{ runner.os }}
+          restore-keys: |
+            uv-ha-${{ env.HA_VERSION }}-
+      # Build the addon image with the shared gha layer cache and load
+      # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
+      # jobs so unchanged builds skip the apt/uv/extension layers).
+      - name: Build add-on image (cached)
         run: |
-          docker buildx build --target test \
+          docker buildx build \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
             --cache-from type=gha,scope=ha-weewx-test \
             --cache-to type=gha,mode=max,scope=ha-weewx-test \
-            .
+            -t ha-weewx-test --load .
+      # Run the self-checks + felddy unit/device_class sweep against the
+      # built image. `docker run` (not `docker buildx build`) so the
+      # default docker driver sees the locally-loaded tag; the uv cache
+      # is bind-mounted so the HA wheel install is fast on warm cache.
+      # `--entrypoint /bin/bash` bypasses the s6 init that would
+      # otherwise boot weewxd/nginx instead of running our script.
+      - name: Run self-contained checks
+        run: |
+          mkdir -p ~/.cache/uv
+          docker run --rm --entrypoint /bin/bash \
+            -v "${PWD}:/work" \
+            -v "${HOME}/.cache/uv:/root/.cache/uv" \
+            -e HA_VERSION \
+            ha-weewx-test \
+            /work/build/check_image.sh
 
   maria-mqtt:
     name: "e2e: maria + mqtt"
