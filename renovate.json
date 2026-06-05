@@ -47,7 +47,7 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, felddy's weewx_ha in pyproject.toml, the xstats ADD in the Dockerfile, and the rtgd URL in build/install_rtgd.py.",
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, the xstats ADD in the Dockerfile, and the rtgd URL in build/install_rtgd.py.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/pyproject\\.toml$/",

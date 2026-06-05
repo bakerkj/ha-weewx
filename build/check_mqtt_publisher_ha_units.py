@@ -1,34 +1,25 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Comprehensive felddy unit/device_class sweep.
+"""MQTT publisher (by felddy) -> Home Assistant unit validation.
 
-For every ``KEY_CONFIG`` entry that declares a ``device_class``, assert
-that ``get_unit_metadata`` returns a ``unit_of_measurement`` that Home
-Assistant actually accepts for that device_class — across all three unit
-systems (METRIC, METRICWX, US).
+For every ``KEY_CONFIG`` entry the MQTT publisher (by felddy) publishes
+with a ``device_class``, verify the discovery payload's
+``unit_of_measurement`` is one Home Assistant accepts -- across all
+three weewx unit systems (METRIC, METRICWX, US).
 
-Catches the cases ``patches/venv/0006`` fixes AND any future regression
-(a new ``KEY_CONFIG`` entry, a new weewx unit, a new HA device_class
-restriction) at build time, before anyone deploys an image that silently
-fails HA discovery validation.
+``DEVICE_CLASS_UNITS`` is imported from homeassistant itself rather
+than hand-copied, so the allowed-units mapping stays in sync as HA
+evolves. Necessary but not sufficient: HA may reject a discovery
+payload for reasons unrelated to unit names, and live supervisors run
+whatever HA version they ship (which may differ from the HA pin used
+here).
 
-Reads HA's canonical ``DEVICE_CLASS_UNITS`` mapping FROM HOME ASSISTANT
-ITSELF (pinned to the version the supervisor ships) rather than from a
-hand-copied table — so the test stays in sync with HA's actual
-allowed-units list automatically as HA evolves.
-
-The check asserts a NECESSARY (not sufficient) condition: felddy emits
-HA-known unit names. Live deployments run whatever the supervisor ships;
-the HA pin in the test layer can lag slightly.
-
-PYTHONPATH must include ``/opt/weewx-data/bin`` so this script can import
-bundled extensions whose module-level code registers ``obs_group_dict``
-entries — specifically ``user.rain24h`` sets
-``weewx.units.obs_group_dict['rain24h'] = 'group_rain'`` at import time.
-Without that, ``get_unit_metadata("rain24h", ...)`` returns ``None`` and
-the sweep silently skips ``rain24h`` (a real validation hole) rather than
-checking that the rain24h discovery payload gets a HA-valid unit.
+``PYTHONPATH`` must include ``/opt/weewx-data/bin`` so this script can
+import ``user.rain24h``, whose module-level code registers
+``weewx.units.obs_group_dict['rain24h'] = 'group_rain'``. Without it,
+``get_unit_metadata("rain24h", ...)`` returns ``None`` and ``rain24h``
+is silently skipped instead of validated.
 """
 
 import sys
@@ -40,9 +31,10 @@ import user.rain24h  # noqa: F401  -- registers 'rain24h' -> 'group_rain'
 
 from weewx_ha.utils import KEY_CONFIG, UnitSystem, get_unit_metadata
 
-# KEY_CONFIG TEMPLATE-base entries: felddy keeps these so get_key_config can
-# strip numeric suffixes (extraTemp5 -> extraTemp -> friendly name "Extra
-# Temperature 5"). The base name itself NEVER appears as a real measurement
+# KEY_CONFIG TEMPLATE-base entries: the MQTT publisher (by felddy) keeps
+# these so get_key_config can strip numeric suffixes (extraTemp5 ->
+# extraTemp -> friendly name "Extra Temperature 5"). The base name itself
+# NEVER appears as a real measurement
 # in a loop packet, so calling get_unit_metadata on it correctly returns no
 # unit AND correctly emits a "No unit found" WARNING -- but that warning is
 # noise here because we'd never check the base key in production. Skip them.
@@ -59,10 +51,10 @@ TEMPLATE_BASE_KEYS = {
     "windburn",
 }
 
-# Known upstream felddy bugs NOT in scope for patches/venv/0006 -- they
-# need different fixes (device_class change, concentration conversion,
-# or a felddy code change), not a UNIT_METADATA addition. Tracked
-# separately; revisit when those PRs land.
+# Known upstream bugs in the MQTT publisher (by felddy) that are out of
+# scope here: they need different fixes (device_class change,
+# concentration conversion, or an upstream code change), not a
+# UNIT_METADATA addition.
 SKIP_KEYS = {
     "o3",  # device_class=ozone, emits 'ppm'; HA wants µg/m³
     "so2",  # device_class=sulphur_dioxide, emits 'ppm'; HA wants µg/m³
@@ -77,7 +69,8 @@ def main() -> None:
     # DEVICE_CLASS_UNITS maps SensorDeviceClass enum -> set of allowed
     # units. Each unit in the set is a str, a StrEnum member, or None
     # ("no unit"). Normalize to {device_class_string: {unit_string, ...}}
-    # for direct comparison against felddy's unit_of_measurement strings.
+    # for direct comparison against the MQTT publisher's (by felddy)
+    # unit_of_measurement strings.
     ha_allowed: dict[str, set[str]] = {}
     for dc, units in DEVICE_CLASS_UNITS.items():
         dc_name = dc.value if hasattr(dc, "value") else str(dc)
@@ -115,7 +108,10 @@ def main() -> None:
                 bad.append((key, dc, us.name, unit))
 
     if bad:
-        print("FAIL: felddy emits HA-invalid unit_of_measurement for these combos:")
+        print(
+            "FAIL: the MQTT publisher (by felddy) emits HA-invalid "
+            "unit_of_measurement for these combos:"
+        )
         for row in bad:
             print(
                 f"  key={row[0]:20s} device_class={row[1]:25s} "
@@ -123,8 +119,9 @@ def main() -> None:
             )
         sys.exit(1)
     print(
-        f"felddy unit/device_class sweep OK: {checked} (key, unit_system) combos "
-        f"checked against homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
+        f"MQTT publisher (by felddy) -> HA unit validation OK: "
+        f"{checked} (key, unit_system) combos checked against "
+        f"homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
     )
     if skipped_dc:
         print(f"  (device_classes with no unit validation: {sorted(skipped_dc)})")

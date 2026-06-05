@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build the addon image (or reuse it), then run the MQTT-only e2e via
-# docker-compose.mqtt.yml. Verifies the felddy HA discovery surface,
+# docker-compose.mqtt.yml. Verifies the MQTT publisher's (by felddy) HA
+# discovery surface,
 # state_class, availability, rain24h metadata, archive-only field
 # (windrun), and that user.xaggs loaded clean at engine start. Storage
 # is SQLite — MariaDB-as-backend is covered separately by

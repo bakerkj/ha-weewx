@@ -2,11 +2,11 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
 # Single-stage build. apt provides only OS-level bits (python3, libusb, and the
-# mariadb/nginx/ssh/rsync runtime tools); every Python library — weewx, felddy's
-# weewx_ha, and their dependencies (Pillow, Cheetah, pyephem, pyserial, pyusb,
-# PyMySQL, paho, pydantic) — is installed by uv as wheels. Nothing compiles, so
-# there are no gcc/-dev headers and no separate builder stage; uv is bind-mounted
-# for the build only and is never shipped in the image.
+# mariadb/nginx/ssh/rsync runtime tools); every Python library — weewx, the
+# MQTT publisher (by felddy), and their dependencies (Pillow, Cheetah, pyephem,
+# pyserial, pyusb, PyMySQL, paho, pydantic) — is installed by uv as wheels.
+# Nothing compiles, so there are no gcc/-dev headers and no separate builder
+# stage; uv is bind-mounted for the build only and is never shipped in the image.
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
 
@@ -50,9 +50,10 @@ ENV PATH="/opt/weewx/bin:$PATH" \
     UV_PROJECT_ENVIRONMENT="/opt/weewx"
 # uv is bind-mounted from its image for this layer only (never shipped in the
 # final image). `uv sync --frozen` builds the venv at /opt/weewx on the system
-# python3 and installs the locked deps from uv.lock (weewx + felddy + Pillow/
-# pydantic/Cheetah/pyephem/pyserial/pyusb/PyMySQL/paho) as wheels — nothing
-# compiles. pyproject.toml/uv.lock are bind-mounted, so they add no image layer.
+# python3 and installs the locked deps from uv.lock (weewx + the MQTT
+# publisher (by felddy) + Pillow/pydantic/Cheetah/pyephem/pyserial/pyusb/
+# PyMySQL/paho) as wheels — nothing compiles. pyproject.toml/uv.lock are
+# bind-mounted, so they add no image layer.
 RUN --mount=from=ghcr.io/astral-sh/uv:0.11.19,source=/uv,target=/usr/local/bin/uv \
     --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/build/uv.lock \
@@ -115,9 +116,10 @@ ADD https://raw.githubusercontent.com/weewx/weewx/v5.3.1/src/weewx_data/examples
 #   patches/weewx/*.patch      -> weewx core in the /opt/weewx venv's
 #                                 site-packages (weedb, weewx, ...); paths
 #                                 relative to that dir.
-#   patches/venv/*.patch       -> the weewx_ha pip package in the venv (felddy
-#                                 is pip-installed, not under /opt/weewx-data);
-#                                 paths relative to the weewx_ha package dir.
+#   patches/venv/*.patch       -> the MQTT publisher (by felddy) pip package
+#                                 in the venv (pip-installed, not under
+#                                 /opt/weewx-data); paths relative to the
+#                                 weewx_ha package dir.
 # ---------------------------------------------------------------------------
 RUN --mount=type=bind,source=patches,target=/build/patches \
     set -eu && \
