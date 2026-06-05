@@ -37,18 +37,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      # Self-contained checks baked into the Dockerfile `test` stage: binary
-      # runs, deps + user extensions import, patches applied, stock skins
-      # present, weewx-mqtt removed. No external services. The gha layer cache
-      # restores the base/apt/uv/extension layers between runs, so unchanged
-      # builds skip those steps (shared 'ha-weewx-test' scope with the e2e job).
-      - name: Build + run self-contained checks
+      # Build the addon image with the shared gha layer cache and load it
+      # as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e jobs so
+      # unchanged builds skip the apt/uv/extension layers).
+      - name: Build add-on image (cached)
         run: |
-          docker buildx build --target test \
+          docker buildx build \
             --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
             --cache-from type=gha,scope=ha-weewx-test \
             --cache-to type=gha,mode=max,scope=ha-weewx-test \
-            .
+            -t ha-weewx-test --load .
+      # Run the self-checks (binary runs, deps + user extensions import,
+      # patches applied, stock skins present, weewx-mqtt removed) and the
+      # felddy unit/device_class sweep against that image. No external
+      # services. Cached separately because the HA pip install is heavy
+      # and only invalidates when HA_VERSION or check_felddy_units.py move.
+      - name: Run self-contained checks
+        run: |
+          docker buildx build \
+            --build-arg BASE_IMAGE=ha-weewx-test \
+            --cache-from type=gha,scope=ha-weewx-checks \
+            --cache-to type=gha,mode=max,scope=ha-weewx-checks \
+            -f Dockerfile.test .
 
   maria-mqtt:
     name: "e2e: maria + mqtt"
