@@ -1,0 +1,29 @@
+configuration:
+  watchdog_path:
+    name: Watchdog path
+    description: >-
+      URL path probed through the addon's own nginx (e.g. `/index.html`,
+      `/gauge-data.txt`). Empty = watchdog disabled. Pick a path whose source
+      you trust to rewrite regularly.
+  watchdog_max_age_seconds:
+    name: Maximum Last-Modified age (seconds)
+    description: >-
+      A probe is counted as a failure if the response's `Last-Modified` is older
+      than this many seconds. Set it to roughly the cadence of whatever writes
+      the URL (archive_interval for `/index.html`; LOOP cadence for
+      `/gauge-data.txt`).
+  watchdog_consecutive_failures:
+    name: Consecutive failures before tear-down
+    description: >-
+      How many failed probes in a row before the addon is brought down (so Home
+      Assistant's "Watchdog" toggle can restart it).
+  watchdog_interval_seconds:
+    name: Probe interval (seconds)
+    description: Seconds between probes.
+  watchdog_startup_grace_seconds:
+    name: Startup grace (seconds)
+    description: >-
+      Sleep this long after addon start before the first probe. Must be at least
+      as large as "Maximum Last-Modified age" — otherwise the first probe will
+      trip on a file that hasn't been refreshed yet, and the watchdog will kill
+      the addon for no real reason.
