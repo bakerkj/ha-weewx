@@ -50,6 +50,19 @@ wait_for_nginx() {
   return 1
 }
 
+# nginx-init/nginx and weewx-init/weewxd are independent s6 chains, so
+# nginx can be serving before weewxd has spawned. On slow runners (cold
+# cache, aarch64) `pkill weewxd` can fire before the process exists.
+wait_for_weewxd() {
+  local start
+  start=$(date +%s)
+  while [[ $(($(date +%s) - start)) -lt "$INIT_TIMEOUT" ]]; do
+    docker exec "$CTR" pgrep -x weewxd >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  return 1
+}
+
 wait_for_exit() {
   # Returns the container's exit code, or "TIMEOUT".
   local code
@@ -75,8 +88,10 @@ run_phase() {
 run_phase "Phase 1: kill weewxd -> addon exits"
 if ! wait_for_nginx; then
   bad "nginx did not come up within ${INIT_TIMEOUT}s"
+elif ! wait_for_weewxd; then
+  bad "weewxd did not start within ${INIT_TIMEOUT}s"
 else
-  ok "nginx is serving"
+  ok "nginx + weewxd are running"
   # weewxd is a python process; the supervised PID is the immediate child of run.
   # pkill -x -9 weewxd kills it without giving s6 time to interpose.
   if docker exec "$CTR" pkill -x -9 weewxd; then
