@@ -31,12 +31,16 @@ services:
     environment:
       S6_KEEP_ENV: 1
     # Healthy once weewxd has written its first archive record to MariaDB.
+    # Uses PyMySQL (already in the runtime venv) so the addon image needs
+    # no mariadb CLI at runtime.
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "mariadb -h mariadb -uweewx -pweewxpass weewx -N -e 'SELECT COUNT(*)
-          FROM archive' 2>/dev/null | grep -qE '[1-9]'",
+          '/opt/weewx/bin/python3 -c "import pymysql,sys;
+          c=pymysql.connect(host=''mariadb'',user=''weewx'',password=''weewxpass'',database=''weewx'');
+          cur=c.cursor(); cur.execute(''SELECT COUNT(*) FROM archive'');
+          sys.exit(0 if cur.fetchone()[0]>=1 else 1)" 2>/dev/null',
         ]
       interval: 5s
       timeout: 10s
