@@ -218,6 +218,19 @@ interval instead of hardcoding it.
 
 Start from the defaults below and adjust the windows you need:
 
+> **Order matters.** nginx picks the first matching `location` block, so put
+> specific patterns above catch-alls — e.g. the `^/day*.png`,
+> `^/week|month*.png`, and `^/year*.png` rules must stay above the unprefixed
+> `\.png$` fallback, or the fallback shadows them and every chart gets the same
+> window.
+
+> **Denylist.** A small set of directives that would break the ingress contract
+> or replace response shaping are rejected at startup (the add-on logs a warning
+> and falls back to the generated defaults): `proxy_pass`, `*_pass`, `return`,
+> `rewrite`, `auth_basic`/`auth_request`, `deny`/`allow`, `root`/`alias`,
+> `include`, and `add_header` for `X-Frame-Options` / `Content-Security-Policy`
+> / `Strict-Transport-Security`. The override is for cache-tier tuning only.
+
 ```nginx
 location ^~ /icons/ {
     try_files $uri =404;
