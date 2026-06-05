@@ -11,6 +11,13 @@ repos:
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: check-illegal-windows-names
+        # Upstream's pre-commit-hooks restricts this hook to
+        # [pre-commit, pre-push, manual]. prek 0.4.x runs it on
+        # commit-msg too, where the COMMIT_EDITMSG path is presented
+        # with leading `../../../` segments that the hook's own regex
+        # flags as illegal (/../). Pin the stages here to match
+        # upstream and stop the spurious commit-msg failure.
+        stages: [pre-commit, pre-push, manual]
       - id: detect-private-key
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
@@ -35,6 +42,12 @@ repos:
         files: ^(build|extensions|tests)/.*\.py$
         pass_filenames: false
         args: [build, extensions, tests]
+      - id: check-extensions-annotated
+        name: check build/extensions.txt URLs are annotated
+        entry: python3 build/check_extensions_annotated.py
+        language: system
+        files: ^build/(extensions\.txt|check_extensions_annotated\.py)$
+        pass_filenames: false
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
