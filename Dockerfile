@@ -76,8 +76,8 @@ RUN --mount=type=bind,source=build/seed_skins.py,target=/build/seed_skins.py \
 
 # Build-time stub weewx.conf so weectl extension install knows where to drop
 # user modules and skins. Removed at the end of the build — runtime uses
-# /config/weewx.conf only. See build/seed_build_conf.py for full rationale
-# (incl. why /config must exist at build time and why root logger is WARNING).
+# /config/weewx.conf only. See build/seed_build_conf.py for the rationale
+# (why a [Logging] block is needed and why root logger is WARNING).
 RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_conf.py \
     python3 /build/seed_build_conf.py
 
@@ -141,9 +141,9 @@ RUN --mount=type=bind,source=patches,target=/build/patches \
         patch --batch -d "$WEEWX_HA_DIR" -p1 < "$p"; \
     done
 
-# Drop the build-time stub conf and the build-time log it produced — runtime
-# uses /config/weewx.conf only, and /config is the addon_config mount.
-RUN rm -f /opt/weewx-data/weewx.conf && rm -rf /config
+# Drop the build-time stub conf — runtime uses /config/weewx.conf (the
+# addon_config mount). /config itself is not created at build time.
+RUN rm -f /opt/weewx-data/weewx.conf
 
 # ---------------------------------------------------------------------------
 # Bundled extra extension: log_to_file (per-record CSV file writer, bakerkj).
