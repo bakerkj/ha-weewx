@@ -9,10 +9,10 @@
 #             assert the full loop -> archive -> report -> nginx cycle, which is
 #             the same code path regardless of the interval.
 #
-# Usage: scripts/test-sqlite-n-template.sh                  # build + test
-#        BUILD=0 IMAGE=ha-weewx-test scripts/test-sqlite-n-template.sh
+# Usage: e2e-tests/scripts/test-sqlite-n-template.sh                  # build + test
+#        BUILD=0 IMAGE=ha-weewx-test e2e-tests/scripts/test-sqlite-n-template.sh
 set -uo pipefail
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 
 IMAGE="${IMAGE:-ha-weewx-sqlite-template-test}"
 PORT="${PORT:-18098}"

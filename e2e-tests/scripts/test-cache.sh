@@ -5,10 +5,10 @@
 # (current month/year vs. immutable history), and the /config/nginx-cache.conf
 # override + its fallback when broken.
 #
-# Usage: scripts/test-cache.sh                          # build + test
-#        BUILD=0 IMAGE=ha-weewx-test scripts/test-cache.sh   # reuse an image
+# Usage: e2e-tests/scripts/test-cache.sh                          # build + test
+#        BUILD=0 IMAGE=ha-weewx-test e2e-tests/scripts/test-cache.sh   # reuse an image
 set -uo pipefail
-cd "$(dirname "$0")/.." || exit 1
+cd "$(dirname "$0")/../.." || exit 1
 
 IMAGE="${IMAGE:-ha-weewx-cache-test}"
 PORT="${PORT:-18099}"

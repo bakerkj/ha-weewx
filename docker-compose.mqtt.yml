@@ -2,7 +2,7 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     volumes:
-      - ./test/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./e2e-tests/configs/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     healthcheck:
       test:
         [
@@ -19,7 +19,7 @@ services:
       mosquitto:
         condition: service_healthy
     volumes:
-      - ./test/mqtt/weewx.conf:/config/weewx.conf:ro
+      - ./e2e-tests/configs/mqtt/weewx.conf:/config/weewx.conf:ro
     environment:
       S6_KEEP_ENV: 1
     # Healthy once weewxd has written its first archive record to SQLite —

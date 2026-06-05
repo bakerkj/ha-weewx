@@ -5,7 +5,7 @@
 to MariaDB and that the Seasons report is generated + served by nginx.
 
 Run inside docker-compose.mariadb.yml against the live addon container
-(MariaDB-backed via test/mariadb/weewx.conf). The weewx service's
+(MariaDB-backed via e2e-tests/configs/mariadb/weewx.conf). The weewx service's
 healthcheck gates this container to start only once an archive record
 exists, so the data + report are already present by the time these run.
 """

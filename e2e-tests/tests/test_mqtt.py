@@ -3,7 +3,7 @@
 
 """MQTT e2e — asserts the MQTT publisher's (by felddy) HA discovery
 surface against the live addon image (SQLite-backed via
-test/mqtt/weewx.conf, mosquitto sidecar).
+e2e-tests/configs/mqtt/weewx.conf, mosquitto sidecar).
 
 All tests share one session-scoped MQTT subscriber that subscribes to
 `homeassistant/#` + `weather/#` and accumulates messages over the session.
@@ -25,7 +25,7 @@ MQTT_HOST = os.environ.get("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 
 # Maximum time to wait for the archive-only field (windrun) to appear on
-# the broker. test/mqtt/weewx.conf uses archive_interval=5 s +
+# the broker. e2e-tests/configs/mqtt/weewx.conf uses archive_interval=5 s +
 # archive_delay=3 s, so the first archive can fire ~13 s after weewxd
 # init; on a cold runner (esp. aarch64) weewxd init itself is 5-10 s, so
 # the budget needs headroom over the naive 1-cycle math.
@@ -85,7 +85,7 @@ def mqtt_messages() -> dict[str, str]:
             f"setup: weather/windrun never arrived within {ARCHIVE_DEADLINE}s "
             f"({len(seen)} topics seen); most likely cause is slow weewxd "
             f"startup pushing the first archive cycle past the deadline — "
-            f"check archive_interval + archive_delay in test/mqtt/weewx.conf "
+            f"check archive_interval + archive_delay in e2e-tests/configs/mqtt/weewx.conf "
             f"and weewxd boot time before suspecting MQTT/weewx_ha."
         )
     return seen

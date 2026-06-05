@@ -5,13 +5,13 @@
 # state_class, availability, rain24h metadata, archive-only field
 # (windrun), and that user.xaggs loaded clean at engine start. Storage
 # is SQLite — MariaDB-as-backend is covered separately by
-# scripts/test-mariadb.sh.
+# e2e-tests/scripts/test-mariadb.sh.
 #
-# Usage: scripts/test-mqtt.sh          # build + e2e (amd64)
-#        BUILD=0 scripts/test-mqtt.sh  # reuse the existing ha-weewx-test image
-#        ARCH=aarch64 scripts/test-mqtt.sh
+# Usage: e2e-tests/scripts/test-mqtt.sh          # build + e2e (amd64)
+#        BUILD=0 e2e-tests/scripts/test-mqtt.sh  # reuse the existing ha-weewx-test image
+#        ARCH=aarch64 e2e-tests/scripts/test-mqtt.sh
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 ARCH="${ARCH:-amd64}"
 BUILD="${BUILD:-1}"

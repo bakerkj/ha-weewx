@@ -6,11 +6,11 @@
 # script — that check belongs here because the maria fixture is the one
 # that exercises the most subsystems in one container.
 #
-# Usage: scripts/test-mariadb.sh          # build + e2e (amd64)
-#        BUILD=0 scripts/test-mariadb.sh  # reuse the existing ha-weewx-test image
-#        ARCH=aarch64 scripts/test-mariadb.sh
+# Usage: e2e-tests/scripts/test-mariadb.sh          # build + e2e (amd64)
+#        BUILD=0 e2e-tests/scripts/test-mariadb.sh  # reuse the existing ha-weewx-test image
+#        ARCH=aarch64 e2e-tests/scripts/test-mariadb.sh
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 ARCH="${ARCH:-amd64}"
 BUILD="${BUILD:-1}"
