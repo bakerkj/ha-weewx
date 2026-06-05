@@ -34,6 +34,16 @@ mypy_path = ["extensions"]
 
 # weewx + weeutil + configobj ship without py.typed; silence the
 # import noise without weakening checks on our own code.
+# weewx_ha (felddy) ships without py.typed too; homeassistant is only
+# installed in the build/test image, not the dev venv; user.* is a
+# runtime package built at /opt/weewx-data/bin/user.
 [[tool.mypy.overrides]]
-module = ["weewx.*", "weeutil.*", "configobj"]
+module = [
+    "weewx.*",
+    "weeutil.*",
+    "configobj",
+    "weewx_ha.*",
+    "homeassistant.*",
+    "user.*",
+]
 ignore_missing_imports = true

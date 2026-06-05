@@ -32,9 +32,9 @@ repos:
         name: mypy
         entry: uv run mypy
         language: system
-        files: ^(extensions|tests)/.*\.py$
+        files: ^(build|extensions|tests)/.*\.py$
         pass_filenames: false
-        args: [extensions, tests]
+        args: [build, extensions, tests]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
