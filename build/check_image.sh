@@ -45,28 +45,27 @@ check "patch: MQTT publisher (by felddy): NEW_ARCHIVE bind" has 'self.bind(NEW_A
 check "patch: MQTT publisher (by felddy): on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
 check "patch: MQTT publisher (by felddy): uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
 
-# Bundled extensions installed — one assert per URL in build/extensions.txt
-# (module + skin where applicable). install_extensions.sh fails hard on a
-# weectl error, but assert presence anyway so a silent drift between
-# extensions.txt and the build is caught at the in-image stage too.
-check "ext: emoncms module present" test -f "$WEEWX_BIN/user/emoncms.py"
-check "ext: exfoliation skin present" test -d /opt/weewx-data/skins/exfoliation
-check "ext: forecast module present" test -f "$WEEWX_BIN/user/forecast.py"
-check "ext: forecast skin present" test -d /opt/weewx-data/skins/forecast
-check "ext: fuzzy-archer Bootstrap skin present" test -d /opt/weewx-data/skins/Bootstrap
-check "ext: MQTTSubscribe module present" test -f "$WEEWX_BIN/user/MQTTSubscribe.py"
-check "ext: opensensemap module present" test -f "$WEEWX_BIN/user/opensensemap.py"
-check "ext: owm module present" test -f "$WEEWX_BIN/user/owm.py"
-check "ext: previmeteo module present" test -f "$WEEWX_BIN/user/previmeteo.py"
-check "ext: purpleair module present" test -f "$WEEWX_BIN/user/purpleair.py"
-check "ext: rain24h module present" test -f "$WEEWX_BIN/user/rain24h.py"
-check "ext: thingspeak module present" test -f "$WEEWX_BIN/user/thingspeak.py"
-check "ext: wcloud module present" test -f "$WEEWX_BIN/user/wcloud.py"
-check "ext: wetter module present" test -f "$WEEWX_BIN/user/wetter.py"
-check "ext: windfinder module present" test -f "$WEEWX_BIN/user/windfinder.py"
-check "ext: windguru module present" test -f "$WEEWX_BIN/user/windguru.py"
-check "ext: windy module present" test -f "$WEEWX_BIN/user/windy.py"
-check "ext: xaggs module present" test -f "$WEEWX_BIN/user/xaggs.py"
+# Bundled extensions installed — assertions derived from `# install: <path>`
+# annotations alongside each URL in build/extensions.txt. Adding or removing
+# a URL only requires editing extensions.txt, not this script. The
+# annotations still have to be kept correct by hand — they're documented
+# next to the URL but nothing automatically discovers them from upstream.
+while IFS= read -r install_path; do
+  case "$install_path" in
+    bin/user/*)
+      name="${install_path##*/}"
+      check "ext: $name present" test -f "/opt/weewx-data/$install_path"
+      ;;
+    skins/*)
+      name="${install_path#skins/}"
+      check "ext: $name skin present" test -d "/opt/weewx-data/$install_path"
+      ;;
+    *)
+      echo "FAIL  extensions.txt: unrecognised install path: $install_path"
+      fail=1
+      ;;
+  esac
+done < <(grep -E '^# install: ' /work/build/extensions.txt | sed 's/^# install: //')
 
 # rtgd is installed by build/install_rtgd.py (not weectl — its install.py
 # uses distutils). Assert both pieces survived.
