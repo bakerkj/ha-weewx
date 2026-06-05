@@ -298,4 +298,4 @@ def test_logtofile_missing_path_config_does_not_bind(monkeypatch):
 
     svc = LogToFile(FakeEngine(), cfg)
     assert bound == []
-    assert not hasattr(svc, "loop_thread")
+    assert svc._configured is False
