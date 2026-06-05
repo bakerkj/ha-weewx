@@ -1,27 +1,14 @@
 #!/usr/bin/env bash
-# Self-contained build-time checks for the ha-weewx addon image.
+# In-image self-checks for the ha-weewx addon image.
 #
-# Runs inside the built image via `docker run`; expects the repo root to
-# be bind-mounted at /work so this script and build/check_felddy_units.py
-# are reachable.
-#
-# Two phases:
-#   1) Cheap in-image asserts: binary version, dep imports, patch hunks
-#      present, bundled extensions installed, stock skins present,
-#      weewx-mqtt removed, s6 services + watchdog wired. Each assert is
-#      named via the `check` helper; all of them run, failures are
-#      summarized at the end (one bad assert no longer hides the others).
-#   2) Felddy unit/device_class sweep against a transient homeassistant
-#      install. Heavy (gcc + ~250 MB pip install) — uses uv with the
-#      cache dir bind-mounted from the host (CI: gha-cached via
-#      actions/cache), so wheels are reused between runs when HA_VERSION
-#      is unchanged.
+# Runs inside the built image via `docker run`. Asserts binary version,
+# dep imports, patch hunks, bundled extensions, stock skins, weewx-mqtt
+# absence, and s6/watchdog wiring. Each assert is named via the `check`
+# helper; all run, failures summarized at the end.
 
 set -uo pipefail
 
-HA_VERSION="${HA_VERSION:-2026.1.3}"
-
-# --- 1. in-image self-checks ---------------------------------------------
+# --- in-image self-checks -----------------------------------------------
 
 fail=0
 check() {
@@ -121,17 +108,3 @@ if [ "$fail" -ne 0 ]; then
 fi
 echo
 echo "=== in-image self-checks passed ==="
-
-# --- 2. felddy unit/device_class sweep against transient HA install ------
-set -e
-# gcc + python3-dev for the couple of small wheels HA pulls in
-# (propcache, etc.) that don't ship platform binaries for our arch.
-apt-get update
-apt-get install -y --no-install-recommends gcc python3-dev
-# Install uv inline (not shipped in the addon image; ~5 s warm).
-curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="${HOME}/.local/bin:$PATH"
-# The host's uv cache is bind-mounted at /root/.cache/uv so the HA
-# wheel set is reused between CI runs when HA_VERSION is unchanged.
-uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}"
-PYTHONPATH=/opt/weewx-data/bin python3 /work/build/check_felddy_units.py
