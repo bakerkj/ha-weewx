@@ -18,21 +18,19 @@ LABEL \
 
 # Only OS-level bits come from apt: python3 (the interpreter uv builds the venv
 # on), libusb (the C library pyusb binds at runtime for USB drivers), and the
-# runtime tools — mariadb-client-core (the `mariadb` CLI for DB setup; the full
-# mariadb-client metapackage drags in perl, ~120 MB, and weewx talks to the DB
-# via the library anyway), nginx (ingress) plus its brotli filter module
-# (better-than-gzip compression of the report text payload; zstd is not
-# packaged for nginx in trixie) and njs (libnginx-mod-http-js, used for the
-# per-request NOAA Cache-Control filter), openssh-client / rsync (report
-# uploads), patch (build-time extension patching). Every Python library is
-# installed by uv below, as wheels — nothing compiles.
+# runtime tools — nginx (ingress) plus its brotli filter module (better-than-
+# gzip compression of the report text payload; zstd is not packaged for nginx
+# in trixie) and njs (libnginx-mod-http-js, used for the per-request NOAA
+# Cache-Control filter), openssh-client / rsync (report uploads), patch
+# (build-time extension patching). MariaDB access at runtime goes through
+# PyMySQL (Python lib, installed by uv below), so no mariadb CLI is needed.
+# Every Python library is installed by uv below, as wheels — nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
     libusb-1.0-0=2:1.0.28-1 \
-    mariadb-client-core=1:11.8.6-0+deb13u1 \
     nginx-light=1.26.3-3+deb13u5 \
     openssh-client=1:10.0p1-7+deb13u4 \
     patch=2.8-2 \
