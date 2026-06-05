@@ -58,7 +58,7 @@ jobs:
       # no-op'd from a `run:` block. The action retrieves the token via
       # the JS API and exports it for buildx, so cache export actually
       # happens.
-      - name: Build add-on image (cached)
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -93,7 +93,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      - name: Build add-on image (cached)
+      # Cache the sidecar (mariadb:12) + the e2e-tests image as tarballs
+      # so we skip the ~5-10 s registry pull + ~5 s pip-install on every
+      # run. Key includes the compose file (sidecar tag) and the entire
+      # e2e-tests/ tree (pytest deps); restore-keys lets us reuse a
+      # near-match while the new entry is being computed.
+      - name: Restore docker image cache
+        id: docker-cache
+        uses: actions/cache@v5.0.5
+        with:
+          path: /tmp/docker-images
+          key:
+            docker-mariadb-${{ hashFiles('docker-compose.mariadb.yml',
+            'e2e-tests/**') }}
+          restore-keys: |
+            docker-mariadb-
+      - name: Load cached images
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          for f in /tmp/docker-images/*.tar; do
+            [ -f "$f" ] && docker load -i "$f"
+          done
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -110,6 +131,12 @@ jobs:
       # `mqtt` job below.
       - name: Run pytest e2e (mariadb)
         run: BUILD=0 ./scripts/test-mariadb.sh
+      - name: Save docker images for cache
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/docker-images
+          docker save mariadb:12 -o /tmp/docker-images/mariadb.tar
+          docker save ha-weewx-e2e:test -o /tmp/docker-images/e2e.tar
       - name: Upload mariadb e2e results
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
@@ -125,7 +152,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      - name: Build add-on image (cached)
+      # Same caching pattern as the mariadb job, but for the mosquitto
+      # sidecar. mosquitto:2 is only ~10 MB so the pull is cheap; the
+      # bigger win here is the cached e2e-tests image (pip install).
+      - name: Restore docker image cache
+        id: docker-cache
+        uses: actions/cache@v5.0.5
+        with:
+          path: /tmp/docker-images
+          key:
+            docker-mqtt-${{ hashFiles('docker-compose.mqtt.yml', 'e2e-tests/**')
+            }}
+          restore-keys: |
+            docker-mqtt-
+      - name: Load cached images
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          for f in /tmp/docker-images/*.tar; do
+            [ -f "$f" ] && docker load -i "$f"
+          done
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -144,6 +190,12 @@ jobs:
       # all instead of per-test settle sleeps.
       - name: Run pytest e2e (mqtt)
         run: BUILD=0 ./scripts/test-mqtt.sh
+      - name: Save docker images for cache
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/docker-images
+          docker save eclipse-mosquitto:2 -o /tmp/docker-images/mosquitto.tar
+          docker save ha-weewx-e2e:test -o /tmp/docker-images/e2e.tar
       - name: Upload mqtt e2e results
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
@@ -162,7 +214,7 @@ jobs:
       # Read the shared gha layer cache (the build-checks/integration jobs
       # populate it); build + load the add-on image, then assert the nginx
       # Cache-Control tiers, brotli/gzip, the NOAA njs filter, and the override.
-      - name: Build add-on image (cached)
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -186,7 +238,7 @@ jobs:
       # it with an empty /config and assert the default new-user path: the
       # template seeds, weewxd runs on Simulator + SQLite, writes an archive
       # record, and the Seasons report is generated and served by nginx.
-      - name: Build add-on image (cached)
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -212,7 +264,7 @@ jobs:
       # verify: killing weewxd exits the container, killing nginx exits the
       # container, and the HTTP-poll watchdog triggers an exit when its
       # configured path stays stale.
-      - name: Build add-on image (cached)
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
