@@ -3,6 +3,10 @@ name: addon-lint
 on:
   pull_request:
   push:
+    # Pushes to PR branches are already covered by the pull_request event;
+    # scoping push to main avoids the double-fire footgun (one push + one
+    # pull_request event for the same SHA = lint runs twice).
+    branches: [main]
 
 permissions:
   contents: read
