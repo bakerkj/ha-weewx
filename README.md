@@ -36,8 +36,8 @@ On first start the add-on copies a starter `weewx.conf` template into
 - **`[Station]`** — placeholder location/lat/lon (edit these).
 - **Driver** — `Simulator` (replace with your real driver section, e.g.
   `[Vantage]`, `[FineOffsetUSB]`, `[Interceptor]`).
-- **Database** — SQLite at `/config/weewx.sdb`. No external DB required out of
-  the box.
+- **Database** — SQLite at `/config/db/weewx.sdb`. No external DB required out
+  of the box.
 - **`[StdReport]`** — `Seasons` skin, output written to `/config/www/` so the HA
   ingress panel automatically serves your reports.
 - **No extensions wired up** — see [Bundled extensions](#bundled-extensions)
@@ -75,8 +75,8 @@ add it to the [Dockerfile](Dockerfile) so it's baked into the image.
 
 ## Database
 
-The default is **SQLite** at `/config/weewx.sdb` — auto-created on first weewxd
-start, persists across image upgrades, no external dependency.
+The default is **SQLite** at `/config/db/weewx.sdb` — auto-created on first
+weewxd start, persists across image upgrades, no external dependency.
 
 To switch to **MariaDB**:
 
