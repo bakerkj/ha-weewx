@@ -34,12 +34,24 @@ jobs:
     name: Build-time self-checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      HA_VERSION: "2026.1.3"
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      # Build the addon image with the shared gha layer cache and load it
-      # as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e jobs so
-      # unchanged builds skip the apt/uv/extension layers).
+      # uv cache stores the homeassistant wheel set + its dep tree;
+      # keyed on HA_VERSION so a bump cleanly invalidates. Re-mounted
+      # into the docker run below so the in-container `uv pip install`
+      # reuses them — no second buildx build needed.
+      - uses: actions/cache@v5.0.5
+        with:
+          path: ~/.cache/uv
+          key: uv-ha-${{ env.HA_VERSION }}-${{ runner.os }}
+          restore-keys: |
+            uv-ha-${{ env.HA_VERSION }}-
+      # Build the addon image with the shared gha layer cache and load
+      # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
+      # jobs so unchanged builds skip the apt/uv/extension layers).
       - name: Build add-on image (cached)
         run: |
           docker buildx build \
@@ -47,21 +59,21 @@ jobs:
             --cache-from type=gha,scope=ha-weewx-test \
             --cache-to type=gha,mode=max,scope=ha-weewx-test \
             -t ha-weewx-test --load .
-      # Run the self-checks (binary runs, deps + user extensions import,
-      # patches applied, stock skins present, weewx-mqtt removed) and the
-      # felddy unit/device_class sweep against the addon image. Uses plain
-      # `docker build` (the default docker driver) rather than
-      # `docker buildx build` so that `FROM ${BASE_IMAGE}` resolves the
-      # locally-loaded `ha-weewx-test` tag from the docker daemon — buildx's
-      # docker-container driver (used above) can't see local images.
-      # No gha cache here; the only heavy layer is the HA pip install
-      # (~60-90s on a clean run), which only invalidates when HA_VERSION
-      # or check_felddy_units.py change.
+      # Run the self-checks + felddy unit/device_class sweep against the
+      # built image. `docker run` (not `docker buildx build`) so the
+      # default docker driver sees the locally-loaded tag; the uv cache
+      # is bind-mounted so the HA wheel install is fast on warm cache.
+      # `--entrypoint /bin/bash` bypasses the s6 init that would
+      # otherwise boot weewxd/nginx instead of running our script.
       - name: Run self-contained checks
         run: |
-          docker build \
-            --build-arg BASE_IMAGE=ha-weewx-test \
-            -f Dockerfile.test .
+          mkdir -p ~/.cache/uv
+          docker run --rm --entrypoint /bin/bash \
+            -v "${PWD}:/work" \
+            -v "${HOME}/.cache/uv:/root/.cache/uv" \
+            -e HA_VERSION \
+            ha-weewx-test \
+            /work/build/check_image.sh
 
   maria-mqtt:
     name: "e2e: maria + mqtt"
