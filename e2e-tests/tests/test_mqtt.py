@@ -25,9 +25,11 @@ MQTT_HOST = os.environ.get("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 
 # Maximum time to wait for the archive-only field (windrun) to appear on
-# the broker. test/mqtt/weewx.conf uses archive_interval=5 s, so a single
-# archive cycle's worth + small buffer is enough.
-ARCHIVE_DEADLINE = 20.0
+# the broker. test/mqtt/weewx.conf uses archive_interval=5 s +
+# archive_delay=3 s, so the first archive can fire ~13 s after weewxd
+# init; on a cold runner (esp. aarch64) weewxd init itself is 5-10 s, so
+# the budget needs headroom over the naive 1-cycle math.
+ARCHIVE_DEADLINE = 40.0
 
 
 @pytest.fixture(scope="session")
@@ -81,7 +83,10 @@ def mqtt_messages() -> dict[str, str]:
         # the whole session here instead.
         pytest.fail(
             f"setup: weather/windrun never arrived within {ARCHIVE_DEADLINE}s "
-            f"({len(seen)} topics seen); downstream tests would be flaky"
+            f"({len(seen)} topics seen); most likely cause is slow weewxd "
+            f"startup pushing the first archive cycle past the deadline — "
+            f"check archive_interval + archive_delay in test/mqtt/weewx.conf "
+            f"and weewxd boot time before suspecting MQTT/weewx_ha."
         )
     return seen
 
