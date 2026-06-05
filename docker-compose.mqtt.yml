@@ -1,0 +1,65 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./test/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_pub -h localhost -t healthcheck -m ok || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  weewx:
+    image: ha-weewx-test
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    volumes:
+      - ./test/mqtt/weewx.conf:/config/weewx.conf:ro
+    environment:
+      S6_KEEP_ENV: 1
+    # Healthy once weewxd has written its first archive record to SQLite —
+    # that's the gate that ensures the archive-only MQTT field (windrun) has
+    # had a chance to publish. python3 with the stdlib sqlite3 module is used
+    # instead of the sqlite3 CLI (not installed in the addon image).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c ''import sqlite3,sys; sys.exit(0 if
+          sqlite3.connect("/config/db/weewx.sdb").execute("SELECT COUNT(*) FROM
+          archive").fetchone()[0] >= 1 else 1)'' 2>/dev/null',
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 5s
+
+  # pytest e2e — asserts the MQTT/HA discovery surface (state_class,
+  # availability, rain24h metadata, archive-only field, xaggs loaded).
+  # All assertions read from a single session-scoped MQTT subscriber, so
+  # the per-test settle waits collapse into one bounded wait. Run with:
+  #   docker compose -f docker-compose.mqtt.yml up --build \
+  #     --abort-on-container-exit --exit-code-from e2e-tests
+  e2e-tests:
+    build:
+      context: ./e2e-tests
+    image: ha-weewx-e2e:test
+    depends_on:
+      weewx:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+    volumes:
+      - ./test-results:/test-results
+    command:
+      [
+        "pytest",
+        "-v",
+        "tests/test_mqtt.py",
+        "--junit-xml=/test-results/mqtt-junit.xml",
+      ]

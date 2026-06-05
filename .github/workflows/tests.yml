@@ -86,16 +86,13 @@ jobs:
             ha-weewx-test \
             /work/build/check_image.sh
 
-  maria-mqtt:
-    name: "e2e: maria + mqtt"
+  mariadb:
+    name: "e2e: mariadb"
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      # Pre-build the add-on image with the shared gha layer cache and load it
-      # as ha-weewx-test, so the layers (base/apt/uv/extensions) are restored
-      # between runs; then run the e2e with BUILD=0 to reuse that image.
       - name: Build add-on image (cached)
         uses: docker/build-push-action@v7
         with:
@@ -108,17 +105,51 @@ jobs:
             type=gha,scope=ha-weewx-test
           cache-to: |
             type=gha,mode=max,scope=ha-weewx-test
-      # Runs the pytest e2e suite via docker-compose.test.yml (MariaDB storage,
-      # MQTT discovery + state_class + availability, Seasons report) against the
-      # prebuilt image, plus the syslog-spam guard.
-      - name: Run pytest e2e
-        run: BUILD=0 ./scripts/test-maria-n-mqtt.sh
-      - name: Upload e2e results
+      # MariaDB-backed e2e: archive rows land in MariaDB, Seasons report
+      # served by nginx. MQTT/discovery/rain24h/xaggs are covered in the
+      # `mqtt` job below.
+      - name: Run pytest e2e (mariadb)
+        run: BUILD=0 ./scripts/test-mariadb.sh
+      - name: Upload mariadb e2e results
         uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
-          name: e2e-results
-          path: test-results/junit.xml
+          name: e2e-mariadb-results
+          path: test-results/mariadb-junit.xml
+          if-no-files-found: ignore
+
+  mqtt:
+    name: "e2e: mqtt"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - name: Build add-on image (cached)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
+          cache-to: |
+            type=gha,mode=max,scope=ha-weewx-test
+      # MQTT-backed e2e against the felddy HA discovery surface. Storage
+      # is SQLite (MariaDB-as-backend is covered by the `mariadb` job),
+      # so this job only needs the mosquitto sidecar. All MQTT assertions
+      # share a session-scoped subscriber — one bounded wait covers them
+      # all instead of per-test settle sleeps.
+      - name: Run pytest e2e (mqtt)
+        run: BUILD=0 ./scripts/test-mqtt.sh
+      - name: Upload mqtt e2e results
+        uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-mqtt-results
+          path: test-results/mqtt-junit.xml
           if-no-files-found: ignore
 
   nginx-cache:
