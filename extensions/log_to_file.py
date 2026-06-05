@@ -83,6 +83,11 @@ class LogToFile(weewx.restx.StdRESTful):
     def __init__(self, engine, config_dict):
         super().__init__(engine, config_dict)
 
+        # Explicit sentinel for "did the worker get set up?" — tests can
+        # assert on this rather than spying on the existence of internal
+        # attributes via hasattr.
+        self._configured: bool = False
+
         try:
             site_dict = accumulateLeaves(
                 config_dict["StdRESTful"]["LogToFile"], max_level=1
@@ -101,20 +106,23 @@ class LogToFile(weewx.restx.StdRESTful):
         site_dict.setdefault("max_backlog", 0)
         site_dict.setdefault("max_tries", 1)
 
-        self.loop_queue: queue.Queue = queue.Queue()
-        self.loop_thread = LogToFileThread(self.loop_queue, manager_dict, **site_dict)
-        self.loop_thread.start()
+        self.record_queue: queue.Queue = queue.Queue()
+        self.record_thread = LogToFileThread(
+            self.record_queue, manager_dict, **site_dict
+        )
+        self.record_thread.start()
 
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
+        self._configured = True
 
         log.info("LogToFile: data will be logged to file %s", site_dict["path"])
 
     def new_loop_packet(self, event):
-        self.loop_queue.put(event.packet)
+        self.record_queue.put(event.packet)
 
     def new_archive_record(self, event):
-        self.loop_queue.put(event.record)
+        self.record_queue.put(event.record)
 
 
 class LogToFileThread(weewx.restx.RESTThread):
@@ -125,7 +133,7 @@ class LogToFileThread(weewx.restx.RESTThread):
         q,
         manager_dict,
         path,
-        skip_upload: bool = False,
+        skip_upload: bool | str = False,
         post_interval=None,
         max_backlog: int = 0,
         stale=None,
