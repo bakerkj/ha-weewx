@@ -117,25 +117,24 @@ ADD https://raw.githubusercontent.com/weewx/weewx/v5.3.1/src/weewx_data/examples
 #                            pip-installed, not under /opt/weewx-data); paths
 #                            relative to the weewx_ha package directory.
 # ---------------------------------------------------------------------------
-COPY patches/ /tmp/patches/
-RUN set -eu && \
-    for p in /tmp/patches/*.patch; do \
+RUN --mount=type=bind,source=patches,target=/build/patches \
+    set -eu && \
+    for p in /build/patches/*.patch; do \
         echo "Applying (data) $(basename "$p")"; \
         patch --batch -d /opt/weewx-data -p1 < "$p"; \
     done && \
     WEEWX_LIB_DIR="$(python3 -c 'import os, weedb; print(os.path.dirname(os.path.dirname(weedb.__file__)))')" && \
-    for p in /tmp/patches/weewx/*.patch; do \
+    for p in /build/patches/weewx/*.patch; do \
         [ -e "$p" ] || continue; \
         echo "Applying (weewx) $(basename "$p") -> $WEEWX_LIB_DIR"; \
         patch --batch -d "$WEEWX_LIB_DIR" -p1 < "$p"; \
     done && \
     WEEWX_HA_DIR="$(python3 -c 'import os, weewx_ha; print(os.path.dirname(weewx_ha.__file__))')" && \
-    for p in /tmp/patches/venv/*.patch; do \
+    for p in /build/patches/venv/*.patch; do \
         [ -e "$p" ] || continue; \
         echo "Applying (venv) $(basename "$p") -> $WEEWX_HA_DIR"; \
         patch --batch -d "$WEEWX_HA_DIR" -p1 < "$p"; \
-    done && \
-    rm -rf /tmp/patches
+    done
 
 # Drop the build-time stub conf and the build-time log it produced — runtime
 # uses /config/weewx.conf only, and /config is the addon_config mount.
