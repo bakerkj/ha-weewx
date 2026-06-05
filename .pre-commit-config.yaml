@@ -26,16 +26,15 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+  - repo: local
     hooks:
       - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
         files: ^(extensions|tests)/.*\.py$
-        # Hook env can't see runtime deps; mypy treats their imports as
-        # untyped, which matches the [tool.mypy.overrides] block in
-        # pyproject.toml and keeps the hook self-contained.
         pass_filenames: false
-        args: ["--config-file=pyproject.toml"]
+        args: [extensions, tests]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
