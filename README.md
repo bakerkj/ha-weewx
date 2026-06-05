@@ -67,9 +67,36 @@ After editing, restart the add-on for changes to take effect.
 
 ## Add-on options
 
-There are no HA UI options. Everything is configured by editing
-`/config/weewx.conf`. To add an extension that isn't bundled, fork this repo and
-add it to the [Dockerfile](Dockerfile) so it's baked into the image.
+Almost everything is configured by editing `/config/weewx.conf`. To add an
+extension that isn't bundled, fork this repo and add it to the
+[Dockerfile](Dockerfile) so it's baked into the image.
+
+The HA addon Configuration tab exposes a small set of options for the
+**hang-detection watchdog** — disabled by default. When enabled, it periodically
+`HEAD`s a URL through the addon's own nginx and verifies the response's
+`Last-Modified` is fresh. After N consecutive failures it SIGTERMs PID 1, which
+tears the addon down so HA's "Watchdog" toggle can restart it.
+
+| Option                           | Default | Meaning                                                                                                    |
+| -------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `watchdog_path`                  | `""`    | URL path probed through nginx (e.g. `/index.html`, `/gauge-data.txt`). Empty = watchdog disabled.          |
+| `watchdog_max_age_seconds`       | `600`   | Max `Last-Modified` age before a probe counts as a failure. Set to the cadence of whatever writes the URL. |
+| `watchdog_consecutive_failures`  | `3`     | How many failures in a row before the addon is torn down.                                                  |
+| `watchdog_interval_seconds`      | `30`    | Seconds between probes.                                                                                    |
+| `watchdog_startup_grace_seconds` | `600`   | Sleep this long after addon start before the first probe. **Must be >= `watchdog_max_age_seconds`.**       |
+
+> **Why `watchdog_startup_grace_seconds >= watchdog_max_age_seconds`?** If
+> `grace` is smaller than `max_age`, the first probe will likely fail on a
+> freshly restarted addon — the target file's `mtime` predates the restart by
+> more than `grace` seconds, so it looks stale even though weewxd / rtgd are
+> perfectly healthy. The threshold then trips in a few probes and the watchdog
+> kills the addon for no real reason. The watchdog log calls this out at start;
+> fix it by raising `grace`.
+
+Pick a `watchdog_path` whose source you trust to rewrite regularly:
+`/index.html` (regenerated every archive cycle) is a safe default;
+`/gauge-data.txt` (rewritten by `realtime-gauge-data` every LOOP packet once
+rtgd is enabled) is much sharper.
 
 ---
 
