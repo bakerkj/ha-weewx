@@ -78,11 +78,11 @@ jobs:
             -v "${PWD}:/work" \
             ha-weewx-test \
             /work/build/check_image.sh
-      # Felddy unit/device_class sweep against a transient host venv
+      # Felddy unit/device_class check against a transient host venv
       # with homeassistant + weewx. Extracts the patched weewx_ha and
       # bundled user/ from the built image with `docker cp`; no apt/pip
       # mutation of the addon image itself.
-      - name: Run felddy unit sweep (host)
+      - name: Run felddy unit check (host)
         run: ./build/check_felddy_units_host.sh
 
   mariadb:

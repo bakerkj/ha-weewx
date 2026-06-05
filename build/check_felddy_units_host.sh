@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Host-side felddy unit/device_class sweep.
+# Host-side felddy unit/device_class check.
 #
 # Builds a transient venv on the CI host with homeassistant + weewx +
 # felddy's runtime deps, overlays the patched weewx_ha extracted from
