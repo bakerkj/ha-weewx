@@ -9,6 +9,15 @@ name: addon-build
 on:
   pull_request:
   push:
+    # Pushes to PR branches are already covered by the pull_request event;
+    # scoping push to main + release tags avoids the double-fire footgun
+    # (one push + one pull_request event for the same SHA = 4 builds).
+    # Tag matchers track the patterns the release-mode script accepts in
+    # the `discover` job: bare `v*.*.*` or component-prefixed `*-v*.*.*`.
+    branches: [main]
+    tags:
+      - "v*"
+      - "*-v*"
 
 permissions:
   contents: read
