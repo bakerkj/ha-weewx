@@ -45,7 +45,7 @@ wait_for_nginx() {
   start=$(date +%s)
   while [[ $(($(date +%s) - start)) -lt "$INIT_TIMEOUT" ]]; do
     curl -fso /dev/null "http://localhost:$PORT/index.html" && return 0
-    sleep 2
+    sleep 0.5
   done
   return 1
 }
@@ -58,7 +58,7 @@ wait_for_weewxd() {
   start=$(date +%s)
   while [[ $(($(date +%s) - start)) -lt "$INIT_TIMEOUT" ]]; do
     docker exec "$CTR" pgrep -x weewxd >/dev/null 2>&1 && return 0
-    sleep 2
+    sleep 0.5
   done
   return 1
 }
