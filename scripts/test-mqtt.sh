@@ -30,4 +30,12 @@ mkdir -p test-results
 
 "${COMPOSE[@]}" up --build --abort-on-container-exit --exit-code-from e2e-tests
 
+# Log-cleanliness guard: the /dev/log "Logging error" spam is stderr
+# meta-output that never reaches the e2e container, so check it here
+# while logs still exist.
+if "${COMPOSE[@]}" logs weewx 2>&1 | grep -qE 'Logging error|/dev/log'; then
+  echo "FAIL: syslog (/dev/log) spam in weewx logs"
+  exit 1
+fi
+
 echo "=== mqtt e2e OK ==="

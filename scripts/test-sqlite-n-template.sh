@@ -104,6 +104,17 @@ else
   ok "no ERROR/CRITICAL in the weewxd log"
 fi
 
+# Syslog-spam guard: the "Logging error" / "/dev/log" Python-logging
+# traceback (from a [Logging] config that falls back to syslog) is
+# stderr meta-output that never appears as an INFO/ERROR level line,
+# so the grep above misses it.
+if docker logs "$CTR" 2>&1 | grep -qE 'Logging error|/dev/log'; then
+  bad "syslog (/dev/log) spam in weewxd log"
+  docker logs "$CTR" 2>&1 | grep -E 'Logging error|/dev/log' | head
+else
+  ok "no syslog (/dev/log) spam in the weewxd log"
+fi
+
 echo
 if [[ "$fail" == 0 ]]; then
   echo "=== sqlite + template e2e OK ==="
