@@ -52,13 +52,24 @@ jobs:
       # Build the addon image with the shared gha layer cache and load
       # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
       # jobs so unchanged builds skip the apt/uv/extension layers).
+      # Uses docker/build-push-action rather than a raw `docker buildx
+      # build` shell step: GHA does not expose ACTIONS_RUNTIME_TOKEN to
+      # plain shell `run:` envs, so `--cache-to type=gha` is silently
+      # no-op'd from a `run:` block. The action retrieves the token via
+      # the JS API and exports it for buildx, so cache export actually
+      # happens.
       - name: Build add-on image (cached)
-        run: |
-          docker buildx build \
-            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
-            --cache-from type=gha,scope=ha-weewx-test \
-            --cache-to type=gha,mode=max,scope=ha-weewx-test \
-            -t ha-weewx-test --load .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
+          cache-to: |
+            type=gha,mode=max,scope=ha-weewx-test
       # Run the self-checks + felddy unit/device_class sweep against the
       # built image. `docker run` (not `docker buildx build`) so the
       # default docker driver sees the locally-loaded tag; the uv cache
@@ -86,12 +97,17 @@ jobs:
       # as ha-weewx-test, so the layers (base/apt/uv/extensions) are restored
       # between runs; then run the e2e with BUILD=0 to reuse that image.
       - name: Build add-on image (cached)
-        run: |
-          docker buildx build \
-            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
-            --cache-from type=gha,scope=ha-weewx-test \
-            --cache-to type=gha,mode=max,scope=ha-weewx-test \
-            -t ha-weewx-test --load .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
+          cache-to: |
+            type=gha,mode=max,scope=ha-weewx-test
       # Runs the pytest e2e suite via docker-compose.test.yml (MariaDB storage,
       # MQTT discovery + state_class + availability, Seasons report) against the
       # prebuilt image, plus the syslog-spam guard.
@@ -116,11 +132,15 @@ jobs:
       # populate it); build + load the add-on image, then assert the nginx
       # Cache-Control tiers, brotli/gzip, the NOAA njs filter, and the override.
       - name: Build add-on image (cached)
-        run: |
-          docker buildx build \
-            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
-            --cache-from type=gha,scope=ha-weewx-test \
-            -t ha-weewx-cache-test --load .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-cache-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
       - name: Run cache tests
         run: BUILD=0 IMAGE=ha-weewx-cache-test ./scripts/test-cache.sh
 
@@ -136,11 +156,15 @@ jobs:
       # template seeds, weewxd runs on Simulator + SQLite, writes an archive
       # record, and the Seasons report is generated and served by nginx.
       - name: Build add-on image (cached)
-        run: |
-          docker buildx build \
-            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
-            --cache-from type=gha,scope=ha-weewx-test \
-            -t ha-weewx-sqlite-template-test --load .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-sqlite-template-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
       - name: Run sqlite + template e2e
         run:
           BUILD=0 IMAGE=ha-weewx-sqlite-template-test
@@ -158,10 +182,14 @@ jobs:
       # container, and the HTTP-poll watchdog triggers an exit when its
       # configured path stays stale.
       - name: Build add-on image (cached)
-        run: |
-          docker buildx build \
-            --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie \
-            --cache-from type=gha,scope=ha-weewx-test \
-            -t ha-weewx-watchdog-test --load .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-watchdog-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
       - name: Run watchdog e2e
         run: BUILD=0 IMAGE=ha-weewx-watchdog-test ./scripts/test-watchdog.sh
