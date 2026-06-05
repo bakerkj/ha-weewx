@@ -4,7 +4,7 @@
 #
 #   Phase 1 — start with an EMPTY /config so weewx-init seeds the *shipped*
 #             template, and assert the seeding + the SQLite schema init.
-#   Phase 2 — drop archive_interval to 15s (the template ships 300s, which would
+#   Phase 2 — drop archive_interval to 5s (the template ships 300s, which would
 #             make the first archive record take up to ~5 min) and restart, then
 #             assert the full loop -> archive -> report -> nginx cycle, which is
 #             the same code path regardless of the interval.
@@ -69,13 +69,13 @@ fi
 [[ -n "$schema" ]] && ok "SQLite DB + archive table created (/config/db/weewx.sdb)" || bad "SQLite archive table not created"
 
 # --- Phase 2: shorten the interval and restart, then exercise the cycle ---
-echo "### Phase 2: set archive_interval=15s, restart, run the archive+report cycle"
+echo "### Phase 2: set archive_interval=5s, restart, run the archive+report cycle"
 # sed (byte-level) rather than configobj: the template's comments contain em
 # dashes, and configobj.write() defaults to ASCII and would choke on them.
-dexec sed -i -E 's/^( *archive_interval *=).*/\1 15/; s/^( *archive_delay *=).*/\1 3/' /config/weewx.conf ||
+dexec sed -i -E 's/^( *archive_interval *=).*/\1 5/; s/^( *archive_delay *=).*/\1 3/' /config/weewx.conf ||
   bad "could not rewrite archive_interval"
-if dexec grep -q "archive_interval = 15" /config/weewx.conf 2>/dev/null; then
-  ok "archive_interval lowered to 15s for the cycle"
+if dexec grep -q "archive_interval = 5" /config/weewx.conf 2>/dev/null; then
+  ok "archive_interval lowered to 5s for the cycle"
 else
   bad "archive_interval edit did not apply"
 fi
