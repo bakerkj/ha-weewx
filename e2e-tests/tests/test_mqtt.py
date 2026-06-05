@@ -62,12 +62,24 @@ def mqtt_messages() -> dict[str, str]:
     # felddy to (re)publish availability.
     client.publish("homeassistant/status", "online")
     deadline = time.monotonic() + ARCHIVE_DEADLINE
+    settled = False
     while time.monotonic() < deadline:
         if "weather/windrun" in seen:
+            settled = True
             break
         time.sleep(0.5)
     client.loop_stop()
     client.disconnect()
+    if not settled:
+        # The settle signal didn't arrive in time. Returning a partial
+        # dict would let every test except `test_archive_only_windrun_*`
+        # pass, hiding the real problem (weewxd slow, archive cycle not
+        # firing, MQTT misrouted) behind one misleading failure. Fail
+        # the whole session here instead.
+        pytest.fail(
+            f"setup: weather/windrun never arrived within {ARCHIVE_DEADLINE}s "
+            f"({len(seen)} topics seen); downstream tests would be flaky"
+        )
     return seen
 
 
