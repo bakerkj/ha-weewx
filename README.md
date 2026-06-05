@@ -226,7 +226,7 @@ configuration section to `weewx.conf`.
 
 | Extension            | Service path                              | Service list       | Notes                                                        |
 | -------------------- | ----------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`  | MQTT discovery for HA (felddy)                               |
+| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`  | MQTT discovery for HA (by felddy)                            |
 | emoncms              | `user.emoncms.EmonCMS`                    | `restful_services` | matthewwall                                                  |
 | exfoliation          | _(skin only)_                             | —                  | Replacement skin                                             |
 | forecast             | `user.forecast.NWSForecast` (etc.)        | `archive_services` | Multiple forecast providers, chaunceygardiner                |

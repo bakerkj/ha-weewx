@@ -1,12 +1,12 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""felddy MQTT publisher -> Home Assistant unit validation.
+"""MQTT publisher (by felddy) -> Home Assistant unit validation.
 
-For every ``KEY_CONFIG`` entry felddy publishes with a ``device_class``,
-verify the discovery payload's ``unit_of_measurement`` is one Home
-Assistant accepts -- across all three weewx unit systems (METRIC,
-METRICWX, US).
+For every ``KEY_CONFIG`` entry the MQTT publisher (by felddy) publishes
+with a ``device_class``, verify the discovery payload's
+``unit_of_measurement`` is one Home Assistant accepts -- across all
+three weewx unit systems (METRIC, METRICWX, US).
 
 ``DEVICE_CLASS_UNITS`` is imported from homeassistant itself rather
 than hand-copied, so the allowed-units mapping stays in sync as HA
@@ -31,9 +31,10 @@ import user.rain24h  # noqa: F401  -- registers 'rain24h' -> 'group_rain'
 
 from weewx_ha.utils import KEY_CONFIG, UnitSystem, get_unit_metadata
 
-# KEY_CONFIG TEMPLATE-base entries: felddy keeps these so get_key_config can
-# strip numeric suffixes (extraTemp5 -> extraTemp -> friendly name "Extra
-# Temperature 5"). The base name itself NEVER appears as a real measurement
+# KEY_CONFIG TEMPLATE-base entries: the MQTT publisher (by felddy) keeps
+# these so get_key_config can strip numeric suffixes (extraTemp5 ->
+# extraTemp -> friendly name "Extra Temperature 5"). The base name itself
+# NEVER appears as a real measurement
 # in a loop packet, so calling get_unit_metadata on it correctly returns no
 # unit AND correctly emits a "No unit found" WARNING -- but that warning is
 # noise here because we'd never check the base key in production. Skip them.
@@ -50,10 +51,10 @@ TEMPLATE_BASE_KEYS = {
     "windburn",
 }
 
-# Known upstream felddy bugs NOT in scope for patches/venv/0006 -- they
-# need different fixes (device_class change, concentration conversion,
-# or a felddy code change), not a UNIT_METADATA addition. Tracked
-# separately; revisit when those PRs land.
+# Known upstream bugs in the MQTT publisher (by felddy) that are out of
+# scope here: they need different fixes (device_class change,
+# concentration conversion, or an upstream code change), not a
+# UNIT_METADATA addition.
 SKIP_KEYS = {
     "o3",  # device_class=ozone, emits 'ppm'; HA wants µg/m³
     "so2",  # device_class=sulphur_dioxide, emits 'ppm'; HA wants µg/m³
@@ -68,7 +69,8 @@ def main() -> None:
     # DEVICE_CLASS_UNITS maps SensorDeviceClass enum -> set of allowed
     # units. Each unit in the set is a str, a StrEnum member, or None
     # ("no unit"). Normalize to {device_class_string: {unit_string, ...}}
-    # for direct comparison against felddy's unit_of_measurement strings.
+    # for direct comparison against the MQTT publisher's (by felddy)
+    # unit_of_measurement strings.
     ha_allowed: dict[str, set[str]] = {}
     for dc, units in DEVICE_CLASS_UNITS.items():
         dc_name = dc.value if hasattr(dc, "value") else str(dc)
@@ -106,7 +108,10 @@ def main() -> None:
                 bad.append((key, dc, us.name, unit))
 
     if bad:
-        print("FAIL: felddy emits HA-invalid unit_of_measurement for these combos:")
+        print(
+            "FAIL: the MQTT publisher (by felddy) emits HA-invalid "
+            "unit_of_measurement for these combos:"
+        )
         for row in bad:
             print(
                 f"  key={row[0]:20s} device_class={row[1]:25s} "
@@ -114,8 +119,9 @@ def main() -> None:
             )
         sys.exit(1)
     print(
-        f"felddy -> HA unit validation OK: {checked} (key, unit_system) combos "
-        f"checked against homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
+        f"MQTT publisher (by felddy) -> HA unit validation OK: "
+        f"{checked} (key, unit_system) combos checked against "
+        f"homeassistant DEVICE_CLASS_UNITS; 0 mismatches"
     )
     if skipped_dc:
         print(f"  (device_classes with no unit validation: {sorted(skipped_dc)})")

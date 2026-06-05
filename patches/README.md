@@ -9,8 +9,8 @@ subdirectories, one per _target tree_:
   driven by `build/extensions.txt`).
 - `weewx/` — WeeWX core libraries (`weedb`, `weewx`, …), pip-installed into the
   `/opt/weewx` venv's site-packages.
-- `venv/` — felddy's `weewx_ha` pip package, also in the venv, separated so the
-  patch paths can be relative to the package dir.
+- `venv/` — the MQTT publisher (by felddy) — the `weewx_ha` pip package, also in
+  the venv, separated so the patch paths can be relative to the package dir.
 
 All three apply with `patch -p1` and share the same conventions for naming and
 file contents.
@@ -47,9 +47,11 @@ site-packages directory** (a patch to `weedb/mysql.py` references it as
 ## `venv/` — patches for pip-installed packages
 
 Some bundled pieces are installed as **pip packages in the venv at
-`/opt/weewx`**, not under `/opt/weewx-data` — notably `weewx_ha`
-(felddy/weewx-home-assistant). Those can't be reached by the `extensions/` loop,
-so their patches live in `patches/venv/`:
+`/opt/weewx`**, not under `/opt/weewx-data` — notably the MQTT publisher's
+`weewx_ha`
+([felddy/weewx-home-assistant](https://github.com/felddy/weewx-home-assistant)).
+Those can't be reached by the `extensions/` loop, so their patches live in
+`patches/venv/`:
 
 - Paths are **relative to the package directory** (a fix to
   `weewx_ha/config_publisher.py` references it as `config_publisher.py`).

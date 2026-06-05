@@ -70,12 +70,12 @@ jobs:
             type=gha,scope=ha-weewx-test
           cache-to: |
             type=gha,mode=max,scope=ha-weewx-test
-      # Run the self-checks + felddy unit/device_class sweep against the
-      # built image. `docker run` (not `docker buildx build`) so the
-      # default docker driver sees the locally-loaded tag; the uv cache
-      # is bind-mounted so the HA wheel install is fast on warm cache.
-      # `--entrypoint /bin/bash` bypasses the s6 init that would
-      # otherwise boot weewxd/nginx instead of running our script.
+      # Run the self-checks + MQTT publisher (by felddy) -> HA unit
+      # validation against the built image. `docker run` (not `docker
+      # buildx build`) so the default docker driver sees the locally-
+      # loaded tag; the uv cache is bind-mounted so the HA wheel install
+      # is fast on warm cache. `--entrypoint /bin/bash` bypasses the s6
+      # init that would otherwise boot weewxd/nginx instead of our script.
       - name: Run self-contained checks
         run: |
           mkdir -p ~/.cache/uv
@@ -183,7 +183,8 @@ jobs:
             type=gha,scope=ha-weewx-test
           cache-to: |
             type=gha,mode=max,scope=ha-weewx-test
-      # MQTT-backed e2e against the felddy HA discovery surface. Storage
+      # MQTT-backed e2e against the MQTT publisher's (by felddy) HA
+      # discovery surface. Storage
       # is SQLite (MariaDB-as-backend is covered by the `mariadb` job),
       # so this job only needs the mosquitto sidecar. All MQTT assertions
       # share a session-scoped subscriber — one bounded wait covers them

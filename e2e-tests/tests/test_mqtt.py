@@ -1,8 +1,9 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""MQTT e2e — asserts the felddy HA discovery surface against the live
-addon image (SQLite-backed via test/mqtt/weewx.conf, mosquitto sidecar).
+"""MQTT e2e — asserts the MQTT publisher's (by felddy) HA discovery
+surface against the live addon image (SQLite-backed via
+test/mqtt/weewx.conf, mosquitto sidecar).
 
 All tests share one session-scoped MQTT subscriber that subscribes to
 `homeassistant/#` + `weather/#` and accumulates messages over the session.
@@ -34,10 +35,11 @@ def mqtt_messages() -> dict[str, str]:
     """One-shot subscriber over the whole session.
 
     Subscribes to ``homeassistant/#`` and ``weather/#``, publishes the HA
-    birth message (which makes felddy republish all non-retained discovery
-    configs), then blocks until either ``weather/windrun`` arrives (the
-    archive-only signal that everything has had its chance) or the
-    deadline lapses. Returns the accumulated {topic: payload} dict.
+    birth message (which makes the MQTT publisher republish all
+    non-retained discovery configs), then blocks until either
+    ``weather/windrun`` arrives (the archive-only signal that everything
+    has had its chance) or the deadline lapses. Returns the accumulated
+    {topic: payload} dict.
     """
     seen: dict[str, str] = {}
 
@@ -57,9 +59,10 @@ def mqtt_messages() -> dict[str, str]:
     client.loop_start()
     # Let on_connect run + subscriptions settle before we publish birth.
     time.sleep(1.0)
-    # felddy publishes discovery configs non-retained, so without the birth
-    # message we'd miss them entirely. The status broadcast also triggers
-    # felddy to (re)publish availability.
+    # The MQTT publisher (by felddy) publishes discovery configs
+    # non-retained, so without the birth message we'd miss them
+    # entirely. The status broadcast also triggers the publisher to
+    # (re)publish availability.
     client.publish("homeassistant/status", "online")
     deadline = time.monotonic() + ARCHIVE_DEADLINE
     settled = False
@@ -103,7 +106,7 @@ def test_outTemp_discovery_has_state_class_measurement(mqtt_messages):
 
 def test_non_measurement_keys_omit_state_class(mqtt_messages):
     """Battery/enum/timestamp keys must NOT carry a state_class — that's
-    the contract patches/venv/0001 (felddy state_class) enforces."""
+    the contract patches/venv/0001 (MQTT publisher state_class) enforces."""
     bad = []
     for t, p in mqtt_messages.items():
         if not t.endswith("/config"):
@@ -121,7 +124,7 @@ def test_non_measurement_keys_omit_state_class(mqtt_messages):
 
 
 def test_availability_retained(mqtt_messages):
-    """felddy publishes ``weather/status=online`` retained on connect."""
+    """The MQTT publisher publishes ``weather/status=online`` retained on connect."""
     assert mqtt_messages.get("weather/status") == "online", mqtt_messages.get(
         "weather/status"
     )
@@ -140,7 +143,8 @@ def test_user_xaggs_module_loaded_clean(mqtt_messages):
 
 def test_rain24h_state_published(mqtt_messages):
     """weewx-rain24h service injects ``rain24h`` into every loop packet,
-    so felddy publishes the state topic with a parseable float."""
+    so the MQTT publisher (by felddy) publishes the state topic with a
+    parseable float."""
     val = mqtt_messages.get("weather/rain24h")
     assert val is not None, (
         "weather/rain24h never published — weewx-rain24h service not "
@@ -154,13 +158,13 @@ def test_rain24h_state_published(mqtt_messages):
 
 
 def test_rain24h_discovery_metadata(mqtt_messages):
-    """patches/venv/0005 (felddy rain24h KEY_CONFIG): discovery payload
+    """patches/venv/0005 (MQTT publisher rain24h KEY_CONFIG): discovery payload
     carries the right device_class, name, and unit_of_measurement."""
     cfg_topic = "homeassistant/sensor/weewx/rain24h/config"
     raw = mqtt_messages.get(cfg_topic)
     assert raw is not None, (
         "no rain24h discovery config — patches/venv/0005 (KEY_CONFIG entry) "
-        "likely not applied, or felddy never saw rain24h in a packet"
+        "likely not applied, or the MQTT publisher never saw rain24h in a packet"
     )
     cfg = json.loads(raw)
     assert cfg.get("device_class") == "precipitation", cfg
@@ -181,7 +185,7 @@ def test_archive_only_windrun_published(mqtt_messages):
     val = mqtt_messages.get("weather/windrun")
     assert val is not None, (
         "weather/windrun never published — bind-archive patch likely "
-        "missing (felddy is processing only loop packets, not archive "
+        "missing (the MQTT publisher is processing only loop packets, not archive "
         "records)"
     )
     try:

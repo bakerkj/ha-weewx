@@ -2,7 +2,7 @@
 # Self-contained build-time checks for the ha-weewx addon image.
 #
 # Runs inside the built image via `docker run`; expects the repo root to
-# be bind-mounted at /work so this script and build/check_felddy_units.py
+# be bind-mounted at /work so this script and build/check_mqtt_publisher_ha_units.py
 # are reachable.
 #
 # Two phases:
@@ -47,16 +47,16 @@ check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
 check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.forecast, user.xstats, user.rain24h, user.xaggs'
 
-# felddy (weewx_ha) patches applied
-check "patch: felddy state_class" has '"state_class"' "$WEEWX_HA/config_publisher.py"
-check "patch: felddy txBatteryStatus int" has 'int(packet["txBatteryStatus"])' "$WEEWX_HA/preprocessor.py"
-check "patch: felddy NO_UNIT_KEYS" has 'NO_UNIT_KEYS' "$WEEWX_HA/utils.py"
-check "patch: felddy rainAlarm key" has '"rainAlarm"' "$WEEWX_HA/utils.py"
-check "patch: felddy windrun key" has '"windrun"' "$WEEWX_HA/utils.py"
-check "patch: felddy rain24h key" has '"rain24h"' "$WEEWX_HA/utils.py"
-check "patch: felddy NEW_ARCHIVE bind" has 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' "$WEEWX_HA/controller.py"
-check "patch: felddy on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
-check "patch: felddy uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
+# MQTT publisher (by felddy) patches applied
+check "patch: MQTT publisher (by felddy): state_class" has '"state_class"' "$WEEWX_HA/config_publisher.py"
+check "patch: MQTT publisher (by felddy): txBatteryStatus int" has 'int(packet["txBatteryStatus"])' "$WEEWX_HA/preprocessor.py"
+check "patch: MQTT publisher (by felddy): NO_UNIT_KEYS" has 'NO_UNIT_KEYS' "$WEEWX_HA/utils.py"
+check "patch: MQTT publisher (by felddy): rainAlarm key" has '"rainAlarm"' "$WEEWX_HA/utils.py"
+check "patch: MQTT publisher (by felddy): windrun key" has '"windrun"' "$WEEWX_HA/utils.py"
+check "patch: MQTT publisher (by felddy): rain24h key" has '"rain24h"' "$WEEWX_HA/utils.py"
+check "patch: MQTT publisher (by felddy): NEW_ARCHIVE bind" has 'self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)' "$WEEWX_HA/controller.py"
+check "patch: MQTT publisher (by felddy): on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
+check "patch: MQTT publisher (by felddy): uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
 
 # Bundled extensions installed — one assert per URL in build/extensions.txt
 # (module + skin where applicable). install_extensions.sh fails hard on a
@@ -122,7 +122,7 @@ fi
 echo
 echo "=== in-image self-checks passed ==="
 
-# --- 2. felddy unit/device_class sweep against transient HA install ------
+# --- 2. MQTT publisher (by felddy) -> HA unit validation against transient HA install ------
 set -e
 # gcc + python3-dev for the couple of small wheels HA pulls in
 # (propcache, etc.) that don't ship platform binaries for our arch.
@@ -134,4 +134,4 @@ export PATH="${HOME}/.local/bin:$PATH"
 # The host's uv cache is bind-mounted at /root/.cache/uv so the HA
 # wheel set is reused between CI runs when HA_VERSION is unchanged.
 uv pip install --python /opt/weewx/bin/python3 "homeassistant==${HA_VERSION}"
-PYTHONPATH=/opt/weewx-data/bin python3 /work/build/check_felddy_units.py
+PYTHONPATH=/opt/weewx-data/bin python3 /work/build/check_mqtt_publisher_ha_units.py

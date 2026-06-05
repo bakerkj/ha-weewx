@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
     "weewx==5.3.1",
-    # felddy's weewx_ha as a release zip (not git+) so uv needs no git CLI.
+    # The MQTT publisher (by felddy) as a release zip (not git+) so uv
+    # needs no git CLI.
     "weewx-home-assistant @ https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip",
     # weewx pulls PyMySQL itself for MariaDB/MySQL; no compiled mysqlclient.
     "configobj>=5.0.9",
@@ -34,9 +35,9 @@ mypy_path = ["extensions"]
 
 # weewx + weeutil + configobj ship without py.typed; silence the
 # import noise without weakening checks on our own code.
-# weewx_ha (felddy) ships without py.typed too; homeassistant is only
-# installed in the build/test image, not the dev venv; user.* is a
-# runtime package built at /opt/weewx-data/bin/user.
+# The MQTT publisher (by felddy) ships without py.typed too;
+# homeassistant is only installed in the build/test image, not the dev
+# venv; user.* is a runtime package built at /opt/weewx-data/bin/user.
 [[tool.mypy.overrides]]
 module = [
     "weewx.*",
