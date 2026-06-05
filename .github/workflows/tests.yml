@@ -49,15 +49,18 @@ jobs:
             -t ha-weewx-test --load .
       # Run the self-checks (binary runs, deps + user extensions import,
       # patches applied, stock skins present, weewx-mqtt removed) and the
-      # felddy unit/device_class sweep against that image. No external
-      # services. Cached separately because the HA pip install is heavy
-      # and only invalidates when HA_VERSION or check_felddy_units.py move.
+      # felddy unit/device_class sweep against the addon image. Uses plain
+      # `docker build` (the default docker driver) rather than
+      # `docker buildx build` so that `FROM ${BASE_IMAGE}` resolves the
+      # locally-loaded `ha-weewx-test` tag from the docker daemon — buildx's
+      # docker-container driver (used above) can't see local images.
+      # No gha cache here; the only heavy layer is the HA pip install
+      # (~60-90s on a clean run), which only invalidates when HA_VERSION
+      # or check_felddy_units.py change.
       - name: Run self-contained checks
         run: |
-          docker buildx build \
+          docker build \
             --build-arg BASE_IMAGE=ha-weewx-test \
-            --cache-from type=gha,scope=ha-weewx-checks \
-            --cache-to type=gha,mode=max,scope=ha-weewx-checks \
             -f Dockerfile.test .
 
   maria-mqtt:

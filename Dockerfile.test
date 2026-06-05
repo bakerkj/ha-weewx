@@ -2,8 +2,14 @@
 # Self-contained build-time checks for the ha-weewx addon image.
 #
 # Run with:
-#   docker buildx build --build-arg BASE_IMAGE=<addon-image-tag> \
-#       -f Dockerfile.test -t ha-weewx-test .
+#   docker buildx build -t ha-weewx --load . && \
+#       docker build --build-arg BASE_IMAGE=ha-weewx:latest -f Dockerfile.test .
+#
+# The addon image must already exist in the local docker daemon's image
+# store (built with `--load`). The test build uses `docker build` (the
+# default docker driver, NOT `docker buildx build` with the
+# docker-container driver) so that `FROM ${BASE_IMAGE}` resolves to the
+# locally-loaded tag instead of attempting a registry pull.
 #
 # No external services — validates the addon image was assembled correctly
 # (binary runs, venv + user extensions import, patches applied, stock
