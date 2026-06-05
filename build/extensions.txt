@@ -1,0 +1,26 @@
+# WeeWX extensions installed via `weectl extension install` at build time.
+# One URL per line; `#` lines and blank lines are ignored.
+# Pinned to specific commits or release tags so renovate can track them.
+# build/install_extensions.sh consumes this file.
+#
+# Realtime-gauge-data is NOT here: its install.py uses distutils + the
+# old WeeWX 3/4 ExtensionInstaller API, so weectl can't install it.
+# See build/install_rtgd.py for the manual unpack.
+
+https://github.com/matthewwall/weewx-emoncms/archive/7c04113.zip
+https://github.com/matthewwall/weewx-exfoliation/archive/9f77f4d.zip
+https://github.com/chaunceygardiner/weewx-forecast/archive/v4.1.zip
+https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip
+https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip
+https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip
+https://github.com/matthewwall/weewx-owm/archive/297dd97.zip
+https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip
+https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip
+https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip
+https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip
+https://github.com/matthewwall/weewx-wcloud/archive/83ee792.zip
+https://github.com/matthewwall/weewx-wetter/archive/50a7f68.zip
+https://github.com/matthewwall/weewx-windfinder/archive/07ccbc3.zip
+https://github.com/claudobahn/weewx-windguru/archive/c0a9b04.zip
+https://github.com/matthewwall/weewx-windy/archive/0.3.zip
+https://github.com/tkeffer/weewx-xaggs/archive/d361456.zip

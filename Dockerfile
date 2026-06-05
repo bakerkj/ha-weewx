@@ -81,36 +81,14 @@ RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_c
     python3 /build/seed_build_conf.py
 
 # ---------------------------------------------------------------------------
-# Install extensions (pinned versions).
-# Failures are warned but do NOT abort the build — a broken extension should
+# Install extensions listed in build/extensions.txt (pinned versions).
+# build/install_extensions.sh iterates the list; a failed install is
+# warned-about but does NOT abort the build — a broken extension should
 # not prevent the image from being usable.
 # ---------------------------------------------------------------------------
-RUN for url in \
-      "https://github.com/matthewwall/weewx-emoncms/archive/7c04113.zip" \
-      "https://github.com/matthewwall/weewx-exfoliation/archive/9f77f4d.zip" \
-      "https://github.com/chaunceygardiner/weewx-forecast/archive/v4.1.zip" \
-      "https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip" \
-      "https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip" \
-      "https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip" \
-      "https://github.com/matthewwall/weewx-owm/archive/297dd97.zip" \
-      "https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip" \
-      "https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip" \
-      "https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip" \
-      "https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip" \
-      "https://github.com/matthewwall/weewx-wcloud/archive/83ee792.zip" \
-      "https://github.com/matthewwall/weewx-wetter/archive/50a7f68.zip" \
-      "https://github.com/matthewwall/weewx-windfinder/archive/07ccbc3.zip" \
-      "https://github.com/claudobahn/weewx-windguru/archive/c0a9b04.zip" \
-      "https://github.com/matthewwall/weewx-windy/archive/0.3.zip" \
-      "https://github.com/tkeffer/weewx-xaggs/archive/d361456.zip" \
-    ; do \
-        echo ""; \
-        echo "=== Installing: $url ==="; \
-        weectl extension install "$url" \
-            --config /opt/weewx-data/weewx.conf \
-            --yes \
-        || echo "WARNING: weectl extension install failed for $(basename $url) — skipping"; \
-    done
+RUN --mount=type=bind,source=build/extensions.txt,target=/build/extensions.txt \
+    --mount=type=bind,source=build/install_extensions.sh,target=/build/install_extensions.sh \
+    bash /build/install_extensions.sh
 
 # ---------------------------------------------------------------------------
 # realtime-gauge-data: manual install — install.py uses distutils (removed
