@@ -39,16 +39,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
-      # uv cache stores the homeassistant wheel set + its dep tree;
-      # keyed on HA_VERSION so a bump cleanly invalidates. Re-mounted
-      # into the docker run below so the in-container `uv pip install`
-      # reuses them — no second buildx build needed.
-      - uses: actions/cache@v5.0.5
+      # uv on the host runner — the MQTT-publisher unit validation host
+      # script uses it to build a transient venv with homeassistant +
+      # weewx. setup-uv caches the wheels keyed on HA_VERSION so a bump
+      # cleanly invalidates.
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
-          path: ~/.cache/uv
-          key: uv-ha-${{ env.HA_VERSION }}-${{ runner.os }}
-          restore-keys: |
-            uv-ha-${{ env.HA_VERSION }}-
+          enable-cache: true
+          cache-suffix: ha-${{ env.HA_VERSION }}
       # Build the addon image with the shared gha layer cache and load
       # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
       # jobs so unchanged builds skip the apt/uv/extension layers).
@@ -70,21 +68,23 @@ jobs:
             type=gha,scope=ha-weewx-test
           cache-to: |
             type=gha,mode=max,scope=ha-weewx-test
-      # Run the self-checks + MQTT publisher (by felddy) -> HA unit
-      # validation against the built image. `docker run` (not `docker
-      # buildx build`) so the default docker driver sees the locally-
-      # loaded tag; the uv cache is bind-mounted so the HA wheel install
-      # is fast on warm cache. `--entrypoint /bin/bash` bypasses the s6
-      # init that would otherwise boot weewxd/nginx instead of our script.
-      - name: Run self-contained checks
+      # In-image asserts (binary version, dep imports, patch hunks,
+      # bundled extensions, stock skins, s6 wiring). `docker run` (not
+      # `docker buildx build`) so the default docker driver sees the
+      # locally-loaded tag; --entrypoint /bin/bash bypasses the s6 init
+      # that would otherwise boot weewxd/nginx instead of the script.
+      - name: Run in-image self-checks
         run: |
-          mkdir -p ~/.cache/uv
           docker run --rm --entrypoint /bin/bash \
             -v "${PWD}:/work" \
-            -v "${HOME}/.cache/uv:/root/.cache/uv" \
-            -e HA_VERSION \
             ha-weewx-test \
             /work/build/check_image.sh
+      # MQTT publisher (by felddy) -> HA unit validation against a
+      # transient host venv with homeassistant + weewx. Extracts the
+      # patched weewx_ha and bundled user/ from the built image with
+      # `docker cp`; no apt/pip mutation of the addon image itself.
+      - name: Run MQTT publisher (by felddy) unit validation (host)
+        run: ./build/check_mqtt_publisher_ha_units_host.sh
 
   mariadb:
     name: "e2e: mariadb"
