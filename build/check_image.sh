@@ -1,21 +1,10 @@
 #!/usr/bin/env bash
 # In-image self-checks for the ha-weewx addon image.
 #
-# Runs inside the built image via `docker run`. Expects the repo root to
-# be bind-mounted at /work (not used by these asserts, but kept stable
-# for the orchestrating CI workflow).
-#
-# Cheap asserts only: binary version, dep imports, patch hunks present,
-# bundled extensions installed, stock skins present, weewx-mqtt removed,
-# s6 services + watchdog wired. Each is named via the `check` helper; all
-# run, failures summarized at the end (one bad assert no longer hides
-# the others).
-#
-# The heavier felddy unit/device_class sweep that used to live here as
-# Phase 2 has moved to build/check_felddy_units_host.sh — it runs on the
-# CI host against an extracted weewx_ha + user/, not inside this image,
-# so the addon image stays unmutated and we don't pay an in-image apt+pip
-# install on every run.
+# Runs inside the built image via `docker run`. Asserts binary version,
+# dep imports, patch hunks, bundled extensions, stock skins, weewx-mqtt
+# absence, and s6/watchdog wiring. Each assert is named via the `check`
+# helper; all run, failures summarized at the end.
 
 set -uo pipefail
 

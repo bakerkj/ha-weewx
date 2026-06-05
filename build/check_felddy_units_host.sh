@@ -1,23 +1,14 @@
 #!/usr/bin/env bash
 # Host-side felddy unit/device_class sweep.
 #
-# Replaces what used to be Phase 2 of build/check_image.sh — that
-# version ran inside the built addon image, installed gcc + python3-dev
-# via apt, downloaded uv via curl|sh, and pip-installed homeassistant
-# into the image's venv, all just to import DEVICE_CLASS_UNITS once.
-# The image mutation was unhygienic and the apt run added 10-20 s to
-# every build-checks run on a cache miss.
-#
-# Instead: extract the patched weewx_ha and user/ trees from the built
-# addon image with `docker cp`, drop them into a host venv that already
-# has uv (set up by setup-uv in the workflow), pip-install homeassistant
-# + weewx into that venv, and run build/check_felddy_units.py with the
-# host venv's Python. The addon image stays unmutated and the heavy
-# pip install benefits directly from the host's uv cache.
+# Builds a transient venv on the CI host with homeassistant + weewx +
+# felddy's runtime deps, overlays the patched weewx_ha extracted from
+# the addon image via `docker cp`, then runs build/check_felddy_units.py
+# against the venv's Python.
 #
 # Inputs:
-#   IMAGE       — tag of the built addon image (default: ha-weewx-test)
-#   HA_VERSION  — homeassistant pin (default: 2026.1.3)
+#   IMAGE         — addon image tag (default: ha-weewx-test)
+#   HA_VERSION    — homeassistant pin (default: 2026.1.3)
 #   WEEWX_VERSION — weewx pin (default: 5.3.1, matches pyproject.toml)
 # Expects `uv` already on PATH and a working `docker` daemon.
 
