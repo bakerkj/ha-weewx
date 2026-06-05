@@ -224,12 +224,13 @@ Start from the defaults below and adjust the windows you need:
 > `\.png$` fallback, or the fallback shadows them and every chart gets the same
 > window.
 
-> **Denylist.** A small set of directives that would break the ingress contract
-> or replace response shaping are rejected at startup (the add-on logs a warning
-> and falls back to the generated defaults): `proxy_pass`, `*_pass`, `return`,
-> `rewrite`, `auth_basic`/`auth_request`, `deny`/`allow`, `root`/`alias`,
-> `include`, and `add_header` for `X-Frame-Options` / `Content-Security-Policy`
-> / `Strict-Transport-Security`. The override is for cache-tier tuning only.
+> **Advisory denylist.** A small set of directives that typically don't belong
+> in cache-tier tuning trigger a startup `WARNING` in the add-on log but the
+> override is loaded anyway: `proxy_pass`, `*_pass`, `return`, `rewrite`,
+> `auth_basic`/`auth_request`, `deny`/`allow`, `root`/`alias`, `include`, and
+> `add_header` for `X-Frame-Options` / `Content-Security-Policy` /
+> `Strict-Transport-Security`. If you put one of these in deliberately, just
+> ignore the warning.
 
 ```nginx
 location ^~ /icons/ {

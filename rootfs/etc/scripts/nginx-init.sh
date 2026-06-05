@@ -90,10 +90,10 @@ EOF
 # The override is `include`d at server-scope, where nginx-syntax-valid directives
 # like `proxy_pass`, `auth_basic`, `return 301`, or response-shaping `add_header`
 # would silently break the HA ingress contract — `nginx -t` won't catch any of
-# those. Pre-screen the override against a denylist of directives that have no
-# legitimate use in a per-tier asset/PNG cache snippet; reject (and fall back to
-# defaults) if any are present, so a copy-pasted recipe from the wild can't
-# quietly take over response shaping.
+# those. Pre-screen the override against an *advisory* denylist of directives
+# that typically don't belong in a per-tier asset/PNG cache snippet; emit a
+# WARNING if any are present, but load the override anyway — the user can do
+# what the user wants to do.
 override=/config/nginx-cache.conf
 forbidden_re='(^|[[:space:]{;])(proxy_pass|fastcgi_pass|uwsgi_pass|scgi_pass|grpc_pass|return|rewrite|auth_basic|auth_basic_user_file|auth_request|deny|allow|root|alias|js_header_filter|js_body_filter|js_content|include|add_header[[:space:]]+X-Frame-Options|add_header[[:space:]]+Content-Security-Policy|add_header[[:space:]]+Strict-Transport-Security)([[:space:]{;]|$)'
 if [[ -f "$override" ]]; then
@@ -101,17 +101,15 @@ if [[ -f "$override" ]]; then
   # only, not a commented-out example.
   scrub="$(sed 's/#.*$//' "$override")"
   if grep -Eq "$forbidden_re" <<<"$scrub"; then
-    echo "WARNING: ${override} contains a directive on the cache-override denylist" >&2
+    echo "WARNING: ${override} contains a directive on the cache-override advisory denylist" >&2
     echo "         (proxy_pass/return/rewrite/auth_basic/root/alias/include/X-Frame-Options/CSP/HSTS/...);" >&2
-    echo "         reverting to generated defaults. See README 'Tuning report caching'." >&2
+    echo "         loading anyway. See README 'Tuning report caching' if this was unintentional." >&2
+  fi
+  sed "s/__ARCHIVE__/${archive_interval}/g" "$override" >/tmp/nginx-cache.conf
+  echo "Cache tiers: using override ${override} (archive_interval=${archive_interval}s)"
+  if ! nginx -t; then
+    echo "WARNING: ${override} failed validation; reverting to generated defaults." >&2
     gen_default_cache
-  else
-    sed "s/__ARCHIVE__/${archive_interval}/g" "$override" >/tmp/nginx-cache.conf
-    echo "Cache tiers: using override ${override} (archive_interval=${archive_interval}s)"
-    if ! nginx -t; then
-      echo "WARNING: ${override} failed validation; reverting to generated defaults." >&2
-      gen_default_cache
-    fi
   fi
 else
   gen_default_cache
