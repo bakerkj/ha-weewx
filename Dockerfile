@@ -81,9 +81,10 @@ RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_c
 
 # ---------------------------------------------------------------------------
 # Install extensions listed in build/extensions.txt (pinned versions).
-# build/install_extensions.sh iterates the list; a failed install is
-# warned-about but does NOT abort the build — a broken extension should
-# not prevent the image from being usable.
+# build/install_extensions.sh iterates the list under `set -euo pipefail`,
+# so the first `weectl extension install` that fails aborts the build —
+# silent skips would let a broken or missing extension ship in the image
+# (the in-image self-checks only assert presence of a subset).
 # ---------------------------------------------------------------------------
 RUN --mount=type=bind,source=build/extensions.txt,target=/build/extensions.txt \
     --mount=type=bind,source=build/install_extensions.sh,target=/build/install_extensions.sh \

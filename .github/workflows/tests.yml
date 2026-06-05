@@ -47,6 +47,14 @@ jobs:
         with:
           enable-cache: true
           cache-suffix: ha-${{ env.HA_VERSION }}
+      # Guard rail for build/extensions.txt: every URL must be preceded
+      # by at least one `# install: <path>` annotation in its paragraph.
+      # check_image.sh derives its per-extension presence assertions from
+      # those annotations, so an un-annotated URL silently ships without
+      # any in-image verification. Runs on the host before docker build
+      # so a bad commit fails immediately, not after the image cooks.
+      - name: Verify extensions.txt URLs are annotated
+        run: python3 build/check_extensions_annotated.py
       # Build the addon image with the shared gha layer cache and load
       # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
       # jobs so unchanged builds skip the apt/uv/extension layers).
