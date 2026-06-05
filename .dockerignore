@@ -1,0 +1,62 @@
+# Trim what's sent to the Docker daemon as build context. The Dockerfile
+# COPYs nginx.conf, extensions/, rootfs/ and bind-mounts pyproject.toml,
+# uv.lock, .python-version, build/, patches/ — everything else here is
+# context bloat that hurts cache hits (any change in these files appears
+# as a new context, defeating buildx layer caching).
+
+# VCS
+.git/
+.github/
+
+# Local dev caches and venvs
+.claude/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+node_modules/
+*.pyc
+
+# Test runs (not used at image build time)
+test-results/
+e2e-tests/
+test/
+tests/
+
+# Repo tooling not used inside the build
+scripts/
+.commitlintrc.json
+.copyright-header.txt
+.dockerignore
+.pre-commit-config.yaml
+.prettierignore
+.prettierrc.json
+.release-please-manifest.json
+release-please-config.json
+renovate.json
+
+# Top-level docs — not COPYed into the image
+README.md
+CHANGELOG.md
+LICENSE
+
+# HA Supervisor metadata — read by Supervisor / addon-build action,
+# never by the Dockerfile itself
+build.yaml
+config.json
+repository.json
+icon.png
+logo.png
+
+# docker-compose files — only used by the e2e harness
+docker-compose.*.yml
+
+# Personal/local snapshots and user customizations (mirrors .gitignore).
+# These are reference material kept in the worktree, never shipped.
+kaylee-weewx/
+microburst-weewx/
+radar-*.html
+*.target
+skins/
+/t.txt
