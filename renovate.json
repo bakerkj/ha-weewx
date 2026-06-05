@@ -47,11 +47,12 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt and the Dockerfile, and felddy's weewx_ha in pyproject.toml.",
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, felddy's weewx_ha in pyproject.toml, the xstats ADD in the Dockerfile, and the rtgd URL in build/install_rtgd.py.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/pyproject\\.toml$/",
-        "/build/extensions\\.txt$/"
+        "/build/extensions\\.txt$/",
+        "/build/install_rtgd\\.py$/"
       ],
       "matchStrings": [
         "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
@@ -134,12 +135,6 @@
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["github-tags", "git-refs"],
       "groupName": "weewx extensions"
-    },
-    {
-      "description": "Tracked manually via scripts/check-updates.sh — build/install_rtgd.py is a hand-rolled unpack (the upstream install.py uses distutils + the old ExtensionInstaller API). A bump here is a deliberate decision, not an auto-apply.",
-      "matchDatasources": ["github-tags"],
-      "matchPackageNames": ["hoetzgit/weewx-realtime_gauge-data"],
-      "enabled": false
     },
     {
       "description": "Pin Python to the 3.13 series — it must match python3 in the Debian trixie base image. Bumping to 3.14 makes uv build a standalone 3.14 venv that mismatches the base's apt python3 (broke the build). Lift this when the base moves to a Debian release with 3.14.",
