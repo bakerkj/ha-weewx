@@ -21,9 +21,20 @@ package = false
 
 [dependency-groups]
 dev = [
+    "mypy>=2.1.0",
     "pytest>=9.0.3",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.mypy]
+files = ["extensions", "tests"]
+python_version = "3.13"
+# weewx + weeutil ship without py.typed; we don't want to depend on
+# third-party stubs that aren't maintained. Silence the import noise
+# without weakening checks on our own code.
+[[tool.mypy.overrides]]
+module = ["weewx.*", "weeutil.*", "configobj"]
+ignore_missing_imports = true
