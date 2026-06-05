@@ -26,4 +26,6 @@ jobs:
           extra-args: --all-files
         env:
           # no-commit-to-branch is a local guard; CI runs on main/PR branches.
-          SKIP: no-commit-to-branch
+          # mypy is skipped here (the dedicated mypy.yaml workflow runs it
+          # with the project's uv-managed venv; prek has no uv on PATH).
+          SKIP: no-commit-to-branch,mypy
