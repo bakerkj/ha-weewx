@@ -200,6 +200,52 @@ def test_skip_upload_writes_nothing(thread_factory, archive_us, tmp_path):
 
 
 # --------------------------------------------------------------------------
+# file handle: held open across records (single open per thread lifetime)
+# --------------------------------------------------------------------------
+
+
+def test_file_handle_opened_once_for_multiple_records(
+    thread_factory, archive_us, tmp_path, monkeypatch
+):
+    """Three records => one open() call. Locks in the held-fh contract so a
+    future refactor doesn't quietly regress to open/close per record."""
+    path = str(tmp_path / "log.txt")
+    t = thread_factory(path=path)
+
+    open_calls: list[str] = []
+    real_open = open
+
+    def counting_open(p, *args, **kwargs):
+        if p == path:
+            open_calls.append(p)
+        return real_open(p, *args, **kwargs)
+
+    monkeypatch.setattr("log_to_file.open", counting_open, raising=False)
+    import builtins
+
+    monkeypatch.setattr(builtins, "open", counting_open)
+
+    t.process_record(_us_record(ts=1_700_000_000, outTemp=70.0), archive_us)
+    t.process_record(_us_record(ts=1_700_000_100, outTemp=71.0), archive_us)
+    t.process_record(_us_record(ts=1_700_000_200, outTemp=72.0), archive_us)
+
+    assert len(open_calls) == 1, open_calls
+    assert len(_read_lines(path)) == 3
+
+
+def test_writes_visible_to_external_reader_before_thread_exits(
+    thread_factory, archive_us, tmp_path
+):
+    """Line-buffered writes must be visible to a separate read() while the
+    thread still holds the fh open."""
+    path = str(tmp_path / "log.txt")
+    t = thread_factory(path=path)
+    t.process_record(_us_record(ts=1_700_000_000, outTemp=70.0), archive_us)
+    # Thread is still alive; fh still open. Reader should see the line.
+    assert len(_read_lines(path)) == 1
+
+
+# --------------------------------------------------------------------------
 # error handling: per-record failure is logged, doesn't propagate
 # --------------------------------------------------------------------------
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 import queue
 from dataclasses import dataclass
-from typing import Any
+from typing import IO, Any
 
 import weeutil.weeutil
 import weewx
@@ -153,6 +153,11 @@ class LogToFileThread(weewx.restx.RESTThread):
         # Single-line dedup cache.
         self._last_tokens: list[str] | None = None
         self._last_ts: float | None = None
+        # Held open for the thread's lifetime to avoid open/close on every
+        # record (a loop binding fires every ~2.5s on a Vantage). Opened
+        # lazily on first write; line-buffered so each write hits the OS
+        # immediately. The kernel reclaims the fd on process exit.
+        self._fh: IO[str] | None = None
 
     # ----------------------------------------------------------------------
     # weewx entry point
@@ -218,8 +223,9 @@ class LogToFileThread(weewx.restx.RESTThread):
         self._last_ts = ts
         self._last_tokens = tokens
         line = ",".join([weeutil.weeutil.timestamp_to_string(ts), *tokens])
-        with open(self.path, "a") as out:
-            out.write(line + "\n")
+        if self._fh is None:
+            self._fh = open(self.path, "a", buffering=1)
+        self._fh.write(line + "\n")
 
 
 def _format_one(record: dict, key: str) -> str | None:
