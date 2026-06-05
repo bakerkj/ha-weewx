@@ -61,6 +61,12 @@ check "patch: felddy uv_index round(1)" python3 -c "from weewx_ha.utils import U
 # bundled extensions installed + their patches
 check "ext: rain24h module present" test -f "$WEEWX_BIN/user/rain24h.py"
 check "ext: xaggs module present" test -f "$WEEWX_BIN/user/xaggs.py"
+
+# rtgd is installed by build/install_rtgd.py (not weectl — its install.py
+# uses distutils). Assert both pieces survived.
+check "ext: rtgd module present" test -f "$WEEWX_BIN/user/rtgd.py"
+check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeGauges
+
 check "patch: previmeteo get_site_dict" has 'weewx.restx.get_site_dict' "$WEEWX_BIN/user/previmeteo.py"
 check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/user/emoncms.py"
 check "patch: rtgd obs-in-self guard" has 'if obs in self:' "$WEEWX_BIN/user/rtgd.py"

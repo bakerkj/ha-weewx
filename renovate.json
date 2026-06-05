@@ -136,7 +136,7 @@
       "groupName": "weewx extensions"
     },
     {
-      "description": "rtgd's version is also baked into a hardcoded unzip PREFIX in the Dockerfile, so an automated URL bump would silently break the build. Track it manually via scripts/check-updates.sh.",
+      "description": "Tracked manually via scripts/check-updates.sh — build/install_rtgd.py is a hand-rolled unpack (the upstream install.py uses distutils + the old ExtensionInstaller API). A bump here is a deliberate decision, not an auto-apply.",
       "matchDatasources": ["github-tags"],
       "matchPackageNames": ["hoetzgit/weewx-realtime_gauge-data"],
       "enabled": false
