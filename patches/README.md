@@ -1,39 +1,55 @@
 # patches/
 
-Standard mechanism for applying small fixes to bundled WeeWX extensions that
-don't quite work as-is in our Python 3 / WeeWX 5 / addon environment.
+Standard mechanism for applying small fixes to the WeeWX environment that don't
+quite work as-is in our Python 3 / WeeWX 5 / addon image. Three parallel
+subdirectories, one per _target tree_:
 
-## Convention
+- `extensions/` — bundled user extensions installed under
+  `/opt/weewx-data/bin/user/` (the things `weectl extension install` drops in,
+  driven by `build/extensions.txt`).
+- `weewx/` — WeeWX core libraries (`weedb`, `weewx`, …), pip-installed into the
+  `/opt/weewx` venv's site-packages.
+- `venv/` — felddy's `weewx_ha` pip package, also in the venv, separated so the
+  patch paths can be relative to the package dir.
+
+All three apply with `patch -p1` and share the same conventions for naming and
+file contents.
+
+## Convention (all subdirs)
 
 - One file per fix, named `NNNN-short-description.patch`. Numbers are applied in
-  lexical order (use `0001`, `0002`, …, `9999`).
-- Each patch is a unified diff (`diff -u`) with paths **relative to
-  `/opt/weewx-data/`** — so a patch to a bundled extension in
-  `/opt/weewx-data/bin/user/foo.py` references it as `bin/user/foo.py`.
+  lexical order (use `0001`, `0002`, …, `9999`) within each subdir.
+- Each patch is a unified diff (`diff -u`) whose paths are **relative to the
+  application root** for that subdir (see per-subdir notes below).
 - The first line of the patch (after the diff header) should be a `# ` comment
   summarising why the patch exists and what upstream version it applies against.
-  Doesn't have to be syntactic — the patch tool ignores leading lines that don't
+  Doesn't have to be syntactic — `patch(1)` ignores leading lines that don't
   match the diff format.
-- Patches are applied with `patch -p1` from `/opt/weewx-data/`.
+
+## `extensions/` — bundled user extensions in `/opt/weewx-data`
+
+- Paths are **relative to `/opt/weewx-data/`** — so a patch to
+  `/opt/weewx-data/bin/user/foo.py` references it as `bin/user/foo.py`.
+- The Dockerfile applies each `patches/extensions/*.patch` with `patch -p1` from
+  `/opt/weewx-data/`, after all extensions have been installed.
 
 ## `weewx/` — patches for WeeWX core (`weedb`, `weewx`, …)
 
 WeeWX core itself is installed as a pip distribution in the `/opt/weewx` venv's
-`site-packages` and isn't reached by the `/opt/weewx-data` loop. The Dockerfile
+`site-packages` and isn't reached by the `extensions/` loop. The Dockerfile
 resolves the site-packages directory at build time from `weedb`
 (`python3 -c 'import os, weedb; print(os.path.dirname(os.path.dirname(weedb.__file__)))'`)
 so the patch is not tied to a Python version, then applies each
 `patches/weewx/*.patch` there with `patch -p1`. Paths are **relative to that
 site-packages directory** (a patch to `weedb/mysql.py` references it as
-`weedb/mysql.py`). Same `NNNN-short-description.patch` naming and leading `# `
-rationale comment.
+`weedb/mysql.py`).
 
 ## `venv/` — patches for pip-installed packages
 
 Some bundled pieces are installed as **pip packages in the venv at
 `/opt/weewx`**, not under `/opt/weewx-data` — notably `weewx_ha`
-(felddy/weewx-home-assistant). Those can't be reached by the `/opt/weewx-data`
-loop, so their patches live in `patches/venv/`:
+(felddy/weewx-home-assistant). Those can't be reached by the `extensions/` loop,
+so their patches live in `patches/venv/`:
 
 - Paths are **relative to the package directory** (a fix to
   `weewx_ha/config_publisher.py` references it as `config_publisher.py`).
@@ -41,19 +57,18 @@ loop, so their patches live in `patches/venv/`:
   (`python3 -c 'import os, weewx_ha; print(os.path.dirname(weewx_ha.__file__))'`),
   so the path is not tied to a Python version, then applies each
   `patches/venv/*.patch` there with `patch -p1`.
-- Same `NNNN-short-description.patch` naming and leading `# ` rationale comment.
 
 ## Lifecycle
 
-The Dockerfile copies `patches/` into the build context and runs `patch` over
-each `.patch` file in lexical order, **after** all extensions have been
-installed. A failing `patch` aborts the build (no silent skips).
+The Dockerfile bind-mounts `patches/` into the build and runs `patch` over each
+`.patch` file in lexical order within each subdir, **after** all extensions have
+been installed. A failing `patch` aborts the build (no silent skips).
 
-## Generating a new patch
+## Generating a new patch (extensions example)
 
 1. `docker run --rm ha-weewx:test bash -c 'cat /opt/weewx-data/bin/user/foo.py' > /tmp/foo.orig.py`
 2. Hand-edit `/tmp/foo.new.py`.
-3. `diff -u /tmp/foo.orig.py /tmp/foo.new.py > patches/00NN-foo-fix-x.patch`
+3. `diff -u /tmp/foo.orig.py /tmp/foo.new.py > patches/extensions/00NN-foo-fix-x.patch`
 4. Rewrite the `--- a/bin/user/foo.py` and `+++ b/bin/user/foo.py` headers so
    the path is relative to `/opt/weewx-data/`.
 5. Add a leading comment line explaining the rationale.

@@ -109,18 +109,21 @@ ADD https://raw.githubusercontent.com/weewx/weewx/v5.3.1/src/weewx_data/examples
 # ---------------------------------------------------------------------------
 # Apply patches. Each .patch is a unified diff applied with `patch -p1` in
 # lexical order; a single failure aborts the build. See patches/README.md.
-#   patches/*.patch       -> /opt/weewx-data (extensions installed there via
-#                            weectl); paths relative to /opt/weewx-data/.
-#   patches/weewx/*.patch -> weewx core in the /opt/weewx venv's site-packages
-#                            (weedb, weewx, ...); paths relative to that dir.
-#   patches/venv/*.patch  -> the weewx_ha pip package in the venv (felddy is
-#                            pip-installed, not under /opt/weewx-data); paths
-#                            relative to the weewx_ha package directory.
+#   patches/extensions/*.patch -> /opt/weewx-data (bundled extensions installed
+#                                 there via weectl); paths relative to
+#                                 /opt/weewx-data/.
+#   patches/weewx/*.patch      -> weewx core in the /opt/weewx venv's
+#                                 site-packages (weedb, weewx, ...); paths
+#                                 relative to that dir.
+#   patches/venv/*.patch       -> the weewx_ha pip package in the venv (felddy
+#                                 is pip-installed, not under /opt/weewx-data);
+#                                 paths relative to the weewx_ha package dir.
 # ---------------------------------------------------------------------------
 RUN --mount=type=bind,source=patches,target=/build/patches \
     set -eu && \
-    for p in /build/patches/*.patch; do \
-        echo "Applying (data) $(basename "$p")"; \
+    for p in /build/patches/extensions/*.patch; do \
+        [ -e "$p" ] || continue; \
+        echo "Applying (extensions) $(basename "$p")"; \
         patch --batch -d /opt/weewx-data -p1 < "$p"; \
     done && \
     WEEWX_LIB_DIR="$(python3 -c 'import os, weedb; print(os.path.dirname(os.path.dirname(weedb.__file__)))')" && \
