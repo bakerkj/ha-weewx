@@ -184,6 +184,11 @@ The `__ARCHIVE__` token expands to `[StdArchive] archive_interval` at startup
 (the same way the defaults are filled in), so a window can track your archive
 interval instead of hardcoding it.
 
+> **Restart required after editing `archive_interval`.** The value is read once
+> at addon start and substituted into the generated nginx config and into the
+> `/NOAA/` filter variable. Changing `archive_interval` in `weewx.conf` only
+> takes effect after restarting the addon.
+
 Start from the defaults below and adjust the windows you need:
 
 ```nginx
