@@ -174,7 +174,7 @@ regenerates it, then revalidated. The default tiers:
 
 | Path                                      | Window                                 |
 | ----------------------------------------- | -------------------------------------- |
-| `gauge-data.txt`                          | `max-age=1` (rewritten every loop)     |
+| `gauge-data.txt` (only with rtgd enabled) | `max-age=1` (rewritten every loop)     |
 | HTML pages + the directory index          | `archive_interval` (from `weewx.conf`) |
 | `day*.png` and any other `*.png`          | `archive_interval`                     |
 | `week*.png`, `month*.png`                 | 1 hour                                 |
