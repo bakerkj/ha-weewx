@@ -162,10 +162,3 @@ COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
 # default /init (s6 supervisor), so we don't override it here.
 # ---------------------------------------------------------------------------
 COPY rootfs/ /
-
-# Build-time self-checks live in Dockerfile.test — kept out of this file
-# so the HA builder / `docker build` produce the add-on image with no
-# test concerns. Run with:
-#   docker buildx build -t ha-weewx . && \
-#       docker buildx build --build-arg BASE_IMAGE=ha-weewx \
-#           -f Dockerfile.test .
