@@ -123,6 +123,15 @@
       "depNameTemplate": "ghcr.io/astral-sh/uv",
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "uv tool required-version pin in pyproject.toml [tool.uv] (companion to the Dockerfile bind-mount pin above — keeps setup-uv on the same uv major.minor in CI).",
+      "managerFilePatterns": ["/(^|/)pyproject\\.toml$/"],
+      "matchStrings": ["required-version\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440"
     }
   ],
   "packageRules": [
@@ -137,6 +146,11 @@
     {
       "matchManagers": ["uv"],
       "groupName": "python dependencies"
+    },
+    {
+      "description": "Group both uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version) so a uv bump lands in one PR.",
+      "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
+      "groupName": "uv tool"
     },
     {
       "matchManagers": ["custom.regex"],
