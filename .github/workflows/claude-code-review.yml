@@ -16,12 +16,16 @@ permissions:
 jobs:
   claude-review:
     name: Auto code-review
-    # Skip Renovate/Dependabot PRs — they're already gated by CI + the
-    # SHA-pinning review flow, and an LLM pass on every weekly bump is
-    # just noise (and credit burn).
+    # Skip auto-generated PRs:
+    #   * Renovate / Dependabot — already gated by CI + the SHA-pin review
+    #     flow; an LLM pass on every weekly bump is noise + credit burn.
+    #   * release-please — its PRs are authored by the user (PAT-driven, so
+    #     user.login isn't a bot), but the head branch is always prefixed
+    #     `release-please--`, which is the reliable signal.
     if: |
       github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      !startsWith(github.head_ref, 'release-please--')
     # Optional: also filter by PR author / association.
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
@@ -50,3 +54,18 @@ jobs:
             github.event.pull_request.number }}"
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options.
+      # The action's SDK call writes a JSONL transcript (per-turn tool_use,
+      # tool_result, permission events) to runner.temp/claude-execution-output.json.
+      # The action redacts those events from the public CI log "for security";
+      # uploading the raw record as an artifact keeps it visible only to
+      # collaborators — needed for diagnosing permission denials and turn-count
+      # blowups. `if: always()` so we capture failures too.
+      - name: Upload Claude execution log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name:
+            claude-execution-output-pr${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/claude-execution-output.json
+          if-no-files-found: ignore
+          retention-days: 14
