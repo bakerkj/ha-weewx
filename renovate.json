@@ -62,10 +62,23 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned files fetched via raw.githubusercontent.com — the xstats ADD in the Dockerfile (single source file pulled from a tag rather than a /archive/<tag>.zip). Tracked against github-tags so a new weewx release bumps the pin.",
-      "managerFilePatterns": ["/Dockerfile$/"],
+      "description": "Tag-pinned files fetched via raw.githubusercontent.com — the xstats ADD in the Dockerfile (single source file pulled from a tag rather than a /archive/<tag>.zip), and the addon-linter schema URLs in .pre-commit-config.yaml's check-jsonschema hook. Tracked against github-tags so a new upstream release bumps the pin.",
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/\\.pre-commit-config\\.yaml$/"
+      ],
       "matchStrings": [
         "raw\\.githubusercontent\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)/"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "home-assistant/builder sub-action pin in addon-build.yml. Renovate's built-in github-actions manager picks up `uses: owner/repo@vX.Y` but doesn't reliably track the `owner/repo/path/to/action@CalVer` form against github-tags, so handle it explicitly.",
+      "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "uses:\\s*(?<depName>home-assistant/builder)/actions/[\\w-]+@(?<currentValue>[\\d.]+)"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose"
