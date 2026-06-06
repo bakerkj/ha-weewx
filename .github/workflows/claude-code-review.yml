@@ -3,6 +3,12 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+    # Optional: only run on specific file changes.
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 permissions:
   contents: read
@@ -13,6 +19,12 @@ jobs:
     # Skip Renovate/Dependabot PRs — they're already gated by CI + the
     # SHA-pinning review flow, and an LLM pass on every weekly bump is just
     # noise (and credit burn).
+    #
+    # Optional: also filter by PR author / association.
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
     if: |
       github.event.pull_request.user.login != 'renovate[bot]' &&
       github.event.pull_request.user.login != 'dependabot[bot]'
@@ -28,6 +40,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Run Claude Code Review
+        id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -36,3 +49,5 @@ jobs:
           prompt:
             "/code-review:code-review ${{ github.repository }}/pull/${{
             github.event.pull_request.number }}"
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://code.claude.com/docs/en/cli-reference for available options.
