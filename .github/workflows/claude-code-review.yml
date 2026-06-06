@@ -1,5 +1,12 @@
 name: Claude Code Review
 
+# Replaces the `code-review@claude-code-plugins` plugin path (which had
+# multiple open upstream bugs: anthropics/claude-code-action#1383, #1308,
+# #1087, #825, etc. — malformed `gh pr view` args + missing `--comment`
+# meant ~$0.70 per PR for zero output). This version follows the action's
+# own pr-review-comprehensive.yml example: hand-rolled prompt + the
+# action's built-in github_inline_comment MCP server.
+
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
@@ -35,7 +42,9 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      pull-requests: read
+      # write needed so the action can post review comments and update the
+      # progress-tracking comment that track_progress creates.
+      pull-requests: write
       issues: read
       id-token: write
     steps:
@@ -47,13 +56,56 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
-          plugins: "code-review@claude-code-plugins"
-          prompt:
-            "/code-review:code-review ${{ github.repository }}/pull/${{
-            github.event.pull_request.number }}"
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options.
+
+          # Flips mode from `agent` to `tag`, which auto-loads the
+          # github_comment MCP server and creates a tracking comment with
+          # progress checkboxes so a failure still leaves a visible trail.
+          track_progress: true
+
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            This is a Home Assistant add-on packaging WeeWX 5.x + a set of
+            patched WeeWX extensions, served behind nginx. Patches live in
+            `patches/` and target either the venv-installed `weewx_ha`
+            module or third-party extensions; the build verifies them in
+            `build/check_image.sh`.
+
+            Review this PR for *real* issues. Prioritize, in order:
+
+            1. Bugs — logic errors, race conditions, off-by-ones, broken
+               edge cases. If you find one, leave an inline comment at the
+               specific line.
+            2. CI / build correctness — shell pipefail, missing quotes,
+               cache key mistakes, version pins that drift from their
+               manager, healthchecks that go green on the wrong signal.
+            3. Patch hygiene — patches that don't match their stated
+               baseline, depend on undocumented upstream state, or would
+               silently no-op against an upstream bump.
+            4. Security — only at trust boundaries (HTTP handlers, MQTT
+               input, shell-escaped user data). Don't flag internal code
+               that's already guarded.
+
+            Hard rules:
+
+            - Do NOT comment on style, naming, formatting, or "consider
+              adding a docstring" — the repo runs ruff + prettier + shfmt
+              in pre-commit and intentionally avoids redundant comments.
+            - Do NOT leave general praise or summary fluff.
+            - If you have nothing substantive to flag, post a single
+              short top-level comment saying "No issues found." That's
+              the success signal — silence isn't.
+            - When you do flag something, the comment body MUST include
+              the file path, the concrete failure mode, and the fix.
+
+          # mcp__github_inline_comment__create_inline_comment is the
+          # action's built-in inline-comment tool (loads only when named
+          # here). Bash gh allowlist is the fallback path the official
+          # pr-review-comprehensive.yml example uses for top-level
+          # comments and diff-fetching.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
       # The action's SDK call writes a JSONL transcript (per-turn tool_use,
       # tool_result, permission events) to runner.temp/claude-execution-output.json.
       # The action redacts those events from the public CI log "for security";
