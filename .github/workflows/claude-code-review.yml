@@ -16,13 +16,12 @@ permissions:
 jobs:
   claude-review:
     name: Auto code-review
-    # Optional: skip Renovate/Dependabot PRs once they're noisy. Left off
-    # initially so we get a Claude pass on every bump while we evaluate
-    # the signal.
-    # if: |
-    #   github.event.pull_request.user.login != 'renovate[bot]' &&
-    #   github.event.pull_request.user.login != 'dependabot[bot]'
-    #
+    # Skip Renovate/Dependabot PRs — they're already gated by CI + the
+    # SHA-pinning review flow, and an LLM pass on every weekly bump is
+    # just noise (and credit burn).
+    if: |
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     # Optional: also filter by PR author / association.
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
