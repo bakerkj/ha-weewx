@@ -1,12 +1,5 @@
 name: Claude Code Review
 
-# Replaces the `code-review@claude-code-plugins` plugin path (which had
-# multiple open upstream bugs: anthropics/claude-code-action#1383, #1308,
-# #1087, #825, etc. — malformed `gh pr view` args + missing `--comment`
-# meant ~$0.70 per PR for zero output). This version follows the action's
-# own pr-review-comprehensive.yml example: hand-rolled prompt + the
-# action's built-in github_inline_comment MCP server.
-
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
@@ -72,20 +65,14 @@ jobs:
             module or third-party extensions; the build verifies them in
             `build/check_image.sh`.
 
-            Review this PR for *real* issues. Prioritize, in order:
+            Review this PR. Prioritize, in order:
 
-            1. Bugs — logic errors, race conditions, off-by-ones, broken
-               edge cases. If you find one, leave an inline comment at the
-               specific line.
-            2. CI / build correctness — shell pipefail, missing quotes,
-               cache key mistakes, version pins that drift from their
-               manager, healthchecks that go green on the wrong signal.
-            3. Patch hygiene — patches that don't match their stated
-               baseline, depend on undocumented upstream state, or would
-               silently no-op against an upstream bump.
-            4. Security — only at trust boundaries (HTTP handlers, MQTT
-               input, shell-escaped user data). Don't flag internal code
-               that's already guarded.
+            1. Bugs — logic errors, race conditions, off-by-ones,
+               broken edge cases. If you find one, leave an inline
+               comment at the specific line.
+            2. CI / build correctness.
+            3. Patch hygiene.
+            4. Security.
 
             Hard rules:
 
