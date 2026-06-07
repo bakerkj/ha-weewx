@@ -10,11 +10,18 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
 
+# HA Supervisor passes BUILD_VERSION=<config.json version> on installs; CI
+# does the same in addon-build.yml. Local builds (e2e, BUILD=1 in
+# test-watchdog.sh) leave it at the default so they don't claim a real tag.
+ARG BUILD_VERSION=dev
+ENV HA_WEEWX_VERSION="${BUILD_VERSION}"
+
 LABEL \
     org.opencontainers.image.title="WeeWX" \
     org.opencontainers.image.description="WeeWX weather station server with bundled extensions, MQTT Home Assistant discovery, and nginx ingress web reports. Configured by editing weewx.conf." \
     org.opencontainers.image.source="https://github.com/bakerkj/ha-weewx" \
-    org.opencontainers.image.licenses="MIT"
+    org.opencontainers.image.licenses="MIT" \
+    org.opencontainers.image.version="${BUILD_VERSION}"
 
 # Only OS-level bits come from apt: python3 (the interpreter uv builds the venv
 # on), libusb (the C library pyusb binds at runtime for USB drivers), and the
