@@ -3,10 +3,12 @@
 #   Phase 1: weewxd is killed (s6 finish script halts the tree)
 #   Phase 2: nginx is killed (s6 finish script halts the tree)
 #   Phase 3: the configurable HTTP-poll watchdog stays stale long enough
+# and that the container does NOT exit when
+#   Phase 4: watchdog is enabled, target is fresh, everything is healthy
 #
 # Each phase runs in its own container instance so a failed phase doesn't
 # poison the next. The watchdog uses /data/options.json as HA Supervisor
-# would; we mount a synthetic file for Phase 3.
+# would; we mount a synthetic file for Phases 3 and 4.
 #
 # Usage: e2e-tests/scripts/test-watchdog.sh                       # build + test
 #        BUILD=0 IMAGE=ha-weewx-test e2e-tests/scripts/test-watchdog.sh
@@ -162,6 +164,51 @@ else
     ok "watchdog triggered exit (status=$code) on bogus path"
   fi
 fi
+
+docker rm -f "$CTR" >/dev/null 2>&1 || true
+
+# ---------------------------------------------------------------------------
+# Phase 4: healthy nginx + fresh target -> watchdog does NOT trigger exit.
+# Guards against bugs where the probe rejects a legitimate response (e.g. a
+# required header silently dropped by nginx `add_header` inheritance, or a
+# mis-parsed Last-Modified). Probes /index.html, which nginx-init.sh seeds
+# under /config/www on first start, so the freshness check passes without
+# waiting for a weewx archive cycle.
+# ---------------------------------------------------------------------------
+echo "### Phase 4: healthy weewx -> watchdog does NOT exit"
+TMPDIR_OPTS4=$(mktemp -d)
+cat >"$TMPDIR_OPTS4/options.json" <<'JSON'
+{
+  "watchdog_path": "/index.html",
+  "watchdog_max_age_seconds": 60,
+  "watchdog_consecutive_failures": 2,
+  "watchdog_interval_seconds": 3,
+  "watchdog_startup_grace_seconds": 5
+}
+JSON
+run_phase "" -v "$TMPDIR_OPTS4/options.json:/data/options.json:ro"
+if ! wait_for_nginx; then
+  bad "nginx did not come up within ${INIT_TIMEOUT}s"
+else
+  ok "nginx is serving"
+  # grace(5) + threshold(2)*interval(3) + buffer = ~20s. If the probe is
+  # going to mistakenly reject a healthy response it will have triggered
+  # the SIGTERM-PID-1 path by then.
+  sleep 20
+  if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
+    bad "container exited despite healthy weewx + fresh /index.html"
+    docker logs "$CTR" 2>&1 | tail -30
+  else
+    ok "container still running after 20s of healthy probes"
+  fi
+  if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
+    bad "watchdog logged a probe failure against a healthy /index.html"
+    docker logs "$CTR" 2>&1 | grep "watchdog:" | tail -10
+  else
+    ok "no watchdog probe failures logged"
+  fi
+fi
+rm -rf "$TMPDIR_OPTS4"
 
 echo
 if [[ "$fail" == 0 ]]; then
