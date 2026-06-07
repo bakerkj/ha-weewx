@@ -38,7 +38,7 @@ bad() {
 
 cleanup() {
   docker rm -f "$CTR" >/dev/null 2>&1 || true
-  rm -rf "${TMPDIR_OPTS:-/nonexistent}"
+  rm -rf "${TMPDIR_OPTS:-/nonexistent}" "${TMPDIR_OPTS4:-/nonexistent}"
 }
 trap cleanup EXIT
 
@@ -177,16 +177,20 @@ docker rm -f "$CTR" >/dev/null 2>&1 || true
 # ---------------------------------------------------------------------------
 echo "### Phase 4: healthy weewx -> watchdog does NOT exit"
 TMPDIR_OPTS4=$(mktemp -d)
-# Tightest thresholds the watchdog accepts (all int(1,)) so the negative
-# assertion resolves in a few seconds: SIGTERM would fire at
-# grace(1) + threshold(2)*interval(1) = 3s if probes were failing.
+# grace == max_age so the watchdog's own "0 < grace < max_age" warning does
+# not fire on every CI run; both set to 15s, comfortably above nginx-init
+# wall-clock on a cold CI runner so the watchdog never probes before nginx
+# is serving (which would SIGTERM the container and surface as the wrong
+# diagnosis -- "nginx did not come up within ${INIT_TIMEOUT}s"). threshold *
+# interval = 2s after grace, so a healthy run resolves in ~17s + the small
+# kill-path buffer.
 cat >"$TMPDIR_OPTS4/options.json" <<'JSON'
 {
   "watchdog_path": "/index.html",
-  "watchdog_max_age_seconds": 10,
+  "watchdog_max_age_seconds": 15,
   "watchdog_consecutive_failures": 2,
   "watchdog_interval_seconds": 1,
-  "watchdog_startup_grace_seconds": 1
+  "watchdog_startup_grace_seconds": 15
 }
 JSON
 run_phase "" -v "$TMPDIR_OPTS4/options.json:/data/options.json:ro"
@@ -194,14 +198,15 @@ if ! wait_for_nginx; then
   bad "nginx did not come up within ${INIT_TIMEOUT}s"
 else
   ok "nginx is serving"
-  # 3s SIGTERM deadline + 3s buffer for the kill path + the file-write
-  # latency between nginx-init seeding /index.html and the first probe.
-  sleep 6
+  # grace(15) + threshold(2)*interval(1) = 17s SIGTERM deadline + 3s buffer
+  # for the kill path. If the probe were going to mistakenly reject a
+  # healthy /index.html, it would have triggered by 20s.
+  sleep 20
   if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
     bad "container exited despite healthy weewx + fresh /index.html"
     docker logs "$CTR" 2>&1 | tail -30
   else
-    ok "container still running after 6s of healthy probes"
+    ok "container still running after 20s of healthy probes"
   fi
   if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
     bad "watchdog logged a probe failure against a healthy /index.html"
