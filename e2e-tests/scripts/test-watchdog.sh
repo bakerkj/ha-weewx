@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Watchdog e2e -- verifies that the addon container exits when
-#   Phase 1: weewxd is killed (s6 finish script halts the tree)
+#   Phase 1: weewxd is killed (s6 finish script halts the tree). Also
+#            asserts the negative case along the way: with the watchdog
+#            enabled and pointed at the nginx-init-seeded /index.html,
+#            no probe failure is logged before the kill.
 #   Phase 2: nginx is killed (s6 finish script halts the tree)
 #   Phase 3: the configurable HTTP-poll watchdog stays stale long enough
 #
 # Each phase runs in its own container instance so a failed phase doesn't
 # poison the next. The watchdog uses /data/options.json as HA Supervisor
-# would; we mount a synthetic file for Phase 3.
+# would; we mount a synthetic file for Phases 1 and 3.
 #
 # Usage: e2e-tests/scripts/test-watchdog.sh                       # build + test
 #        BUILD=0 IMAGE=ha-weewx-test e2e-tests/scripts/test-watchdog.sh
@@ -36,7 +39,7 @@ bad() {
 
 cleanup() {
   docker rm -f "$CTR" >/dev/null 2>&1 || true
-  rm -rf "${TMPDIR_OPTS:-/nonexistent}"
+  rm -rf "${TMPDIR_OPTS:-/nonexistent}" "${TMPDIR_OPTS1:-/nonexistent}"
 }
 trap cleanup EXIT
 
@@ -83,28 +86,62 @@ run_phase() {
 }
 
 # ---------------------------------------------------------------------------
-# Phase 1: kill weewxd, expect the addon to exit (finish script semantics)
+# Phase 1: kill weewxd, expect the addon to exit (finish script semantics).
+#
+# Enable the watchdog up-front so we can fold the negative case
+# ("watchdog does NOT fire on a healthy startup") into the same container
+# instance instead of paying for a separate phase. The watchdog s6 service
+# depends on nginx, so it doesn't start probing until nginx is serving --
+# we don't need a large startup_grace to insure against slow nginx-init.
+# max_age=300 comfortably covers the nginx-init stub's mtime aging during
+# the brief observation window. After observing, the kill proceeds as the
+# phase's original assertion.
 # ---------------------------------------------------------------------------
-run_phase "Phase 1: kill weewxd -> addon exits"
+TMPDIR_OPTS1=$(mktemp -d)
+cat >"$TMPDIR_OPTS1/options.json" <<'JSON'
+{
+  "watchdog_path": "/index.html",
+  "watchdog_max_age_seconds": 300,
+  "watchdog_consecutive_failures": 2,
+  "watchdog_interval_seconds": 1,
+  "watchdog_startup_grace_seconds": 2
+}
+JSON
+run_phase "Phase 1: kill weewxd -> addon exits" \
+  -v "$TMPDIR_OPTS1/options.json:/data/options.json:ro"
 if ! wait_for_nginx; then
   bad "nginx did not come up within ${INIT_TIMEOUT}s"
 elif ! wait_for_weewxd; then
   bad "weewxd did not start within ${INIT_TIMEOUT}s"
 else
   ok "nginx + weewxd are running"
-  # weewxd is a python process; the supervised PID is the immediate child of run.
-  # pkill -x -9 weewxd kills it without giving s6 time to interpose.
-  if docker exec "$CTR" pkill -x -9 weewxd; then
-    ok "weewxd killed"
-    code=$(wait_for_exit)
-    if [[ "$code" == "TIMEOUT" ]]; then
-      bad "container did not exit within ${EXIT_TIMEOUT}s after killing weewxd"
-      docker logs "$CTR" 2>&1 | tail -15
-    else
-      ok "container exited (status=$code) after weewxd kill"
-    fi
+  # grace(2) + threshold(2)*interval(1) = 4s; +1s buffer so we definitely
+  # see >=threshold probes' worth of log lines before grepping.
+  sleep 5
+  if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
+    bad "watchdog logged a probe failure against the healthy /index.html"
+    docker logs "$CTR" 2>&1 | grep "watchdog:" | tail -10
   else
-    bad "could not pkill weewxd inside container"
+    ok "watchdog accepted /index.html probes during healthy startup"
+  fi
+  if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
+    bad "container exited during the watchdog observation window"
+    docker logs "$CTR" 2>&1 | tail -30
+  else
+    # weewxd is a python process; the supervised PID is the immediate child of run.
+    # pkill -x -9 weewxd kills it without giving s6 time to interpose.
+    if docker exec "$CTR" pkill -x -9 weewxd; then
+      ok "weewxd killed"
+      code=$(wait_for_exit)
+      if [[ "$code" == "TIMEOUT" ]]; then
+        bad "container did not exit within ${EXIT_TIMEOUT}s after killing weewxd"
+        docker logs "$CTR" 2>&1 | tail -15
+      else
+        ok "container exited (status=$code) after weewxd kill"
+      fi
+    else
+      bad "could not pkill weewxd inside container"
+    fi
   fi
 fi
 docker rm -f "$CTR" >/dev/null 2>&1 || true
@@ -162,6 +199,8 @@ else
     ok "watchdog triggered exit (status=$code) on bogus path"
   fi
 fi
+
+docker rm -f "$CTR" >/dev/null 2>&1 || true
 
 echo
 if [[ "$fail" == 0 ]]; then
