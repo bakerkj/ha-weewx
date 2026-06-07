@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.14](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.13...ha-weewx-v0.1.14) (2026-06-07)
+
+
+### Bug Fixes
+
+* **watchdog:** drop X-Ha-Weewx-Addon fingerprint check ([#130](https://github.com/bakerkj/ha-weewx/issues/130)) ([6a209a0](https://github.com/bakerkj/ha-weewx/commit/6a209a0ac7151354e8f7e753e39b49d9445f18f6))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.214.1 ([#122](https://github.com/bakerkj/ha-weewx/issues/122)) ([75592ef](https://github.com/bakerkj/ha-weewx/commit/75592eff3a9aa0bb7ff91229806c015aee9ff554))
+* pin uv to ==0.11.19 and group with Dockerfile uv pin ([#129](https://github.com/bakerkj/ha-weewx/issues/129)) ([7fb4a8c](https://github.com/bakerkj/ha-weewx/commit/7fb4a8c2f02f5cd881860d05f797fce65d43e0ac))
+
+
+### Continuous Integration
+
+* add Claude Code GitHub workflows ([#120](https://github.com/bakerkj/ha-weewx/issues/120)) ([7efe49d](https://github.com/bakerkj/ha-weewx/commit/7efe49d5346163721267bab8a9ea520476187cb1))
+* **claude:** replace plugin path with hand-rolled prompt + built-in MCP ([#127](https://github.com/bakerkj/ha-weewx/issues/127)) ([0e1eb67](https://github.com/bakerkj/ha-weewx/commit/0e1eb6773a443b7224ed304e87f8ce9df5a29a36))
+* **claude:** skip release-please PRs and upload Claude JSONL as artifact ([#124](https://github.com/bakerkj/ha-weewx/issues/124)) ([0caf01f](https://github.com/bakerkj/ha-weewx/commit/0caf01fab051cece00fc2a739b045ca9fb2eb142))
+* **claude:** skip Renovate/Dependabot PRs from auto code-review ([#123](https://github.com/bakerkj/ha-weewx/issues/123)) ([8588b96](https://github.com/bakerkj/ha-weewx/commit/8588b96fdb1d77f2d0bc1e416a52754c3bce23fb))
+* **claude:** strip review prompt to repo description + four categories ([#128](https://github.com/bakerkj/ha-weewx/issues/128)) ([9f8de27](https://github.com/bakerkj/ha-weewx/commit/9f8de274dcad12df1e3a975441ed1fa9c23b5792))
+* **renovate:** track two version pins the dashboard was missing ([#125](https://github.com/bakerkj/ha-weewx/issues/125)) ([c1e751e](https://github.com/bakerkj/ha-weewx/commit/c1e751e8a581aed9ee954839dc4502afd59a5f69))
+
 ## [0.1.13](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.12...ha-weewx-v0.1.13) (2026-06-05)
 
 
