@@ -38,7 +38,8 @@ bad() {
 
 cleanup() {
   docker rm -f "$CTR" >/dev/null 2>&1 || true
-  rm -rf "${TMPDIR_OPTS:-/nonexistent}" "${TMPDIR_OPTS4:-/nonexistent}"
+  rm -rf "${TMPDIR_OPTS:-/nonexistent}" "${TMPDIR_OPTS4:-/nonexistent}" \
+    "${TMPDIR_CONF4:-/nonexistent}"
 }
 trap cleanup EXIT
 
@@ -168,62 +169,95 @@ fi
 docker rm -f "$CTR" >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
-# Phase 4: healthy nginx + fresh target -> watchdog does NOT trigger exit.
-# Guards against bugs where the probe rejects a legitimate response (e.g. a
-# required header silently dropped by nginx `add_header` inheritance, or a
-# mis-parsed Last-Modified). Probes /index.html, which nginx-init.sh seeds
-# under /config/www on first start, so the freshness check passes without
-# waiting for a weewx archive cycle.
+# Phase 4: healthy nginx + a fresh, weewxd-written /index.html -> watchdog
+# does NOT trigger exit. Exercises both the structural probe path (header
+# inheritance, Last-Modified parsing) AND the freshness comparison.
+#
+# nginx-init.sh seeds /config/www/index.html at container start, but only
+# as a placeholder; its mtime is fixed at T=0 and would go stale inside a
+# tight max_age. To get a meaningful freshness assertion we override
+# weewx.conf with archive_interval=10s + archive_delay=0 so weewxd's first
+# report cycle rewrites /index.html within ~12s of container start, then
+# poll Last-Modified until it advances past phase4_start+5s -- so only a
+# real weewxd write satisfies the gate, not the seeded stub.
 # ---------------------------------------------------------------------------
 echo "### Phase 4: healthy weewx -> watchdog does NOT exit"
 TMPDIR_OPTS4=$(mktemp -d)
-# grace=15 sits comfortably above nginx-init wall-clock on a cold CI runner
-# so the watchdog never probes before nginx is serving (which would SIGTERM
-# the container and surface as the wrong diagnosis -- "nginx did not come
-# up within ${INIT_TIMEOUT}s").
-#
-# max_age=3600 because nginx-init.sh seeds /config/www/index.html ONCE at
-# container start; weewxd's report engine won't refresh it inside our
-# observation window (archive_interval defaults to 300s). A small max_age
-# would make the file appear stale right after grace expires -- exactly the
-# failure mode watchdog.py's own "grace < max_age" WARNING describes -- and
-# Phase 4 would fail every time. The warning will fire on every successful
-# run; in this test it's expected noise, not a misconfiguration to mitigate.
-#
-# threshold * interval = 2s after grace, so a healthy run resolves in ~17s
-# + the small kill-path buffer.
+TMPDIR_CONF4=$(mktemp -d)
+# Extract the runtime template from the image and tighten the archive
+# cadence. --entrypoint cat sidesteps s6-overlay's init for this one-off.
+docker run --rm --entrypoint cat "$IMAGE" /etc/weewx.conf.template \
+  >"$TMPDIR_CONF4/weewx.conf"
+sed -i \
+  -e 's/^\([[:space:]]*archive_interval[[:space:]]*=[[:space:]]*\)[0-9]\+/\110/' \
+  -e 's/^\([[:space:]]*archive_delay[[:space:]]*=[[:space:]]*\)[0-9]\+/\10/' \
+  "$TMPDIR_CONF4/weewx.conf"
+# grace=25 covers nginx-init + weewxd startup + first archive cycle on a
+# cold CI runner. max_age=15 is tight enough that a regression in the age
+# comparison (wrong sign, wrong timezone, off-by-one) would fail this
+# phase.
 cat >"$TMPDIR_OPTS4/options.json" <<'JSON'
 {
   "watchdog_path": "/index.html",
-  "watchdog_max_age_seconds": 3600,
+  "watchdog_max_age_seconds": 15,
   "watchdog_consecutive_failures": 2,
   "watchdog_interval_seconds": 1,
-  "watchdog_startup_grace_seconds": 15
+  "watchdog_startup_grace_seconds": 25
 }
 JSON
-run_phase "" -v "$TMPDIR_OPTS4/options.json:/data/options.json:ro"
+phase4_start=$(date +%s)
+run_phase "" \
+  -v "$TMPDIR_OPTS4/options.json:/data/options.json:ro" \
+  -v "$TMPDIR_CONF4/weewx.conf:/config/weewx.conf:ro"
 if ! wait_for_nginx; then
   bad "nginx did not come up within ${INIT_TIMEOUT}s"
 else
   ok "nginx is serving"
-  # grace(15) + threshold(2)*interval(1) = 17s SIGTERM deadline + 3s buffer
-  # for the kill path. If the probe were going to mistakenly reject a
-  # healthy /index.html, it would have triggered by 20s.
-  sleep 20
-  if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
-    bad "container exited despite healthy weewx + fresh /index.html"
+  # Poll Last-Modified until weewxd's first report-engine run overwrites
+  # the nginx-init stub. Stub mtime is within ~1s of phase4_start; gate on
+  # lm_epoch > phase4_start+5 so only a real weewxd write trips the check.
+  wrote_deadline=$((phase4_start + 45))
+  wrote=0
+  while [[ $(date +%s) -lt $wrote_deadline ]]; do
+    lm=$(curl -sI "http://localhost:$PORT/index.html" |
+      sed -n 's/^[Ll]ast-[Mm]odified:[[:space:]]*//p' | tr -d '\r\n')
+    if [[ -n "$lm" ]]; then
+      lm_epoch=$(date -d "$lm" +%s 2>/dev/null || echo 0)
+      if [[ $lm_epoch -gt $((phase4_start + 5)) ]]; then
+        wrote=1
+        break
+      fi
+    fi
+    sleep 1
+  done
+  if [[ $wrote -ne 1 ]]; then
+    bad "weewxd did not refresh /index.html within 45s"
     docker logs "$CTR" 2>&1 | tail -30
   else
-    ok "container still running after 20s of healthy probes"
-  fi
-  if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
-    bad "watchdog logged a probe failure against a healthy /index.html"
-    docker logs "$CTR" 2>&1 | grep "watchdog:" | tail -10
-  else
-    ok "no watchdog probe failures logged"
+    ok "weewxd refreshed /index.html (first archive cycle ran)"
+    # Watchdog timeline from phase4_start: grace=25 -> first probe T+25,
+    # threshold*interval=2 -> SIGTERM-if-failing by T+27. Observe until
+    # T+30 (3s buffer for the kill path).
+    observe_until=$((phase4_start + 30))
+    now=$(date +%s)
+    if [[ $now -lt $observe_until ]]; then
+      sleep $((observe_until - now))
+    fi
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
+      bad "container exited despite healthy weewx + fresh /index.html"
+      docker logs "$CTR" 2>&1 | tail -30
+    else
+      ok "container still running after watchdog observation"
+    fi
+    if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
+      bad "watchdog logged a probe failure against a healthy /index.html"
+      docker logs "$CTR" 2>&1 | grep "watchdog:" | tail -10
+    else
+      ok "no watchdog probe failures logged"
+    fi
   fi
 fi
-rm -rf "$TMPDIR_OPTS4"
+rm -rf "$TMPDIR_OPTS4" "$TMPDIR_CONF4"
 
 echo
 if [[ "$fail" == 0 ]]; then
