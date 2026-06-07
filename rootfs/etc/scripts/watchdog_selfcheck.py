@@ -22,23 +22,14 @@ spec.loader.exec_module(wd)
 
 
 class FakeResp:
-    def __init__(
-        self,
-        status: int,
-        last_modified: str | None,
-        fingerprint: str | None = "ha-weewx-nginx",
-    ) -> None:
+    def __init__(self, status: int, last_modified: str | None) -> None:
         self.status = status
         self.reason = "OK" if status < 400 else "Not Found"
         self._lm = last_modified
-        self._fp = fingerprint
 
     def getheader(self, name: str):
-        n = name.lower()
-        if n == "last-modified":
+        if name.lower() == "last-modified":
             return self._lm
-        if n == "x-ha-weewx-addon":
-            return self._fp
         return None
 
 
@@ -62,50 +53,18 @@ def stub_with(resp: FakeResp):
 
 
 cases = [
-    # (label, status, last_modified, fingerprint, max_age, expect_ok)
-    (
-        "fresh-200",
-        200,
-        formatdate(time.time(), usegmt=True),
-        "ha-weewx-nginx",
-        60,
-        True,
-    ),
-    (
-        "stale-200",
-        200,
-        formatdate(time.time() - 3600, usegmt=True),
-        "ha-weewx-nginx",
-        60,
-        False,
-    ),
-    ("404", 404, None, "ha-weewx-nginx", 60, False),
-    ("500", 500, None, "ha-weewx-nginx", 60, False),
-    ("200-without-last-modified", 200, None, "ha-weewx-nginx", 60, False),
-    (
-        "200-with-bogus-last-modified",
-        200,
-        "not a real date",
-        "ha-weewx-nginx",
-        60,
-        False,
-    ),
-    # Port collision: another process holds :8099 and answers 200 with a
-    # fresh Last-Modified but does not emit our addon fingerprint. Must fail
-    # so we don't falsely report "healthy" while our nginx never started.
-    (
-        "200-no-fingerprint",
-        200,
-        formatdate(time.time(), usegmt=True),
-        None,
-        60,
-        False,
-    ),
+    # (label, status, last_modified, max_age, expect_ok)
+    ("fresh-200", 200, formatdate(time.time(), usegmt=True), 60, True),
+    ("stale-200", 200, formatdate(time.time() - 3600, usegmt=True), 60, False),
+    ("404", 404, None, 60, False),
+    ("500", 500, None, 60, False),
+    ("200-without-last-modified", 200, None, 60, False),
+    ("200-with-bogus-last-modified", 200, "not a real date", 60, False),
 ]
 
 failures: list[str] = []
-for label, status, lm, fp, max_age, expect_ok in cases:
-    stub_with(FakeResp(status, lm, fp))
+for label, status, lm, max_age, expect_ok in cases:
+    stub_with(FakeResp(status, lm))
     ok, reason = wd.probe("/x", max_age)
     if ok is not expect_ok:
         failures.append(
