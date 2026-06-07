@@ -2,6 +2,8 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+echo "ha-weewx version=${HA_WEEWX_VERSION:-unknown}"
+
 WEEWX_CONF="/config/weewx.conf"
 
 # Subdirs the bundled template references for SQLite DBs and log files. Make
