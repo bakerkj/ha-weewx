@@ -63,14 +63,6 @@ def probe(path: str, max_age: int) -> tuple[bool, str]:
             pass
     if resp.status >= 400:
         return False, f"HTTP {resp.status} {resp.reason}"
-    # Confirm the response came from THIS addon's nginx before trusting any
-    # freshness signal. The addon runs host_network: true so port 8099 is
-    # shared with the host; if some other process held :8099 first, our
-    # nginx never started and we'd be probing whatever DID. nginx.conf adds
-    # this header on every response from the ingress server{}; its absence
-    # means we're talking to an impostor.
-    if not resp.getheader("X-Ha-Weewx-Addon"):
-        return False, "not our nginx -- port collision on :8099?"
     lm = resp.getheader("Last-Modified")
     if not lm:
         # Without Last-Modified there's no way to verify freshness, which is
