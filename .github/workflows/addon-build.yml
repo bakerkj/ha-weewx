@@ -106,6 +106,7 @@ jobs:
           tags: ha-weewx-smoke
           build-args: |
             BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:trixie
+            BUILD_VERSION=${{ matrix.version }}
           cache-from: |
             type=gha,scope=${{ matrix.arch }}-ha-weewx-${{ matrix.arch }}
           cache-to: |
