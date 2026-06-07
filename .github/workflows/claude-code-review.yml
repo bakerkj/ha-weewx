@@ -73,6 +73,9 @@ jobs:
             2. CI / build correctness.
             3. Patch hygiene.
             4. Security.
+            5. Missing tests — call out behavior changes that
+               landed without a test, or a tight test that would
+               have caught a likely regression.
 
             Hard rules:
 
