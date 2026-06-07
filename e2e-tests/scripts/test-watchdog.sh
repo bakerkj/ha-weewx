@@ -177,13 +177,16 @@ docker rm -f "$CTR" >/dev/null 2>&1 || true
 # ---------------------------------------------------------------------------
 echo "### Phase 4: healthy weewx -> watchdog does NOT exit"
 TMPDIR_OPTS4=$(mktemp -d)
+# Tightest thresholds the watchdog accepts (all int(1,)) so the negative
+# assertion resolves in a few seconds: SIGTERM would fire at
+# grace(1) + threshold(2)*interval(1) = 3s if probes were failing.
 cat >"$TMPDIR_OPTS4/options.json" <<'JSON'
 {
   "watchdog_path": "/index.html",
-  "watchdog_max_age_seconds": 60,
+  "watchdog_max_age_seconds": 10,
   "watchdog_consecutive_failures": 2,
-  "watchdog_interval_seconds": 3,
-  "watchdog_startup_grace_seconds": 5
+  "watchdog_interval_seconds": 1,
+  "watchdog_startup_grace_seconds": 1
 }
 JSON
 run_phase "" -v "$TMPDIR_OPTS4/options.json:/data/options.json:ro"
@@ -191,15 +194,14 @@ if ! wait_for_nginx; then
   bad "nginx did not come up within ${INIT_TIMEOUT}s"
 else
   ok "nginx is serving"
-  # grace(5) + threshold(2)*interval(3) + buffer = ~20s. If the probe is
-  # going to mistakenly reject a healthy response it will have triggered
-  # the SIGTERM-PID-1 path by then.
-  sleep 20
+  # 3s SIGTERM deadline + 3s buffer for the kill path + the file-write
+  # latency between nginx-init seeding /index.html and the first probe.
+  sleep 6
   if [[ "$(docker inspect -f '{{.State.Running}}' "$CTR" 2>/dev/null)" != "true" ]]; then
     bad "container exited despite healthy weewx + fresh /index.html"
     docker logs "$CTR" 2>&1 | tail -30
   else
-    ok "container still running after 20s of healthy probes"
+    ok "container still running after 6s of healthy probes"
   fi
   if docker logs "$CTR" 2>&1 | grep -qE "watchdog: failure [0-9]+/"; then
     bad "watchdog logged a probe failure against a healthy /index.html"
