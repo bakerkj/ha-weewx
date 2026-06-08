@@ -137,7 +137,10 @@ check "patch: rtldavis python313 r-strings" has "r'ChannelIdx:([\\d]+) ChannelFr
 # rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
 # popen()s it when station_type=Rtldavis. Image must contain it executable.
 check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
-check "rtldavis links to librtlsdr" ldd /opt/rtldavis/bin/rtldavis | grep -q librtlsdr
+# The `|` belongs inside the assertion, not at check()'s shell level --
+# otherwise check's stdout (PASS …librtlsdr…) feeds grep silently.
+check "rtldavis links to librtlsdr" \
+  sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep -q librtlsdr'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
