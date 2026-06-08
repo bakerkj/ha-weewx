@@ -32,6 +32,16 @@ WEEWX_ROOT = /opt/weewx-data
     driver = weewx.drivers.simulator
     mode   = simulator
 
+# Alternative: rtldavis (RTL-SDR receiver for Davis ISS). Requires an
+# RTL-SDR dongle passed through to the addon. To enable, set
+# `station_type = Rtldavis` above and uncomment this section. Switch -tf
+# to EU/NZ/AU as appropriate. See bin/user/rtldavis.py for the full
+# option list and DEFAULT_SENSOR_MAP.
+#
+# [Rtldavis]
+#     driver = user.rtldavis
+#     cmd    = /opt/rtldavis/bin/rtldavis -tf US -tr 1
+
 
 ##############################################################################
 #   Reports — generated HTML lands under /config/www so the HA ingress panel

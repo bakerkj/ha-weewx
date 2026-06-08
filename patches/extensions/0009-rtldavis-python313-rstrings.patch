@@ -1,0 +1,30 @@
+# Convert the remaining re.compile() arguments to raw strings. Python 3.12
+# emits a SyntaxWarning for unrecognised escape sequences inside non-raw
+# strings; the addon runs Python 3.13 so this would surface as a warning on
+# every weewxd start. (The DATAPacket.IDENTIFIER regex is also touched in
+# 0008-rtldavis-low-battery-regex.patch — its r-prefix lands there.)
+--- a/bin/user/rtldavis.py
++++ b/bin/user/rtldavis.py
+@@ -511,7 +511,7 @@ class Packet(object):
+
+ class DATAPacket(Packet):
+     IDENTIFIER = re.compile(r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}")
+-    PATTERN = re.compile('([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2}) ([\d]+) ([\d]+) ([\d]+) ([\d]+)')
++    PATTERN = re.compile(r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2}) ([\d]+) ([\d]+) ([\d]+) ([\d]+)')
+
+     @staticmethod
+     def parse_text(self, payload, lines):
+@@ -538,10 +538,10 @@ class DATAPacket(Packet):
+
+
+ class CHANNELPacket(Packet):
+-    IDENTIFIER = re.compile("ChannelIdx:")
++    IDENTIFIER = re.compile(r"ChannelIdx:")
+     # chan: 13:44:13.116046 Hop: {ChannelIdx:3 ChannelFreq:868437250 FreqError:431 Transmitter:1}
+-    PATTERNv13 = re.compile('ChannelIdx:([\d]+) ChannelFreq:([\d]+) FreqError:([\d-]+) Transmitter:([\d]+)')
+-    PATTERNv12 = re.compile('ChannelIdx:([\d]+) ChannelFreq:([\d]+) FreqError:([\d-]+)')
++    PATTERNv13 = re.compile(r'ChannelIdx:([\d]+) ChannelFreq:([\d]+) FreqError:([\d-]+) Transmitter:([\d]+)')
++    PATTERNv12 = re.compile(r'ChannelIdx:([\d]+) ChannelFreq:([\d]+) FreqError:([\d-]+)')
+
+     @staticmethod
+     def parse_text(self, payload, lines):

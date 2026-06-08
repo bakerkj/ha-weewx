@@ -1,12 +1,34 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
-# Single-stage build. apt provides only OS-level bits (python3, libusb, and the
-# mariadb/nginx/ssh/rsync runtime tools); every Python library — weewx, the
-# MQTT publisher (by felddy), and their dependencies (Pillow, Cheetah, pyephem,
-# pyserial, pyusb, PyMySQL, paho, pydantic) — is installed by uv as wheels.
-# Nothing compiles, so there are no gcc/-dev headers and no separate builder
-# stage; uv is bind-mounted for the build only and is never shipped in the image.
+# rtldavis Go binary — RTL-SDR demodulator for Davis ISS, opt-in alternative
+# to the existing Vantage USB driver. Built as a separate stage so the Go
+# toolchain never ships in the final image. Pinned to upstream master since
+# the project has no release tags and the protocol has been stable since 2020.
+# ---------------------------------------------------------------------------
+FROM golang:1.22-bookworm AS rtldavis-builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    librtlsdr-dev \
+    libusb-1.0-0-dev \
+    pkg-config \
+ && rm -rf /var/lib/apt/lists/*
+ARG RTLDAVIS_REF=b95d5d734e4666c90f3d7539d5e2acd9f80f7e43
+ENV GOPATH=/go GO111MODULE=off
+RUN git clone https://github.com/lheijst/rtldavis \
+      "$GOPATH/src/github.com/lheijst/rtldavis"
+WORKDIR /go/src/github.com/lheijst/rtldavis
+RUN git checkout "$RTLDAVIS_REF" && git submodule update --init --recursive \
+ && go build -trimpath -ldflags="-s -w" -o /out/rtldavis .
+
+# ---------------------------------------------------------------------------
+# Single-stage runtime image. apt provides only OS-level bits (python3,
+# libusb, librtlsdr0, and the mariadb/nginx/ssh/rsync runtime tools); every
+# Python library — weewx, the MQTT publisher (by felddy), and their
+# dependencies (Pillow, Cheetah, pyephem, pyserial, pyusb, PyMySQL, paho,
+# pydantic) — is installed by uv as wheels. Nothing compiles in this stage,
+# so there are no gcc/-dev headers; uv is bind-mounted for the build only
+# and is never shipped in the image.
 # ---------------------------------------------------------------------------
 FROM ${BUILD_FROM} AS addon
 
@@ -37,6 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl=8.14.1-2+deb13u3 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
+    librtlsdr0=2.0.2-2+b1 \
     libusb-1.0-0=2:1.0.28-1 \
     nginx-light=1.26.3-3+deb13u5 \
     openssh-client=1:10.0p1-7+deb13u4 \
@@ -150,6 +173,13 @@ RUN --mount=type=bind,source=patches,target=/build/patches \
 # Drop the build-time stub conf — runtime uses /config/weewx.conf (the
 # addon_config mount). /config itself is not created at build time.
 RUN rm -f /opt/weewx-data/weewx.conf
+
+# ---------------------------------------------------------------------------
+# rtldavis binary built in the rtldavis-builder stage above. The
+# weewx-rtldavis driver (installed via build/extensions.txt) popen()s this
+# path when station_type=Rtldavis in /config/weewx.conf.
+# ---------------------------------------------------------------------------
+COPY --from=rtldavis-builder /out/rtldavis /opt/rtldavis/bin/rtldavis
 
 # ---------------------------------------------------------------------------
 # Bundled extra extension: log_to_file (per-record CSV file writer, bakerkj).

@@ -131,6 +131,13 @@ check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/
 check "patch: rtgd obs-in-self guard" has 'if obs in self:' "$WEEWX_BIN/user/rtgd.py"
 check "patch: forecast Zambretti SQL" has 'ORDER BY dateTime DESC LIMIT 1" % dbm.table_name' "$WEEWX_BIN/user/forecast.py"
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
+check "patch: rtldavis low-battery regex" has 'r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}"' "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtldavis python313 r-strings" has "r'ChannelIdx:([\\d]+) ChannelFreq:" "$WEEWX_BIN/user/rtldavis.py"
+
+# rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
+# popen()s it when station_type=Rtldavis. Image must contain it executable.
+check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
+check "rtldavis links to librtlsdr" ldd /opt/rtldavis/bin/rtldavis | grep -q librtlsdr
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
