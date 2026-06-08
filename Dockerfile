@@ -61,7 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnginx-mod-http-js=0.8.9-1 \
     librtlsdr0=2.0.2-2+b1 \
     libusb-1.0-0=2:1.0.28-1 \
-    nginx-light=1.26.3-3+deb13u5 \
+    nginx-light=1.26.3-3+deb13u6 \
     openssh-client=1:10.0p1-7+deb13u4 \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
