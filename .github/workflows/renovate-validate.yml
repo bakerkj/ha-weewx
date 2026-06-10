@@ -5,6 +5,7 @@ on:
     paths:
       - renovate.json
       - .github/workflows/**
+      - .github/scripts/**
 
 permissions:
   contents: read

@@ -89,13 +89,22 @@ def main() -> int:
                 )
                 continue
 
-            # (b) proposed version exists in apt-cache for this exact binary
+            # (b) proposed version exists in apt-cache for this exact binary.
+            # apt-cache madison output is "pkg | version | source" per line
+            # with column-aligned whitespace. Parse the pipe-separated
+            # fields rather than substring-matching the raw text (which
+            # would false-positive "1.2" against a line containing "1.2.3").
             madison = subprocess.run(
                 ["apt-cache", "madison", name],
                 capture_output=True,
                 text=True,
             )
-            if madison.returncode != 0 or new not in madison.stdout:
+            versions = {
+                parts[1].strip()
+                for line in madison.stdout.splitlines()
+                if len(parts := line.split("|")) >= 2
+            }
+            if madison.returncode != 0 or new not in versions:
                 madison_lines = madison.stdout.strip() or "(empty)"
                 failures.append(
                     f"{name}: proposed {new} not in `apt-cache madison {name}` "
