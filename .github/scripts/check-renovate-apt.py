@@ -27,28 +27,56 @@ def main() -> int:
     with open(log_path, encoding="utf-8") as f:
         log = f.read()
 
-    # Renovate's debug-level dry-run dumps each flattened update as a JSON
-    # object inline. Extract (depName, packageName, currentValue, datasource,
-    # newVersion) tuples by anchored regex -- structured parsing of the full
-    # config dump is fragile because the JSON is interleaved with INFO/TRACE
-    # log lines.
-    pat = re.compile(
-        r'"depName":\s*"([^"]+)".{1,500}?'
-        r'"packageName":\s*"([^"]+)".{1,200}?'
-        r'"currentValue":\s*"([^"]+)".{1,200}?'
-        r'"datasource":\s*"([^"]+)".{1,1500}?'
-        r'"newVersion":\s*"([^"]+)"',
-        re.S,
+    # Renovate's debug-level dry-run dumps each flattened-update record as a
+    # JSON object inline with the log. Slice the log at every "depName" so a
+    # per-record regex can't accidentally pick up fields from the next record
+    # (e.g. matching depName=libnginx-mod-http-js then greedily scanning to
+    # the newVersion of the following nginx-light record).
+    depname_re = re.compile(r'"depName":\s*"([^"]+)"')
+    record_starts = [m.start() for m in depname_re.finditer(log)]
+    record_starts.append(len(log))
+
+    fields_re = re.compile(
+        r'"packageName":\s*"([^"]+)"',
     )
+    cur_re = re.compile(r'"currentValue":\s*"([^"]+)"')
+    ds_re = re.compile(r'"datasource":\s*"([^"]+)"')
+    # Non-empty updates: "updates": [ {  ... }
+    upd_re = re.compile(r'"updates":\s*\[\s*\{')
+    nv_re = re.compile(r'"newVersion":\s*"([^"]+)"')
 
     failures: list[str] = []
     seen: set[tuple[str, str, str]] = set()
-    for m in pat.finditer(log):
-        dep, pkg, cur, ds, new = m.groups()
+    for i in range(len(record_starts) - 1):
+        record = log[record_starts[i] : record_starts[i + 1]]
+        dep_match = depname_re.search(record)
+        if not dep_match:
+            continue
+        dep = dep_match.group(1)
+
+        pkg_match = fields_re.search(record)
+        ds_match = ds_re.search(record)
+        cur_match = cur_re.search(record)
+        if not (pkg_match and ds_match and cur_match):
+            continue
+        pkg = pkg_match.group(1)
+        ds = ds_match.group(1)
+        cur = cur_match.group(1)
+
+        if ds != "repology" or not pkg.startswith("debian_13/"):
+            continue
+
+        # Only check records that actually have a proposed update. An empty
+        # "updates": [] array means Renovate is keeping the current pin.
+        if not upd_re.search(record):
+            continue
+        nv_match = nv_re.search(record)
+        if not nv_match:
+            continue
+        new = nv_match.group(1)
+
         key = (dep, cur, new)
         if key in seen:
-            continue
-        if ds != "repology" or not pkg.startswith("debian_13/"):
             continue
         seen.add(key)
 
