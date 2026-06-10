@@ -37,13 +37,14 @@
     },
     {
       "customType": "regex",
-      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles, tracked against the Debian archive via the deb datasource (resolves binary package names directly — no per-package source mapping). depName excludes '_' since Debian package names can't contain underscores (avoids matching Python kwargs like 'exist_ok=True' in heredocs).",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'.",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": [
         "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
       ],
-      "datasourceTemplate": "deb",
-      "versioningTemplate": "deb"
+      "datasourceTemplate": "repology",
+      "versioningTemplate": "deb",
+      "packageNameTemplate": "debian_13/{{depName}}"
     },
     {
       "customType": "regex",
@@ -158,15 +159,30 @@
       "groupName": "home-assistant base images"
     },
     {
-      "description": "Resolve pinned Debian apt packages against the trixie archive (main + updates + security), matching the base-debian image's apt sources.",
       "matchManagers": ["custom.regex"],
-      "matchDatasources": ["deb"],
-      "registryUrls": [
-        "https://deb.debian.org/debian?suite=trixie&components=main&binaryArch=amd64",
-        "https://deb.debian.org/debian?suite=trixie-updates&components=main&binaryArch=amd64",
-        "https://security.debian.org/debian-security?suite=trixie-security&components=main&binaryArch=amd64"
-      ],
+      "matchPackageNames": ["/^debian_13//"],
       "groupName": "apt packages"
+    },
+    {
+      "description": "Map binary packages to their Debian source project name. Required where the binary name doesn't match a Repology project of the same name.",
+      "matchPackageNames": ["debian_13/nginx-light"],
+      "overridePackageName": "debian_13/nginx"
+    },
+    {
+      "matchPackageNames": ["debian_13/libnginx-mod-http-brotli-filter"],
+      "overridePackageName": "debian_13/nginx"
+    },
+    {
+      "matchPackageNames": ["debian_13/libnginx-mod-http-js"],
+      "overridePackageName": "debian_13/nginx"
+    },
+    {
+      "matchPackageNames": ["debian_13/openssh-client"],
+      "overridePackageName": "debian_13/openssh"
+    },
+    {
+      "matchPackageNames": ["debian_13/libusb-1.0-0"],
+      "overridePackageName": "debian_13/libusb-1.0"
     },
     {
       "matchManagers": ["custom.regex"],
