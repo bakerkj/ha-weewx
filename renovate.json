@@ -169,14 +169,6 @@
       "overridePackageName": "debian_13/nginx"
     },
     {
-      "matchPackageNames": ["debian_13/libnginx-mod-http-brotli-filter"],
-      "overridePackageName": "debian_13/nginx"
-    },
-    {
-      "matchPackageNames": ["debian_13/libnginx-mod-http-js"],
-      "overridePackageName": "debian_13/nginx"
-    },
-    {
       "matchPackageNames": ["debian_13/openssh-client"],
       "overridePackageName": "debian_13/openssh"
     },
