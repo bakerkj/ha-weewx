@@ -5,6 +5,7 @@ on:
     paths:
       - renovate.json
       - .github/workflows/**
+      - .github/scripts/**
 
 permissions:
   contents: read
@@ -34,13 +35,17 @@ jobs:
 
       - name: Dry-run lookup test
         env:
+          LOG_FORMAT: json
           LOG_LEVEL: debug
           GITHUB_COM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx --package renovate@43.214.1 -- renovate --dry-run --platform=local > renovate-dry-run.log 2>&1 || true
+          # LOG_FORMAT=json emits one JSON event per line so downstream
+          # checks can parse the structured log instead of regex-scraping
+          # interleaved text output.
+          npx --package renovate@43.214.1 -- renovate --dry-run --platform=local > renovate-dry-run.jsonl 2>&1 || true
 
-          # Check for datasource lookup failures
-          errors=$(grep -i "no-result\|failed to look up" renovate-dry-run.log | grep -v "python-version" || true)
+          # Check for datasource lookup failures (msg field per log event).
+          errors=$(jq -r 'select(.msg | tostring | test("no-result|Failed to look up"; "i")) | .msg' renovate-dry-run.jsonl 2>/dev/null | grep -v "python-version" || true)
           if [ -n "$errors" ]; then
             echo "::error::Renovate datasource lookup failures detected:"
             echo "$errors"
@@ -48,3 +53,35 @@ jobs:
           fi
 
           echo "All datasource lookups succeeded"
+
+      - name: Cross-check Renovate's apt updates against actual Debian archives
+        run: |
+          # Boots a debian:trixie container with apt's trixie + trixie-updates
+          # + trixie-security suites and verifies, for every Renovate-proposed
+          # apt-package update:
+          #
+          #   (a) the proposed newVersion compares >= the currently pinned
+          #       version per `dpkg --compare-versions ... ge` (no downgrades);
+          #   (b) the proposed newVersion appears in `apt-cache madison <pkg>`
+          #       for the binary (catches misconfigured overridePackageName
+          #       rules that resolve a binary to a wrong-upstream source --
+          #       Renovate happily lifts a "newer" version from a different
+          #       upstream family, which would break the build).
+          #
+          # The script reads Renovate's dry-run trace log from the previous
+          # step. apt is the authoritative source of truth here; Repology is
+          # not.
+          docker run --rm -v "$PWD:/work" -w /work debian:trixie bash -c '
+            set -euo pipefail
+            # Append -updates and -security suites to apt sources. The classic
+            # one-line `deb http://...` syntax inherits the base image keyring
+            # without the Signed-By collision that DEB822 hits.
+            cat >>/etc/apt/sources.list <<SRC
+          deb http://deb.debian.org/debian trixie-updates main
+          deb http://deb.debian.org/debian-security trixie-security main
+          SRC
+            apt-get update -qq
+            # debian:trixie minimal image does not ship python3.
+            apt-get install -y --no-install-recommends python3 >/dev/null
+            python3 /work/.github/scripts/check-renovate-apt.py renovate-dry-run.jsonl
+          '
