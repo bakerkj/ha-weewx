@@ -1,0 +1,54 @@
+# rtgd: copy the field map before mutating per-field defaults.
+#
+# RealtimeGaugeDataThread.__init__ reads FieldMap (defaulting to the module
+# global DEFAULT_FIELD_MAP) and FieldMapExtensions (from rtgd_config_dict,
+# the configobj-backed weewx.conf section). It walks the merged map and
+# mutates each entry in place:
+#
+#   _field_map[field[0]]['default'] = _vt   # _vt is a ValueTuple
+#
+# The assignment is to a reference, so the mutation leaks into both
+# DEFAULT_FIELD_MAP and the configobj section. A single-init run is fine.
+# But if RealtimeGaugeDataThread.__init__ runs a second time in the same
+# Python process -- e.g. after a driver throws WeeWxIOError and weewxd's
+# engine retry loop re-creates services -- the field map's 'default'
+# entries are now ValueTuples, the to_list(...) wraps each in a 1-element
+# list, and the len(_default) == 1 branch trips:
+#
+#   _vt = ValueTuple(float(_default[0]), ...)
+#   TypeError: float() argument must be a string or a real number,
+#   not 'ValueTuple'
+#
+# weewxd exits CRITICAL. The rtldavis driver triggers this routinely
+# through its stall-and-retry pattern.
+#
+# Build a fresh plain-dict-of-plain-dicts via `dict()` rather than
+# copy.deepcopy(): deepcopy on a configobj.Section invokes the
+# interpolation engine for %(...)s tokens, which blows up against the
+# [Logging] formatter ("missing option 'asctime' in interpolation").
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -1564,10 +1564,19 @@
+         # add the Groups config to the chainmap and set the units_dict property
+         self.units_dict = ListOfDicts(_config_units_dict, DEFAULT_UNITS)
+         # set up the field map
+-        _field_map = rtgd_config_dict.get('FieldMap', DEFAULT_FIELD_MAP)
+-        # update the field map with any extensions
+-        _extensions = rtgd_config_dict.get('FieldMapExtensions', {})
+-        # update the field map with any extensions
++        # Build a fresh merged map without aliasing DEFAULT_FIELD_MAP
++        # (module global) or rtgd_config_dict (configobj-backed). The
++        # per-field 'default' assignment below mutates the inner dict;
++        # without these copies, a second __init__ in the same process
++        # (e.g. after a driver's WeeWxIOError stall trips weewxd's
++        # retry loop) re-reads ValueTuple-mutated defaults and crashes
++        # on float(<ValueTuple>) in the len(_default)==1 branch.
++        # dict(v) avoids copy.deepcopy(), which fails on configobj
++        # sections via the interpolation engine.
++        _src_map = rtgd_config_dict.get('FieldMap', DEFAULT_FIELD_MAP)
++        _field_map = {k: dict(_src_map[k]) for k in _src_map}
++        _src_ext = rtgd_config_dict.get('FieldMapExtensions', {})
++        _extensions = {k: dict(_src_ext[k]) for k in _src_ext}
+         _field_map.update(_extensions)
+
+         # convert any defaults to ValueTuples
