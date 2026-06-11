@@ -143,7 +143,7 @@ check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
 # The `|` belongs inside the assertion, not at check()'s shell level --
 # otherwise check's stdout (PASS …librtlsdr…) feeds grep silently.
 check "rtldavis links to librtlsdr" \
-  sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep -q librtlsdr'
+  sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep librtlsdr | grep -qv "not found"'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
