@@ -1,0 +1,26 @@
+# Protect rtgd's calculate() against history_max returning None. When no wind
+# packets have landed in the last 10 minutes (intermittent SDR reception,
+# offline drivers, startup race), self.buffer['windGust'].history_max(ts,
+# age=600) returns None and the bare `.value` crashes:
+#
+#   AttributeError: 'NoneType' object has no attribute 'value'
+#
+# The crash recurs once per LOOP packet until conditions recover, taking
+# down the rtgd thread (and gauge-data.txt updates). Same fix applies to
+# the windSpeed fallback path.
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2288,9 +2288,11 @@
+         # first look for max windGust value in the history, if windGust is not
+         # in the buffer then use windSpeed, if no windSpeed then use 0.0
+         if 'windGust' in self.buffer:
+-            wgust = self.buffer['windGust'].history_max(ts, age=600).value
++            _h = self.buffer['windGust'].history_max(ts, age=600)
++            wgust = _h.value if _h is not None else 0.0
+         elif 'windSpeed' in self.buffer:
+-            wgust = self.buffer['windSpeed'].history_max(ts, age=600).value
++            _h = self.buffer['windSpeed'].history_max(ts, age=600)
++            wgust = _h.value if _h is not None else 0.0
+         else:
+             wgust = 0.0
+         # put into a ValueTuple so we can convert
