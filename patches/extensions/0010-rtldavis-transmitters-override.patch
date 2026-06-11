@@ -1,13 +1,24 @@
 # Allow the [Rtldavis] config to set the raw -tr bitmask directly.
-# The driver builds -tr from 5 named slots (iss/anemometer/leaf_soil/temp_hum_1
-# /temp_hum_2), capping coverage at 5 of 8 transmitter IDs. For diagnostic
-# scans (probing for nearby Davis stations on every channel) we want
-# transmitters_override = 255.
+# The driver builds -tr from 5 named slots (iss/anemometer/leaf_soil/
+# temp_hum_1/temp_hum_2), capping coverage at 5 of 8 transmitter IDs.
+# For diagnostic scans (probing every channel for a nearby Davis) we
+# want transmitters_override = 255. Bad config (e.g. an unquoted name
+# instead of an int) is logged and the override skipped, leaving the
+# computed value from the named slots in place.
 --- a/bin/user/rtldavis.py
 +++ b/bin/user/rtldavis.py
-@@ -805,3 +805,5 @@
+@@ -804,6 +804,15 @@
+         self.transmitters, self.tr_count = RtldavisDriver.ch_to_xmit(self,
              channels['iss'], channels['anemometer'], channels['leaf_soil'],
              channels['temp_hum_1'], channels['temp_hum_2'])
 +        _ov = stn_dict.get('transmitters_override')
-+        if _ov is not None and str(_ov).strip(): self.transmitters = int(_ov); self.tr_count = bin(self.transmitters).count('1')
++        if _ov is not None and str(_ov).strip():
++            try:
++                self.transmitters = int(_ov)
++            except ValueError:
++                logerr("[Rtldavis] transmitters_override=%r is not a "
++                       "valid integer; ignoring" % (_ov,))
++            else:
++                self.tr_count = bin(self.transmitters).count('1')
          loginf('using transmitters %d' % self.transmitters)
+         loginf('log_humidity_raw %s' % self._log_humidity_raw)

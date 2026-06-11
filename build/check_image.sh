@@ -133,6 +133,9 @@ check "patch: forecast Zambretti SQL" has 'ORDER BY dateTime DESC LIMIT 1" % dbm
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
 check "patch: rtldavis low-battery regex" has 'r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}"' "$WEEWX_BIN/user/rtldavis.py"
 check "patch: rtldavis python313 r-strings" has "r'ChannelIdx:([\\d]+) ChannelFreq:" "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtldavis transmitters-override" has 'transmitters_override' "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtgd history-max none guard" has '_h is not None else 0.0' "$WEEWX_BIN/user/rtgd.py"
+check "patch: rtldavis last-seen merge" has '_last_seen' "$WEEWX_BIN/user/rtldavis.py"
 
 # rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
 # popen()s it when station_type=Rtldavis. Image must contain it executable.
