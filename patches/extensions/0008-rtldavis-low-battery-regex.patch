@@ -1,0 +1,17 @@
+# DATAPacket.IDENTIFIER restricts the second hex nibble to 0-7, which is the
+# encoding for a normal-battery ISS transmitter. When the battery goes low
+# the high bit gets set and the nibble lands in 8-F, so the regex stops
+# matching and the driver silently drops every packet after the battery
+# starts to die. Upstream issue lheijst/weewx-rtldavis#20 (open since 2023);
+# upstream comment confirms the regex is the bug.
+--- a/bin/user/rtldavis.py
++++ b/bin/user/rtldavis.py
+@@ -510,7 +510,7 @@ class Packet(object):
+
+
+ class DATAPacket(Packet):
+-    IDENTIFIER = re.compile("^\d\d:\d\d:\d\d.[\d]{6} [0-9A-F][0-7][0-9A-F]{14}")
++    IDENTIFIER = re.compile(r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}")
+     PATTERN = re.compile('([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2}) ([\d]+) ([\d]+) ([\d]+) ([\d]+)')
+
+     @staticmethod

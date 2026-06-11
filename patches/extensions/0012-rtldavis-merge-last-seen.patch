@@ -1,0 +1,46 @@
+# rtldavis: merge last-seen sensor values into every LOOP packet.
+#
+# The Davis ISS over-the-air protocol rotates through sensor types --
+# a single 8-byte message carries one of {temperature, humidity, wind,
+# rain, solar, UV, ...} at a time. The driver's _data_to_packet
+# faithfully emits this as a LOOP packet containing only the sensors
+# present in the current message.
+#
+# This breaks per-LOOP derived calculations: weewx.wxservices.
+# StdWXCalculate sees a LOOP packet with outTemp but no outHumidity
+# (or vice versa) and cannot compute dewpoint, cloudbase, heatindex,
+# windchill, etc. The realtime gauges (gauge-data.txt, ssg.html) show
+# dew = 0.0, cloudbasevalue = 0.0, apptemp = 0.0 indefinitely even
+# though archive records (built by StdArchive's accumulator over all
+# LOOPs in the interval) get them right.
+#
+# Fix: cache the last-known value for each gauge field, then merge
+# cached values into every LOOP packet. After this, each LOOP packet
+# carries the latest known value for every sensor, matching how the
+# Vantage USB driver (which has a console-side cache) presents its
+# LOOPs. 'rain' is excluded -- it's an incremental delta per packet,
+# not a gauge, and re-emitting it would double-count tips.
+--- a/bin/user/rtldavis.py
++++ b/bin/user/rtldavis.py
+@@ -867,6 +867,21 @@
+             if DEBUG_RAIN:
+                 logdbg("rain=%s rain_count=%s last_rain_count=%s" %
+                        (packet['rain'], rain_count, self.last_rain_count))
++        # ISS over-the-air rotates through sensor types, so each LOOP
++        # packet carries only one of {temperature, humidity, wind,
++        # rain, solar, UV, ...}. Without merging, StdWXCalculate sees a
++        # packet with outTemp but no outHumidity (or vice versa) and
++        # cannot compute dewpoint, cloudbase, heatindex, etc. -- so
++        # live derived values stay at None. Cache the last-seen value
++        # for each gauge field and merge cached values into every
++        # packet. Skip 'rain' (incremental delta, must not be repeated).
++        if not hasattr(self, '_last_seen'):
++            self._last_seen = {}
++        for k, v in packet.items():
++            if v is not None and k not in ('rain',):
++                self._last_seen[k] = v
++        for k, v in self._last_seen.items():
++            packet.setdefault(k, v)
+         packet['dateTime'] = int(time.time() + 0.5)
+         packet['usUnits'] = weewx.METRICWX
+         return packet

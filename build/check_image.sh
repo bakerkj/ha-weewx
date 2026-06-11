@@ -131,6 +131,20 @@ check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/
 check "patch: rtgd obs-in-self guard" has 'if obs in self:' "$WEEWX_BIN/user/rtgd.py"
 check "patch: forecast Zambretti SQL" has 'ORDER BY dateTime DESC LIMIT 1" % dbm.table_name' "$WEEWX_BIN/user/forecast.py"
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
+check "patch: rtldavis low-battery regex" has 'r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}"' "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtldavis python313 r-strings" has "r'ChannelIdx:([\\d]+) ChannelFreq:" "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtldavis transmitters-override" has 'transmitters_override' "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtgd history-max none guard" has '_h is not None else 0.0' "$WEEWX_BIN/user/rtgd.py"
+check "patch: rtldavis last-seen merge" has '_last_seen' "$WEEWX_BIN/user/rtldavis.py"
+check "patch: rtgd fieldmap deepcopy" has '_field_map = {k: dict(_src_map[k])' "$WEEWX_BIN/user/rtgd.py"
+
+# rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
+# popen()s it when station_type=Rtldavis. Image must contain it executable.
+check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
+# The `|` belongs inside the assertion, not at check()'s shell level --
+# otherwise check's stdout (PASS …librtlsdr…) feeds grep silently.
+check "rtldavis links to librtlsdr" \
+  sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep librtlsdr | grep -qv "not found"'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons

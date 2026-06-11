@@ -49,6 +49,12 @@ https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip
 # install: bin/user/rain24h.py
 https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip
 
+# install: bin/user/rtldavis.py
+# Driver for the rtldavis Go binary built in the rtldavis-builder stage of
+# Dockerfile. Upstream master last touched 2021-01; patches/extensions/
+# carries the known low-battery regex + Python 3.13 r-string fixes.
+https://github.com/lheijst/weewx-rtldavis/archive/2f3b4b344fd70ab253aabfa837b0ffc76570c075.zip
+
 # install: bin/user/thingspeak.py
 https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip
 
