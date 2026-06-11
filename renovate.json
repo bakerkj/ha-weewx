@@ -188,6 +188,14 @@
       "overridePackageName": "debian_13/libusb-1.0"
     },
     {
+      "matchPackageNames": ["debian_13/libusb-1.0-0-dev"],
+      "overridePackageName": "debian_13/libusb-1.0"
+    },
+    {
+      "matchPackageNames": ["debian_13/libc6-dev"],
+      "overridePackageName": "debian_13/glibc"
+    },
+    {
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["github-tags", "git-refs"],
       "groupName": "weewx extensions"
