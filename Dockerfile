@@ -5,13 +5,20 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # to the existing Vantage USB driver. Built as a separate stage so the Go
 # toolchain never ships in the final image. Pinned to upstream master since
 # the project has no release tags and the protocol has been stable since 2020.
+# Built on debian:trixie (not golang:bookworm) so every apt package in the
+# build stage is tracked by the same debian_13/<pkg> Renovate manager that
+# governs the runtime stage.
 # ---------------------------------------------------------------------------
-FROM golang:1.22-bookworm AS rtldavis-builder
+FROM debian:trixie AS rtldavis-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    librtlsdr-dev \
-    libusb-1.0-0-dev \
-    pkg-config \
+    ca-certificates=20250419 \
+    gcc=4:14.2.0-1 \
+    git=1:2.47.3-0+deb13u1 \
+    golang-go=2:1.24~2 \
+    libc6-dev=2.41-12+deb13u3 \
+    librtlsdr-dev=2.0.2-2+b1 \
+    libusb-1.0-0-dev=2:1.0.28-1 \
+    pkg-config=1.8.1-4 \
  && rm -rf /var/lib/apt/lists/*
 ARG RTLDAVIS_REF=b95d5d734e4666c90f3d7539d5e2acd9f80f7e43
 ENV GOPATH=/go GO111MODULE=off

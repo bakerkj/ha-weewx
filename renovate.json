@@ -118,6 +118,17 @@
     },
     {
       "customType": "regex",
+      "description": "rtldavis Go binary SHA pinned via ARG RTLDAVIS_REF in the multi-stage Dockerfile builder. Upstream lheijst/rtldavis has no release tags; tracked via git-refs against the master HEAD.",
+      "managerFilePatterns": ["/Dockerfile$/"],
+      "matchStrings": ["ARG RTLDAVIS_REF=(?<currentDigest>[0-9a-f]{7,40})"],
+      "depNameTemplate": "lheijst/rtldavis",
+      "packageNameTemplate": "https://github.com/lheijst/rtldavis",
+      "currentValueTemplate": "master",
+      "datasourceTemplate": "git-refs",
+      "autoReplaceStringTemplate": "ARG RTLDAVIS_REF={{newDigest}}"
+    },
+    {
+      "customType": "regex",
       "description": "uv build tool, bind-mounted into the Dockerfile build (RUN --mount=from=ghcr.io/astral-sh/uv:<version>). Renovate's docker manager doesn't parse --mount=from, so it's matched here.",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": ["astral-sh/uv:(?<currentValue>[\\d.]+)"],
