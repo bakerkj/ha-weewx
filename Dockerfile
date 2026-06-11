@@ -5,9 +5,9 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # to the existing Vantage USB driver. Built as a separate stage so the Go
 # toolchain never ships in the final image. Pinned to upstream master since
 # the project has no release tags and the protocol has been stable since 2020.
-# Built on debian:trixie (not golang:bookworm) so every apt package in the
-# build stage is tracked by the same debian_13/<pkg> Renovate manager that
-# governs the runtime stage.
+# Built on debian:trixie so every apt package in the build stage falls
+# under the same debian_13/<pkg> Renovate manager that governs the
+# runtime stage.
 # ---------------------------------------------------------------------------
 FROM debian:trixie AS rtldavis-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
