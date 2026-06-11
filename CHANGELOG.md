@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.15](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.14...ha-weewx-v0.1.15) (2026-06-11)
+
+
+### Features
+
+* **rtldavis:** bundle SDR receiver as opt-in Davis alternative ([#141](https://github.com/bakerkj/ha-weewx/issues/141)) ([c76001b](https://github.com/bakerkj/ha-weewx/commit/c76001b3463036cdd653dacbd833dbda7ab3c6b2))
+* **version:** log ha-weewx version on startup ([#132](https://github.com/bakerkj/ha-weewx/issues/132)) ([cdfc006](https://github.com/bakerkj/ha-weewx/commit/cdfc006cfb815e0834b18628b7b190056e3a251a))
+
+
+### Miscellaneous Chores
+
+* **deps:** update apt packages to v1.26.3-3+deb13u6 ([#136](https://github.com/bakerkj/ha-weewx/issues/136)) ([167f726](https://github.com/bakerkj/ha-weewx/commit/167f726805392ea1234d256281a450bd2c4f3932))
+* **deps:** update dependency renovate to v43.217.1 ([#137](https://github.com/bakerkj/ha-weewx/issues/137)) ([c0b856e](https://github.com/bakerkj/ha-weewx/commit/c0b856ef248b5fa1c4868999f9f82d65b5dd1e1b))
+* **deps:** update dependency renovate to v43.220.0 ([#140](https://github.com/bakerkj/ha-weewx/issues/140)) ([30bdb26](https://github.com/bakerkj/ha-weewx/commit/30bdb26f2acd3604fa2bbb6f4645a3426b0c78fb))
+* **deps:** update uv tool to v0.11.20 ([#139](https://github.com/bakerkj/ha-weewx/issues/139)) ([0ca7b0c](https://github.com/bakerkj/ha-weewx/commit/0ca7b0c1755682f6b4e5292c97521bac9878f97c))
+* **pre-commit:** migrate prettier mirror to rbubley fork ([#138](https://github.com/bakerkj/ha-weewx/issues/138)) ([e56fd02](https://github.com/bakerkj/ha-weewx/commit/e56fd0239ab687531df76d5ee24282249df82e4f))
+* **renovate:** switch apt-package tracking from deb to repology ([#135](https://github.com/bakerkj/ha-weewx/issues/135)) ([784954b](https://github.com/bakerkj/ha-weewx/commit/784954b9f7f6f66628346065c52cd51edb13f319))
+* **review:** instruct review bot to use GitHub suggestion blocks ([#142](https://github.com/bakerkj/ha-weewx/issues/142)) ([ffe9686](https://github.com/bakerkj/ha-weewx/commit/ffe96861396a0f43698e3500951d5fb0381d3b4e))
+
+
+### Tests
+
+* **watchdog:** assert addon stays up on healthy probe ([#131](https://github.com/bakerkj/ha-weewx/issues/131)) ([131e228](https://github.com/bakerkj/ha-weewx/commit/131e228728962be33b2b8a452a082cadbe366c7d))
+
+
+### Continuous Integration
+
+* **claude:** add missing-tests priority to the review prompt ([#133](https://github.com/bakerkj/ha-weewx/issues/133)) ([39a62de](https://github.com/bakerkj/ha-weewx/commit/39a62de76d47972da8da420f8431253622a6a12d))
+
 ## [0.1.14](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.13...ha-weewx-v0.1.14) (2026-06-07)
 
 
