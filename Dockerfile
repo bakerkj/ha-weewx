@@ -1,10 +1,11 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
-# rtldavis Go binary — RTL-SDR demodulator for Davis ISS, opt-in alternative
-# to the existing Vantage USB driver. Built as a separate stage so the Go
-# toolchain never ships in the final image. Pinned to upstream master since
-# the project has no release tags and the protocol has been stable since 2020.
+# rtldavis Go binary — RTL-SDR demodulator for Davis ISS. The Python
+# rtldavis driver popen()s it when station_type = Rtldavis is selected.
+# Built as a separate stage so the Go toolchain never ships in the
+# final image. Pinned to upstream master since the project has no
+# release tags and the protocol has been stable since 2020.
 # Built on debian:trixie so every apt package in the build stage falls
 # under the same debian_13/<pkg> Renovate manager that governs the
 # runtime stage.
