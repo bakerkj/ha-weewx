@@ -44,7 +44,7 @@ https://github.com/matthewwall/weewx-owm/archive/297dd97.zip
 https://github.com/previmeteo/weewx-previmeteo/archive/v0.1.zip
 
 # install: bin/user/purpleair.py
-https://github.com/bakerkj/weewx-purpleair/archive/v0.9.zip
+https://github.com/bakerkj/weewx-purpleair/archive/v0.10.zip
 
 # install: bin/user/rain24h.py
 https://github.com/chaunceygardiner/weewx-rain24h/archive/a37f6bb.zip
