@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.18](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.17...ha-weewx-v0.1.18) (2026-06-14)
+
+
+### Bug Fixes
+
+* **rtgd:** round tick_interval ts to nearest second ([#153](https://github.com/bakerkj/ha-weewx/issues/153)) ([79c8900](https://github.com/bakerkj/ha-weewx/commit/79c8900bff0608e02ddb0d12920f8f8eabf2c05c))
+
 ## [0.1.17](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.16...ha-weewx-v0.1.17) (2026-06-14)
 
 
