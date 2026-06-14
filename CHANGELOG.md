@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.17](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.16...ha-weewx-v0.1.17) (2026-06-14)
+
+
+### Features
+
+* **rtgd:** tick_interval option for monotonic gauge-data.txt clock ([#150](https://github.com/bakerkj/ha-weewx/issues/150)) ([4a2b65f](https://github.com/bakerkj/ha-weewx/commit/4a2b65f9ef6607c4f477a37f0f23f4c4bf3def18))
+
+
+### Miscellaneous Chores
+
+* **review:** instruct review bot to preserve patch-file diff format ([#151](https://github.com/bakerkj/ha-weewx/issues/151)) ([ee6f137](https://github.com/bakerkj/ha-weewx/commit/ee6f1376fe827d3ed87534372b966de5b2a2b22c))
+
 ## [0.1.16](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.15...ha-weewx-v0.1.16) (2026-06-14)
 
 
