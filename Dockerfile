@@ -10,7 +10,7 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # under the same debian_13/<pkg> Renovate manager that governs the
 # runtime stage.
 # ---------------------------------------------------------------------------
-FROM debian:trixie AS rtldavis-builder
+FROM debian:trixie-20260610 AS rtldavis-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates=20250419 \
     gcc=4:14.2.0-1 \
