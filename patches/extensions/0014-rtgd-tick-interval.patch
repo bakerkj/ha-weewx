@@ -11,7 +11,7 @@
 # [RealtimeGaugeData] to enable.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -1487,6 +1487,12 @@
+@@ -1487,6 +1487,16 @@
 
          # setup file generation timing
          self.min_interval = rtgd_config_dict.get('min_interval', None)
@@ -20,11 +20,15 @@
 +        # arrived. Cached values are reused; dateTime advances to
 +        # time.time() so consumers see a monotonically-rising clock.
 +        _ti = rtgd_config_dict.get('tick_interval', None)
-+        self.tick_interval = float(_ti) if _ti not in (None, '', '0') else None
++        try:
++            _ti_f = float(_ti) if _ti not in (None, '') else 0.0
++        except (TypeError, ValueError):
++            _ti_f = 0.0
++        self.tick_interval = _ti_f if _ti_f > 0 else None
          self.last_write = 0  # ts (actual) of last generation
 
          # get our file paths and names
-@@ -1801,8 +1807,11 @@
+@@ -1801,8 +1811,11 @@
                          # received throw queue.Empty
                          _package = self.control_queue.get(True, 1.0)
                      except queue.Empty:
@@ -38,7 +42,7 @@
                      else:
                          # a None record is our signal to exit
                          if _package is None:
-@@ -1858,6 +1867,29 @@
+@@ -1858,6 +1871,29 @@
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
 
