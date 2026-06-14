@@ -108,6 +108,21 @@ jobs:
               don't put a `suggestion` block on a line containing
               both `"` and `'` — a tool bug corrupts the body. Use
               prose for that line instead.)
+            - Patch files in `patches/` are unified diffs that get
+              piped through `patch -p1` at build time. Every edit you
+              suggest to a `.patch` file MUST preserve diff format:
+              keep the `+`/`-`/space prefix on every line (the
+              GitHub apply-suggestion button copies your block
+              verbatim, so bare Python or shell will be read as
+              malformed `patch` input and abort the build); never
+              delete a context line the new code depends on; if
+              your suggestion changes the number of added or removed
+              lines, also update the affected `@@ -A,B +C,D @@` hunk
+              header counts and the destination offsets of every
+              later hunk in the same file. When in doubt, suggest
+              the change in prose with the corrected hunk header
+              spelled out rather than a one-click `suggestion`
+              block.
 
           # mcp__github_inline_comment__create_inline_comment is the
           # action's built-in inline-comment tool (loads only when named
