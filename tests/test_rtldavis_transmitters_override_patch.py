@@ -1,52 +1,66 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0010-rtldavis-transmitters-override.patch.
+"""Behavioural regression test for
+patches/extensions/0010-rtldavis-transmitters-override.patch.
 
-Allow ``[Rtldavis] transmitters_override`` in weewx.conf to set the raw
-``-tr`` bitmask directly. The driver builds ``-tr`` from 5 named slots
-(iss/anemometer/leaf_soil/temp_hum_1/temp_hum_2), capping coverage at 5
-of 8 transmitter IDs; diagnostic scans want the full 0xFF. Bad config
-must be logged and ignored, leaving the computed value in place.
+The patched driver lets ``[Rtldavis] transmitters_override`` set the raw
+``-tr`` bitmask directly, bypassing the slot-derived value built from 5
+named channels. Bad integer values are logged and skipped, leaving the
+computed default in place.
 """
 
-import pathlib
-
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0010-rtldavis-transmitters-override.patch"
-)
+import importlib
+import sys
+from unittest.mock import Mock, patch
 
 
-def test_override_read_from_stn_dict():
-    """The driver must pull ``transmitters_override`` from ``stn_dict`` so
-    a [Rtldavis] config knob can replace the slot-derived bitmask without
-    editing code. Falsy/empty values must fall through to the computed value.
-    """
-    src = PATCH.read_text()
-    assert "stn_dict.get('transmitters_override')" in src, (
-        "driver must read transmitters_override from stn_dict so a "
-        "weewx.conf override actually reaches the bitmask"
+def _build_stn_dict(override):
+    d = {
+        "iss_channel": 1,
+        "anemometer_channel": 0,
+        "leaf_soil_channel": 0,
+        "temp_hum_1_channel": 0,
+        "temp_hum_2_channel": 0,
+    }
+    if override is not None:
+        d["transmitters_override"] = override
+    return d
+
+
+def _build_driver(stn_dict_override):
+    sys.modules.pop("rtldavis", None)
+    rtl = importlib.import_module("rtldavis")
+    cfg = {"Rtldavis": _build_stn_dict(stn_dict_override)}
+    # Block the real ProcManager (would fork rtldavis), and skip the
+    # NEW_ARCHIVE_RECORD bind (we pass engine=None anyway).
+    with patch.object(rtl, "ProcManager", lambda *a, **kw: Mock()):
+        drv = rtl.RtldavisDriver(engine=None, config_dict=cfg)
+    return drv
+
+
+def test_transmitters_override_sets_raw_bitmask():
+    drv = _build_driver("255")
+    assert drv.transmitters == 255, (
+        "transmitters_override='255' must set the bitmask directly, "
+        "bypassing the 5-slot channel computation"
     )
-    assert "if _ov is not None and str(_ov).strip():" in src, (
-        "override must be skipped when missing/blank so the slot-derived "
-        "default still applies"
-    )
-
-
-def test_override_logs_and_skips_bad_int():
-    """A non-integer override must be logged via ``logerr`` and skipped,
-    *not* propagated as a ValueError that crashes the driver init. The
-    successful path also recomputes ``tr_count`` via ``bin(...).count('1')``
-    so downstream logging stays consistent.
-    """
-    src = PATCH.read_text()
-    assert "except ValueError:" in src, (
-        "bad-int override must hit a ValueError branch, not crash driver init"
-    )
-    assert "transmitters_override=%r is not a " in src, (
-        "bad-int branch must log via logerr with the offending value"
-    )
-    assert "self.tr_count = bin(self.transmitters).count('1')" in src, (
+    assert drv.tr_count == 8, (
         "successful override must recompute tr_count from the new bitmask"
+    )
+
+
+def test_transmitters_override_invalid_is_ignored():
+    # iss_channel=1 → computed bitmask = 1<<0 = 1.
+    drv = _build_driver("not-an-int")
+    assert drv.transmitters == 1, (
+        "invalid transmitters_override must be logged and skipped, leaving "
+        "the slot-derived bitmask intact (not crash driver init)"
+    )
+
+
+def test_transmitters_override_absent_uses_computed():
+    drv = _build_driver(None)
+    assert drv.transmitters == 1, (
+        "absent transmitters_override must leave the slot-derived bitmask"
     )

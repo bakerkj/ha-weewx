@@ -1,63 +1,84 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0013-rtgd-fieldmap-deepcopy.patch.
+"""Behavioural regression test for
+patches/extensions/0013-rtgd-fieldmap-deepcopy.patch.
 
-``RealtimeGaugeDataThread.__init__`` reads ``FieldMap`` (defaulting to the
-module global ``DEFAULT_FIELD_MAP``) and ``FieldMapExtensions`` (from the
-configobj-backed weewx.conf section), then mutates each entry in place:
-``_field_map[field[0]]['default'] = _vt`` (where ``_vt`` is a ValueTuple).
-The assignment is to a reference, so the mutation leaks into both
-``DEFAULT_FIELD_MAP`` and the configobj section. On a second ``__init__``
-in the same process (e.g. after a driver WeeWxIOError trips weewxd's
-retry loop) the now-ValueTuple defaults blow up the
-``float(_default[0])`` path with TypeError. ``copy.deepcopy`` is *not*
-usable here: configobj's Section invokes the interpolation engine and
-explodes against the [Logging] formatter's ``%(asctime)s`` token.
+``RealtimeGaugeDataThread.__init__`` mutates each FieldMap entry in place
+with ``_field_map[field[0]]['default'] = _vt`` (a ValueTuple). Without the
+patch the assignment leaks into ``DEFAULT_FIELD_MAP``, so a *second*
+``__init__`` in the same Python process (after weewxd's engine retry
+loop re-creates services from a WeeWxIOError stall) re-reads
+ValueTuple-mutated defaults and crashes on ``float(<ValueTuple>)`` in
+the ``len(_default) == 1`` branch.
+
+We exec the patched field-map-build slice twice in the same process. The
+second run must not raise.
 """
 
-import pathlib
+import importlib
+import inspect
+import sys
+import textwrap
+from unittest.mock import Mock
 
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0013-rtgd-fieldmap-deepcopy.patch"
-)
+
+def _fieldmap_slice():
+    sys.modules.pop("rtgd", None)
+    rtgd = importlib.import_module("rtgd")
+    src = inspect.getsource(rtgd.RealtimeGaugeDataThread.__init__)
+    # Walk back to the start of the line so dedent sees consistent indent.
+    needle = "_src_map = rtgd_config_dict.get('FieldMap'"
+    body_start = src.index(needle)
+    line_start = src.rfind("\n", 0, body_start) + 1
+    end = src.index("self.field_map = _field_map", line_start)
+    end = src.index("\n", end) + 1
+    slice_text = textwrap.dedent(src[line_start:end])
+    return rtgd, slice_text
 
 
-def test_fieldmap_built_as_fresh_nested_dict():
-    """The merged field map must be built as a fresh dict-of-dicts via
-    ``dict(_src_map[k])`` so the per-entry ``['default'] = _vt`` mutation
-    does NOT leak into ``DEFAULT_FIELD_MAP`` or the configobj section. A
-    second __init__ otherwise re-reads ValueTuple defaults and crashes on
-    ``float(<ValueTuple>)`` in the len==1 branch.
-    """
-    src = PATCH.read_text()
-    assert "_field_map = {k: dict(_src_map[k]) for k in _src_map}" in src, (
-        "field map must be rebuilt as a fresh dict-of-dicts; alias to "
-        "DEFAULT_FIELD_MAP leaks ValueTuple mutations across re-inits"
+def _run(rtgd, body, rtgd_config_dict):
+    self_mock = Mock()
+    self_mock.units_dict = {}
+    # Pre-fill the only unit groups referenced by entries that carry a
+    # 'default' (only the `bearing` field in the upstream default map).
+    g = dict(vars(rtgd))
+    g.update(
+        {
+            "self": self_mock,
+            "rtgd_config_dict": rtgd_config_dict,
+        }
     )
-    assert "_extensions = {k: dict(_src_ext[k]) for k in _src_ext}" in src, (
-        "FieldMapExtensions must also be copied; otherwise mutation "
-        "leaks into the configobj section"
-    )
+
+    # `self.units_dict[_group]` lookups need to succeed; fall back to a
+    # dict-of-dicts that returns 'degree_compass' for the bearing default
+    # (matches weewx convention for windDir/bearing fields).
+    class _UnitsDict(dict):
+        def __missing__(self, key):
+            return "degree_compass"
+
+    self_mock.units_dict = _UnitsDict()
+    exec(body, g)
+    return self_mock.field_map
 
 
-def test_fieldmap_copies_each_inner_section():
-    """The fix must clone *each inner section* via ``dict(_src_map[k])`` —
-    not just rebind the outer name — because the per-field mutation
-    ``_field_map[field[0]]['default'] = _vt`` writes into the *inner* dict.
-    A shallow outer copy alone still aliases the inner Section objects and
-    re-exposes the second-init TypeError on float(<ValueTuple>).
-    """
-    src = PATCH.read_text()
-    added_lines = [
-        ln for ln in src.splitlines() if ln.startswith("+") and not ln.startswith("+++")
-    ]
-    joined = "\n".join(added_lines)
-    assert "dict(_src_map[k]) for k in _src_map" in joined, (
-        "field-map clone must copy each inner section; a shallow outer "
-        "rebind leaves the inner default dicts aliased and re-exposes the bug"
-    )
-    assert "dict(_src_ext[k]) for k in _src_ext" in joined, (
-        "FieldMapExtensions clone must also copy each inner section"
+def test_fieldmap_build_runs_idempotently_in_same_process():
+    rtgd, body = _fieldmap_slice()
+    cfg = {}  # falls back to DEFAULT_FIELD_MAP
+    fm1 = _run(rtgd, body, cfg)
+    # Without the patch, this second run would crash because
+    # DEFAULT_FIELD_MAP['bearing']['default'] is now a ValueTuple, and
+    # to_list(ValueTuple(...)) wraps it in a 1-element list, then
+    # float(_default[0]) -> TypeError.
+    fm2 = _run(rtgd, body, cfg)
+    # Both runs produced a field map with the bearing default already
+    # converted to a ValueTuple.
+    assert "bearing" in fm1 and "bearing" in fm2
+    assert isinstance(fm1["bearing"]["default"], rtgd.ValueTuple)
+    assert isinstance(fm2["bearing"]["default"], rtgd.ValueTuple)
+    # And the *module global* must not have been mutated.
+    assert rtgd.DEFAULT_FIELD_MAP["bearing"]["default"] == 0, (
+        "patched __init__ must not mutate the module-global DEFAULT_FIELD_MAP; "
+        "a leaked ValueTuple default trips a TypeError in the second "
+        "in-process __init__ via the weewxd engine retry loop"
     )

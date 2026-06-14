@@ -33,6 +33,12 @@ addopts = "-ra"
 
 [tool.mypy]
 mypy_path = ["extensions"]
+exclude = [
+    # Downloaded + patched upstream extension sources used by the test
+    # fixture. Not authored here; type-check noise from upstream's Py2/3
+    # straddle helps no one.
+    "tests/_patched_extensions/",
+]
 
 # weewx + weeutil + configobj ship without py.typed; silence the
 # import noise without weakening checks on our own code.

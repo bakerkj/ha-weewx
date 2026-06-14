@@ -1,54 +1,55 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0012-rtldavis-merge-last-seen.patch.
+"""Behavioural regression test for
+patches/extensions/0012-rtldavis-merge-last-seen.patch.
 
-The Davis ISS over-the-air protocol rotates through sensor types: a single
-8-byte message carries one of {temperature, humidity, wind, rain, solar,
-UV, ...} at a time, and the driver's ``_data_to_packet`` emits a LOOP
-packet containing only that sensor. ``StdWXCalculate`` then can't compute
-dewpoint/cloudbase/heatindex/windchill because it sees a packet with
-outTemp but no outHumidity (or vice versa), and gauge-data.txt shows
-dew=0.0, cloudbasevalue=0.0, apptemp=0.0 indefinitely. Cache the last-
-seen value per gauge field and merge into every LOOP packet. ``rain`` is
-excluded — it's an incremental delta, re-emitting it double-counts tips.
+The Davis ISS over-the-air protocol rotates through sensor types: each
+8-byte message carries one of {temperature, humidity, wind, rain, solar, ...}.
+Without the patch ``_data_to_packet`` emits a LOOP packet with only the
+sensor present in that message, and StdWXCalculate cannot compute derived
+values (dewpoint, cloudbase, etc.). The patch caches the last-seen value
+per gauge field and merges cached values into every LOOP packet. ``rain`` is
+excluded because it is an incremental delta.
 """
 
-import pathlib
-
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0012-rtldavis-merge-last-seen.patch"
-)
+import importlib
+import sys
 
 
-def test_last_seen_cache_initialized_and_updated():
-    """The driver must lazily allocate ``self._last_seen`` and update it
-    from each LOOP packet's non-None fields. Without the cache, every
-    LOOP packet only carries the rotating sensor type and StdWXCalculate
-    cannot compute derived values.
-    """
-    src = PATCH.read_text()
-    assert "if not hasattr(self, '_last_seen'):" in src, (
-        "driver must lazily initialise self._last_seen so the cache "
-        "survives across calls without an __init__ change"
+def _make_driver():
+    sys.modules.pop("rtldavis", None)
+    rtl = importlib.import_module("rtldavis")
+    drv = object.__new__(rtl.RtldavisDriver)
+    drv.last_rain_count = None
+    drv.rain_per_tip = 0.01
+    drv.sensor_map = dict(rtl.RtldavisDriver.DEFAULT_SENSOR_MAP)
+    return drv
+
+
+def test_last_seen_merges_across_packets_and_excludes_rain():
+    drv = _make_driver()
+
+    # First packet carries only outTemp.
+    p1 = drv._data_to_packet({"temperature": 20.0})
+    assert p1["outTemp"] == 20.0
+    assert "outHumidity" not in p1
+
+    # Second packet carries only outHumidity (no temperature key) but the
+    # merge step must surface the cached outTemp into this packet.
+    p2 = drv._data_to_packet({"humidity": 60.0})
+    assert p2["outHumidity"] == 60.0
+    assert p2["outTemp"] == 20.0, (
+        "patched _data_to_packet must merge last-seen non-rain fields into "
+        "every LOOP packet so StdWXCalculate sees both outTemp and "
+        "outHumidity together"
     )
-    assert "self._last_seen[k] = v" in src, (
-        "cache must be updated from each LOOP packet's non-None fields"
-    )
 
-
-def test_last_seen_merge_skips_rain():
-    """Cached values must be merged into each LOOP via ``packet.setdefault``
-    so a freshly-sampled field is preserved. ``rain`` must be excluded
-    from the cache — it is an incremental delta per packet, and re-emitting
-    the last-seen value double-counts tips.
-    """
-    src = PATCH.read_text()
-    assert "packet.setdefault(k, v)" in src, (
-        "cached values must merge via setdefault so fresh samples win"
-    )
-    assert "if v is not None and k not in ('rain',):" in src, (
-        "rain must be excluded from the cache; it is an incremental "
-        "delta and re-emitting it double-counts tips"
+    # Rain delta must NOT carry across — re-emitting double-counts tips.
+    p3 = drv._data_to_packet({"rain_count": 5})
+    assert "rain" in p3
+    p4 = drv._data_to_packet({"temperature": 21.0})
+    assert "rain" not in p4, (
+        "rain is an incremental delta; the merge step must skip it so a "
+        "subsequent packet without rain_count does not double-count tips"
     )

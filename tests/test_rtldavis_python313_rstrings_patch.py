@@ -1,46 +1,42 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0009-rtldavis-python313-rstrings.patch.
+"""Behavioural regression test for
+patches/extensions/0009-rtldavis-python313-rstrings.patch.
 
-The remaining ``re.compile()`` arguments in rtldavis.py contain unrecognised
+Several ``re.compile()`` arguments in rtldavis.py contain unrecognised
 escape sequences inside non-raw strings; Python 3.12+ emits a SyntaxWarning
-for each on import, and we run Python 3.13. Convert to raw strings so the
-warnings disappear at weewxd start. (DATAPacket.IDENTIFIER's r-prefix
-lands in 0008-rtldavis-low-battery-regex.patch.)
+for each at import time. The patch converts them to raw strings.
+
+We compile the file with ``py_compile`` in a subprocess with
+``-W error::SyntaxWarning`` so any remaining warning is promoted to a
+``SyntaxError`` and the compile fails.
 """
 
-import pathlib
+import subprocess
+import sys
 
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0009-rtldavis-python313-rstrings.patch"
-)
+from tests._patched_sources import prepare
 
 
-def test_datapacket_pattern_uses_raw_string():
-    """``DATAPacket.PATTERN`` must be a raw string so Python 3.13 does not
-    SyntaxWarning on the ``\\d`` escapes at every weewxd start.
-    """
-    src = PATCH.read_text()
-    assert "+    PATTERN = re.compile(r'([0-9A-F]{2})" in src, (
-        "DATAPacket.PATTERN must use the r-prefix; non-raw form triggers "
-        "SyntaxWarning on Python 3.13 for every \\d escape"
+def test_rtldavis_compiles_with_no_syntaxwarning():
+    src_path = prepare("rtldavis") / "rtldavis.py"
+    assert src_path.exists()
+
+    code = (
+        f"import py_compile, sys\npy_compile.compile({str(src_path)!r}, doraise=True)\n"
     )
-
-
-def test_channelpacket_regexes_use_raw_string():
-    """All three ``CHANNELPacket`` regexes (``IDENTIFIER``, ``PATTERNv13``,
-    ``PATTERNv12``) must be raw strings — same Python 3.13 SyntaxWarning
-    rationale as ``DATAPacket.PATTERN``.
-    """
-    src = PATCH.read_text()
-    assert '+    IDENTIFIER = re.compile(r"ChannelIdx:")' in src, (
-        "CHANNELPacket.IDENTIFIER must use the r-prefix"
+    result = subprocess.run(
+        [sys.executable, "-W", "error::SyntaxWarning", "-c", code],
+        capture_output=True,
+        text=True,
     )
-    assert "+    PATTERNv13 = re.compile(r'ChannelIdx:" in src, (
-        "CHANNELPacket.PATTERNv13 must use the r-prefix"
+    assert result.returncode == 0, (
+        "rtldavis.py must compile cleanly under -W error::SyntaxWarning; "
+        "unprefixed regex strings raise SyntaxWarning on Py 3.12+ which "
+        "noisies every weewxd start.\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     )
-    assert "+    PATTERNv12 = re.compile(r'ChannelIdx:" in src, (
-        "CHANNELPacket.PATTERNv12 must use the r-prefix"
+    assert "SyntaxWarning" not in result.stderr, (
+        f"unexpected SyntaxWarning surfaced:\n{result.stderr}"
     )

@@ -1,37 +1,35 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0007-rtgd-guard-start-of-day-reset.patch.
+"""Behavioural regression test for
+patches/extensions/0007-rtgd-guard-start-of-day-reset.patch.
 
-rtgd's ``Buffer.start_of_day_reset()`` iterates the static MANIFEST and
-calls ``self[obs].day_reset()`` for every entry. The Buffer (a dict) is
-only populated with obs that actually arrive in loop packets, so a station
-that doesn't report a manifest obs (e.g. ``humidex`` when StdWXCalculate is
-not computing it) raises ``KeyError`` at the first midnight rollover and
-the rtgd worker thread exits, freezing ``gauge-data.txt`` until restart.
+rtgd's ``Buffer.start_of_day_reset()`` iterates the static manifest and
+resets every obs. The buffer only contains obs the station actually reports,
+so a missing manifest entry (e.g. ``humidex`` without StdWXCalculate)
+raises ``KeyError`` at the first midnight rollover and the rtgd worker
+thread exits, freezing ``gauge-data.txt`` until restart.
+
+The patched code guards with ``if obs in self``.
 """
 
-import pathlib
-
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0007-rtgd-guard-start-of-day-reset.patch"
-)
+import importlib
+import sys
+from unittest.mock import Mock
 
 
-def test_start_of_day_reset_guards_missing_obs():
-    """``start_of_day_reset`` must guard ``self[obs].day_reset()`` with
-    ``if obs in self``. Without the guard, the first midnight rollover after
-    boot raises KeyError for any MANIFEST obs the station doesn't report,
-    killing the rtgd thread and freezing gauge-data.txt.
-    """
-    src = PATCH.read_text()
-    assert (
-        "+            if obs in self:\n+                self[obs].day_reset()" in src
-    ), (
-        "start_of_day_reset must skip obs not in the Buffer dict; "
-        "otherwise the first midnight rollover kills the rtgd thread"
-    )
-    assert "-            self[obs].day_reset()" in src, (
-        "patch must remove the unguarded self[obs].day_reset() call"
-    )
+def test_start_of_day_reset_skips_missing_obs():
+    sys.modules.pop("rtgd", None)
+    rtgd = importlib.import_module("rtgd")
+
+    buf = dict.__new__(rtgd.Buffer)
+    # Hand-build the dict; bypass __init__ which wants real day_stats.
+    dict.__init__(buf)
+    # Manifest references one obs we provide and one we don't, mimicking
+    # the production "humidex declared but never observed" scenario.
+    buf.manifest = ["outTemp", "humidex"]
+    buf["outTemp"] = Mock()
+
+    # Must not raise even though 'humidex' is in the manifest but not the dict.
+    buf.start_of_day_reset()
+    assert buf["outTemp"].day_reset.call_count == 1

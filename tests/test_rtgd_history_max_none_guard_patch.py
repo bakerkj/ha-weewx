@@ -1,54 +1,79 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0011-rtgd-history-max-none-guard.patch.
+"""Behavioural regression test for
+patches/extensions/0011-rtgd-history-max-none-guard.patch.
 
-rtgd's ``calculate()`` reads ``self.buffer['windGust'].history_max(ts,
-age=600).value``. When no wind packets have landed in the last 10 minutes
-(intermittent SDR reception, offline drivers, startup race), ``history_max``
-returns None and the bare ``.value`` crashes with AttributeError. The crash
-recurs once per LOOP packet until conditions recover, taking down the rtgd
-thread and freezing gauge-data.txt. The same fix applies to the windSpeed
-fallback path.
+When no wind packets have landed in the last 10 minutes (intermittent SDR
+reception, offline driver, startup race), ``Buffer['windGust'].history_max(ts,
+age=600)`` returns ``None``. Upstream calls ``.value`` on the result
+unconditionally and crashes with::
+
+    AttributeError: 'NoneType' object has no attribute 'value'
+
+The patch guards with ``_h.value if _h is not None else 0.0``.
+
+Driving the full ``calculate()`` requires deep setup, so we exec the
+patched wgust slice from the live ``calculate`` source against a
+controlled ``self`` and ``packet`` --- exercising the *actual* patched
+lines, not a re-typed copy.
 """
 
-import pathlib
+import importlib
+import inspect
+import sys
+import textwrap
+from unittest.mock import Mock
 
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0011-rtgd-history-max-none-guard.patch"
-)
+
+def _wgust_slice():
+    sys.modules.pop("rtgd", None)
+    rtgd = importlib.import_module("rtgd")
+    src = inspect.getsource(rtgd.RealtimeGaugeDataThread.calculate)
+    body_start = src.index("# wgust - 10 minute high gust")
+    line_start = src.rfind("\n", 0, body_start) + 1
+    end = src.index("#        # avgbearing", line_start)
+    return rtgd, textwrap.dedent(src[line_start:end])
 
 
-def test_windgust_history_max_none_falls_back_to_zero():
-    """The windGust branch must capture ``history_max(...)`` into a local,
-    check for None, and substitute 0.0 — never blindly take ``.value`` on a
-    possibly-None return. The bare ``.value`` is what crashes the thread.
-    """
-    src = PATCH.read_text()
-    assert "_h = self.buffer['windGust'].history_max(ts, age=600)" in src, (
-        "windGust branch must capture history_max into a local for the "
-        "None check to work; chained .value is the bug"
+def test_history_max_none_does_not_crash_wgust():
+    rtgd, body = _wgust_slice()
+    self_mock = Mock()
+    # buffer must contain 'windGust' to hit the patched branch.
+    self_mock.buffer = {"windGust": Mock()}
+    self_mock.buffer["windGust"].history_max = Mock(return_value=None)
+    self_mock.packet_unit_dict = {
+        "windSpeed": {"units": "km_per_hour", "group": "group_speed"}
+    }
+    self_mock.wind_group = "km_per_hour"
+    self_mock.wind_format = "%.1f"
+    data = {}
+    ts = 1_700_000_000
+    g = dict(vars(rtgd))
+    g.update({"self": self_mock, "data": data, "ts": ts})
+    exec(body, g)
+    # No AttributeError --- and we get the 0.0 fallback formatted.
+    assert data["wgust"] == "0.0", (
+        "patched wgust branch must fall back to 0.0 when history_max returns "
+        "None; unpatched code raises AttributeError on .value and kills the "
+        "rtgd thread on every LOOP packet"
     )
-    assert "wgust = _h.value if _h is not None else 0.0" in src, (
-        "windGust branch must fall back to 0.0 when history_max returns None"
-    )
-    assert (
-        "-            wgust = self.buffer['windGust'].history_max(ts, age=600).value"
-        in src
-    ), "patch must remove the unguarded chained .value that crashed the thread"
 
 
-def test_windspeed_fallback_also_guarded():
-    """The windSpeed fallback branch has the same None-return hazard and
-    must be guarded identically; otherwise the bug just relocates to
-    stations that report windSpeed without windGust.
-    """
-    src = PATCH.read_text()
-    assert "_h = self.buffer['windSpeed'].history_max(ts, age=600)" in src, (
-        "windSpeed fallback must also capture history_max into a local"
-    )
-    assert (
-        "-            wgust = self.buffer['windSpeed'].history_max(ts, age=600).value"
-        in src
-    ), "patch must remove the unguarded windSpeed .value access"
+def test_history_max_none_does_not_crash_windspeed_fallback():
+    rtgd, body = _wgust_slice()
+    self_mock = Mock()
+    # No windGust in buffer; falls through to windSpeed.
+    self_mock.buffer = {"windSpeed": Mock()}
+    self_mock.buffer["windSpeed"].history_max = Mock(return_value=None)
+    self_mock.packet_unit_dict = {
+        "windSpeed": {"units": "km_per_hour", "group": "group_speed"}
+    }
+    self_mock.wind_group = "km_per_hour"
+    self_mock.wind_format = "%.1f"
+    data = {}
+    ts = 1_700_000_000
+    g = dict(vars(rtgd))
+    g.update({"self": self_mock, "data": data, "ts": ts})
+    exec(body, g)
+    assert data["wgust"] == "0.0"

@@ -1,32 +1,40 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""Regression tests for patches/extensions/0005-previmeteo-qualify-get-site-dict.patch.
+"""Behavioural regression test for
+patches/extensions/0005-previmeteo-qualify-get-site-dict.patch.
 
-previmeteo (previmeteo/weewx-previmeteo v0.1) calls bare ``get_site_dict(...)``,
-which is undefined on WeeWX 5 (it lives in ``weewx.restx``). Without
-qualification the service crashes weewxd with ``NameError`` at import time.
-Qualify the call so the service loads.
+Upstream previmeteo calls bare ``get_site_dict(...)``, which doesn't exist
+at module scope. weewxd would crash at first ``StdPrevimeteo`` construction
+with ``NameError``. The patch qualifies the call as
+``weewx.restx.get_site_dict``.
 """
 
-import pathlib
-
-PATCH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "patches/extensions/0005-previmeteo-qualify-get-site-dict.patch"
-)
+import importlib
+import sys
+from unittest.mock import Mock, patch
 
 
-def test_get_site_dict_is_qualified():
-    """``get_site_dict`` must be called as ``weewx.restx.get_site_dict``
-    because the unqualified name is not exported in WeeWX 5; leaving it
-    bare raises ``NameError`` at service init and crashes weewxd.
-    """
-    src = PATCH.read_text()
-    assert "weewx.restx.get_site_dict(" in src, (
-        "previmeteo must call weewx.restx.get_site_dict(...) explicitly; "
-        "bare get_site_dict is undefined on WeeWX 5"
-    )
-    assert "-        _ambient_dict = get_site_dict(" in src, (
-        "patch must remove the unqualified call site"
-    )
+def test_stdprevimeteo_init_calls_qualified_get_site_dict():
+    sys.modules.pop("previmeteo", None)
+    previmeteo = importlib.import_module("previmeteo")
+
+    # Stub ``weewx.restx.get_site_dict`` to return None so __init__ exits
+    # cleanly before touching ``weewx.manager`` / queues / threads.
+    with patch.object(
+        previmeteo.weewx.restx, "get_site_dict", return_value=None
+    ) as gsd:
+        cfg = {"Previmeteo": {"station": "S", "password": "P"}}
+        engine = Mock()
+        # StdRESTful's __init__ just stashes engine + config; that's fine.
+        svc = previmeteo.StdPrevimeteo(engine=engine, config_dict=cfg)
+        assert svc is not None
+        gsd.assert_called_once()
+        args = gsd.call_args[0]
+        # The patched call is
+        #     weewx.restx.get_site_dict(
+        #         config_dict, 'Previmeteo', 'station', 'password')
+        assert args[0] is cfg
+        assert args[1] == "Previmeteo"
+        assert args[2] == "station"
+        assert args[3] == "password"
