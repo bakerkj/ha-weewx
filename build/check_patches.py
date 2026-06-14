@@ -231,8 +231,13 @@ def check_0009_rtldavis_python313_rstrings() -> None:
     code = (
         f"import py_compile, sys\npy_compile.compile({str(src_path)!r}, doraise=True)\n"
     )
+    # Use the weewx venv Python (the same interpreter weewxd uses to load
+    # rtldavis.py at runtime), not sys.executable. check_image.sh invokes us
+    # as `python3 check_patches.py` which can resolve to the system Python;
+    # if it ever diverges from the venv Python the SyntaxWarning gate would
+    # silently test the wrong interpreter.
     result = subprocess.run(
-        [sys.executable, "-W", "error::SyntaxWarning", "-c", code],
+        ["/opt/weewx/bin/python3", "-W", "error::SyntaxWarning", "-c", code],
         capture_output=True,
         text=True,
     )
