@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.16](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.15...ha-weewx-v0.1.16) (2026-06-14)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump weewx-purpleair to v0.10 ([#146](https://github.com/bakerkj/ha-weewx/issues/146)) ([017bf38](https://github.com/bakerkj/ha-weewx/commit/017bf3883d1eb36e6022278a6e16e8c6f7d8eb8e))
+* **deps:** update debian docker tag to trixie-20260610 ([#143](https://github.com/bakerkj/ha-weewx/issues/143)) ([43682da](https://github.com/bakerkj/ha-weewx/commit/43682dabcf27eb0f5cc9423123c826ffa8e02d59))
+* **deps:** update dependency pytest to v9.1.0 ([#149](https://github.com/bakerkj/ha-weewx/issues/149)) ([e23c749](https://github.com/bakerkj/ha-weewx/commit/e23c749e0c7076d4b36b4414d658bccf870a4a0c))
+* **deps:** update pre-commit hooks to v0.15.17 ([#144](https://github.com/bakerkj/ha-weewx/issues/144)) ([6a813ef](https://github.com/bakerkj/ha-weewx/commit/6a813efcbbcde7f962d13a4a5fcd1d7a69919995))
+* **deps:** update pre-commit hooks to v0.37.3 ([#148](https://github.com/bakerkj/ha-weewx/issues/148)) ([e343c09](https://github.com/bakerkj/ha-weewx/commit/e343c090eb71a72fc8b58c0d7e1bdbe66fb2268a))
+* **deps:** update uv tool to v0.11.21 ([#147](https://github.com/bakerkj/ha-weewx/issues/147)) ([b944a53](https://github.com/bakerkj/ha-weewx/commit/b944a530ebd029d4adc340443eb7f31a5bff910b))
+
 ## [0.1.15](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.14...ha-weewx-v0.1.15) (2026-06-11)
 
 
