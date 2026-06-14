@@ -137,6 +137,7 @@ check "patch: rtldavis transmitters-override" has 'transmitters_override' "$WEEW
 check "patch: rtgd history-max none guard" has '_h is not None else 0.0' "$WEEWX_BIN/user/rtgd.py"
 check "patch: rtldavis last-seen merge" has '_last_seen' "$WEEWX_BIN/user/rtldavis.py"
 check "patch: rtgd fieldmap deepcopy" has '_field_map = {k: dict(_src_map[k])' "$WEEWX_BIN/user/rtgd.py"
+check "patch: purpleair dedupe" has '_last_inserted_ts' "$WEEWX_BIN/user/purpleair.py"
 
 # rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
 # popen()s it when station_type=Rtldavis. Image must contain it executable.
