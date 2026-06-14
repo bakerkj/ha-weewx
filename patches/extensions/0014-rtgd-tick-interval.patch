@@ -42,7 +42,7 @@
                      else:
                          # a None record is our signal to exit
                          if _package is None:
-@@ -1858,6 +1871,29 @@
+@@ -1858,6 +1871,36 @@
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
 
@@ -52,7 +52,14 @@
 +        queue.Empty branch when tick_interval seconds have elapsed since
 +        the last write. No buffer/cache mutation — read-only re-render.
 +        """
-+        ts = time.time()
++        # Round ts to the nearest integer second, matching how the
++        # weewx Vantage (and most other) drivers stamp LOOP packets:
++        # `packet['dateTime'] = int(time.time() + 0.5)`. Without this,
++        # _emit_tick's float ts is truncated by strftime("%S") while
++        # the LOOP write a fraction of a second earlier was rounded
++        # up — both end up with the same integer-second timeUTC, so
++        # the displayed clock advances 2s at a time instead of 1s.
++        ts = int(time.time() + 0.5)
 +        cached_packet = self.packet_cache.get_packet(ts, self.max_cache_age)
 +        self.lost_contact_flag = self.get_lost_contact(cached_packet, 'loop')
 +        try:
