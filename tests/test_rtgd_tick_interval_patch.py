@@ -27,10 +27,30 @@ def test_emit_tick_rounds_ts_to_nearest_second():
     but its `timeUTC` field only advanced every 2s.
     """
     src = PATCH.read_text()
-    assert "ts = int(time.time() + 0.5)" in src, (
+    assert "ts = int(now + 0.5)" in src, (
         "tick patch must round ts to match LOOP-packet rounding; "
         "raw float time.time() collides with LOOP timeUTC every other write"
     )
     assert "+        ts = time.time()" not in src, (
-        "raw float assignment was the v0.1.17 bug; do not reintroduce it"
+        "raw float ts assignment was the v0.1.17 bug; do not reintroduce it"
+    )
+
+
+def test_emit_tick_schedules_against_unrounded_wall_clock():
+    """`self.last_write` must be set to the *un-rounded* wall clock, not
+    to the rounded `ts`. If `last_write = ts` and `ts` rounded *up* (i.e.
+    frac(time.time()) >= 0.5), `last_write` is up to 0.5 s in the future.
+    The next queue.Empty branch's `(time.time() - self.last_write) >=
+    tick_interval` check then underflows and skips, so the *next* tick
+    fires 2 s after this one — the same 2 s-clock symptom one layer up
+    from the ts-rounding bug fixed by this patch.
+    """
+    src = PATCH.read_text()
+    assert "+        self.last_write = now" in src, (
+        "last_write must capture the un-rounded wall clock so the "
+        "tick-interval scheduler doesn't underflow when ts rounds up"
+    )
+    assert "+        self.last_write = ts" not in src, (
+        "setting last_write to the rounded ts schedules the next tick "
+        "from a future timestamp and reintroduces the 2 s-clock bug"
     )

@@ -42,7 +42,7 @@
                      else:
                          # a None record is our signal to exit
                          if _package is None:
-@@ -1858,6 +1871,36 @@
+@@ -1858,6 +1871,43 @@
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
 
@@ -52,14 +52,21 @@
 +        queue.Empty branch when tick_interval seconds have elapsed since
 +        the last write. No buffer/cache mutation — read-only re-render.
 +        """
-+        # Round ts to the nearest integer second, matching how the
-+        # weewx Vantage (and most other) drivers stamp LOOP packets:
-+        # `packet['dateTime'] = int(time.time() + 0.5)`. Without this,
-+        # _emit_tick's float ts is truncated by strftime("%S") while
-+        # the LOOP write a fraction of a second earlier was rounded
-+        # up — both end up with the same integer-second timeUTC, so
-+        # the displayed clock advances 2s at a time instead of 1s.
-+        ts = int(time.time() + 0.5)
++        # ts is rounded to the nearest integer second so timeUTC
++        # matches the LOOP-packet rounding (weewx Vantage stamps
++        # `packet['dateTime'] = int(time.time() + 0.5)`). Without
++        # matching rounding, _emit_tick's float ts is truncated by
++        # strftime("%S") while the LOOP write a moment earlier was
++        # rounded up — both end up with the same integer-second
++        # timeUTC, so the clock advances 2s at a time, not 1s.
++        #
++        # last_write must stay on the un-rounded wall clock so the
++        # tick-interval scheduler doesn't see a future timestamp when
++        # ts rounds up (which would make the next `time.time() -
++        # last_write` underflow tick_interval and skip a tick — the
++        # same 2-second symptom in a different layer).
++        now = time.time()
++        ts = int(now + 0.5)
 +        cached_packet = self.packet_cache.get_packet(ts, self.max_cache_age)
 +        self.lost_contact_flag = self.get_lost_contact(cached_packet, 'loop')
 +        try:
@@ -72,7 +79,7 @@
 +        except Exception:
 +            weeutil.logger.log_traceback(log.info, 'rtgdthread: **** ')
 +            return
-+        self.last_write = ts
++        self.last_write = now
 +        if self.exporter:
 +            self.exporter.export(data, ts)
 +
