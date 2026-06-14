@@ -1,0 +1,69 @@
+# rtgd's gauge-data.txt is written from process_packet(), which only fires when
+# a new LOOP packet arrives in the queue. Davis ISS sends a packet every ~2.5s,
+# so consumers (e.g. gauges.js polling gauge-data.txt) see the dateTime field
+# stall in that interval and the displayed clock visibly catches up in jumps.
+#
+# Add an optional `tick_interval` rtgd config knob: when > 0, the run loop's
+# existing 1-second control_queue timeout branch emits a synthetic write using
+# the last cached values with dateTime advanced to time.time(). Sensor values
+# stay at their most recent LOOP value; only the clock advances. Default
+# disabled — set `tick_interval = 1` (in seconds) in weewx.conf
+# [RealtimeGaugeData] to enable.
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -1487,6 +1487,12 @@
+
+         # setup file generation timing
+         self.min_interval = rtgd_config_dict.get('min_interval', None)
++        # tick_interval: when > 0, emit a synthetic gauge-data.txt
++        # write every tick_interval seconds even if no LOOP packet has
++        # arrived. Cached values are reused; dateTime advances to
++        # time.time() so consumers see a monotonically-rising clock.
++        _ti = rtgd_config_dict.get('tick_interval', None)
++        self.tick_interval = float(_ti) if _ti not in (None, '', '0') else None
+         self.last_write = 0  # ts (actual) of last generation
+
+         # get our file paths and names
+@@ -1801,8 +1807,11 @@
+                         # received throw queue.Empty
+                         _package = self.control_queue.get(True, 1.0)
+                     except queue.Empty:
+-                        # nothing in the queue so continue
+-                        pass
++                        # no LOOP packet within 1s — emit a tick if enabled
++                        # so the gauge-data.txt clock advances.
++                        if (self.tick_interval is not None
++                                and (time.time() - self.last_write) >= self.tick_interval):
++                            self._emit_tick()
+                     else:
+                         # a None record is our signal to exit
+                         if _package is None:
+@@ -1858,6 +1867,29 @@
+             log.critical("Thread exiting. Reason: %s" % (e, ))
+             return
+
++    def _emit_tick(self):
++        """Emit a synthetic gauge-data.txt write using cached values
++        with the current time as dateTime. Called from the run loop's
++        queue.Empty branch when tick_interval seconds have elapsed since
++        the last write. No buffer/cache mutation — read-only re-render.
++        """
++        ts = time.time()
++        cached_packet = self.packet_cache.get_packet(ts, self.max_cache_age)
++        self.lost_contact_flag = self.get_lost_contact(cached_packet, 'loop')
++        try:
++            data = self.calculate(cached_packet)
++        except Exception:
++            weeutil.logger.log_traceback(log.info, 'rtgdthread: **** ')
++            return
++        try:
++            self.write_data(data)
++        except Exception:
++            weeutil.logger.log_traceback(log.info, 'rtgdthread: **** ')
++            return
++        self.last_write = ts
++        if self.exporter:
++            self.exporter.export(data, ts)
++
+     def process_packet(self, packet):
+         """Process incoming loop packets and generate gauge-data.txt.
