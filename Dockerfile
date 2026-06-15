@@ -74,8 +74,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     apt-get update && apt-get install -y --no-install-recommends \
-    bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
+    bash=5.2.37-2+b9 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
     librtlsdr0=2.0.2-2+b1 \
