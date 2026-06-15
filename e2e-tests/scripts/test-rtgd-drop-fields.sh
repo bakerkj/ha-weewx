@@ -250,8 +250,8 @@ wait_for_gauge_data || {
 }
 
 # --- Phase 4: assertions ---
-python3 - <<'PYEOF'
-import json, sys
+python3 - <<'PYEOF' || exit 1
+import json, re, sys
 d = json.load(open("/tmp/gd.json"))
 baseline = open("/tmp/gd-baseline-fields.txt").read().splitlines()
 print(f"  after-override total fields: {len(d)} (baseline was {len(baseline)})")
@@ -280,7 +280,33 @@ if non_indoor_dropped:
     sys.exit(1)
 print(f"PASS  only the requested indoor fields were dropped ({len(indoor_dropped)} of them)")
 
-print(f"  sample: temp={d.get('temp')!r}  hum={d.get('hum')!r}  press={d.get('press')!r}  apptemp={d.get('apptemp')!r}")
+# Every T* time-aggregate field (TtempTH, TtempTL, TapptempTH, TapptempTL,
+# TwgustTM, TrrateTM, ThumTH, ThumTL, TheatindexTH, TwchillTL, TpressTH,
+# TpressTL, ThourlyrainTH, TSolarRadTM, TdewpointTH, TdewpointTL, etc.)
+# MUST be a strftime-formatted "HH:MM" string. In the 0.1.20 production
+# regression these stringified as a `%`-formatted number against a
+# `%H:%M` format, crashing with `ValueError: unsupported format
+# character 'H'` and exiting the rtgd thread. The test must catch this
+# per-FIELD (not just "did the thread crash"), because the failure
+# silently produces a None/empty cell rather than killing the daemon.
+time_re = re.compile(r"^\d{2}:\d{2}(:\d{2})?$")
+# RTGD convention: time-of-extreme fields are `T<obs><TH|TL|TM>` —
+# capital T prefix, observation name (mostly lowercase but allowing
+# CamelCase like SolarRad), suffix TH (time of high), TL (time of low),
+# or TM (time of max for solar/rrate/wgust).
+time_fields = [k for k in d if re.match(r"^T[a-zA-Z]+T[HLM]$", k)]
+if not time_fields:
+    print("FAIL  no T<obs> time-aggregate fields in baseline — test invariant violated")
+    sys.exit(1)
+bad = [(k, d[k]) for k in time_fields if not time_re.match(str(d[k]).strip())]
+if bad:
+    print(f"FAIL  {len(bad)} time-aggregate field(s) not HH:MM:")
+    for k, v in bad[:10]:
+        print(f"    {k} = {v!r}")
+    sys.exit(1)
+print(f"PASS  all {len(time_fields)} T* time-aggregate fields are valid HH:MM")
+
+print(f"  sample: temp={d.get('temp')!r}  hum={d.get('hum')!r}  press={d.get('press')!r}  apptemp={d.get('apptemp')!r}  TapptempTH={d.get('TapptempTH')!r}")
 PYEOF
 rc=$?
 
