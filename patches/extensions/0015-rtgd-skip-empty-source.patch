@@ -14,7 +14,8 @@
 # so the operator-facing config stays readable: blank source -> field gone.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -2399,4 +2399,10 @@
+@@ -2457,6 +2457,12 @@
+ 
          # now populate all fields in the field map
          for field in self.field_map:
 +            # Operator can prune a field from gauge-data.txt by setting its
@@ -25,3 +26,4 @@
 +                continue
              data[field] = self.get_field_value(field, packet)
          return data
+ 
