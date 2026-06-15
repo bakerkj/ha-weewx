@@ -2,6 +2,11 @@ repos:
   - repo: builtin
     hooks:
       - id: trailing-whitespace
+        # Unified-diff blank context lines are ` \n` (single leading space
+        # then newline); trim-trailing-whitespace flattens those to `\n`
+        # and `patch -p1` then refuses the file as "malformed patch".
+        # Skip *.patch so the in-tree extension patches keep parsing.
+        exclude: '\.patch$'
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: check-yaml

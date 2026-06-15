@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""In-image behavioural checks for the 14 bundled-extension patches.
+"""In-image behavioural checks for the 15 bundled-extension patches.
 
 Runs inside the built addon image (invoked from ``build/check_image.sh``)
 against the actual shipped code at ``/opt/weewx-data/bin/user/``. Each
@@ -425,20 +425,21 @@ def check_0013_rtgd_fieldmap_deepcopy() -> None:
 def check_0014_rtgd_tick_interval() -> None:
     rtgd = _import("rtgd")
 
-    thr = object.__new__(rtgd.RealtimeGaugeDataThread)
-    cached_packet = {"dateTime": 0}
-    calculate = Mock(return_value={"some": "data"})
-    write_data = Mock()
-    get_lost_contact = Mock(return_value=False)
-    thr.packet_cache = Mock()
-    thr.packet_cache.get_packet = Mock(return_value=cached_packet)
-    thr.max_cache_age = 600
-    thr.calculate = calculate
-    thr.write_data = write_data
-    thr.get_lost_contact = get_lost_contact
-    thr.exporter = None
-    thr.last_write = 0
+    def _new_thread(buffer):
+        thr = object.__new__(rtgd.RealtimeGaugeDataThread)
+        thr.packet_cache = Mock()
+        thr.packet_cache.get_packet = Mock(return_value={"dateTime": 0})
+        thr.max_cache_age = 600
+        thr.calculate = Mock(return_value={"some": "data"})
+        thr.write_data = Mock()
+        thr.get_lost_contact = Mock(return_value=False)
+        thr.exporter = None
+        thr.last_write = 0
+        thr.buffer = buffer
+        return thr
 
+    # --- happy path: buffer is primed (>=1 LOOP digested), tick emits ---
+    thr = _new_thread(buffer={"outTemp": Mock()})
     now = 1234567890.7  # frac > 0.5 — int(now+0.5) rounds up.
     real_time = rtgd.time.time
     rtgd.time.time = lambda: now
@@ -447,9 +448,9 @@ def check_0014_rtgd_tick_interval() -> None:
     finally:
         rtgd.time.time = real_time
 
-    assert calculate.call_count == 1
-    arg_packet = calculate.call_args[0][0]
-    assert arg_packet is cached_packet
+    assert thr.calculate.call_count == 1
+    arg_packet = thr.calculate.call_args[0][0]
+    assert arg_packet == {"dateTime": 0}
     get_packet_args = thr.packet_cache.get_packet.call_args[0]
     assert get_packet_args[0] == int(now + 0.5), (
         "ts passed to get_packet must round to the nearest integer second so "
@@ -460,7 +461,75 @@ def check_0014_rtgd_tick_interval() -> None:
         "rounded ts schedules the next tick from a future timestamp and "
         "re-introduces the 2 s-clock bug at the scheduler layer"
     )
-    write_data.assert_called_once_with({"some": "data"})
+    thr.write_data.assert_called_once_with({"some": "data"})
+
+    # --- startup guard: empty buffer (no LOOP packet yet) is a no-op ---
+    thr = _new_thread(buffer={})
+    real_time = rtgd.time.time
+    rtgd.time.time = lambda: now
+    try:
+        thr._emit_tick()
+    finally:
+        rtgd.time.time = real_time
+
+    assert thr.calculate.call_count == 0, (
+        "_emit_tick must short-circuit when self.buffer is empty — calculate() "
+        "reads running aggregates off self.buffer[source] and would KeyError "
+        "out for any derived obs (e.g. appTemp from StdWXCalculate) before "
+        "the first real LOOP packet primes the buffer"
+    )
+    assert thr.write_data.call_count == 0, (
+        "no write_data call either — gauge-data.txt must not be touched with "
+        "uninitialised data during the pre-first-LOOP startup window"
+    )
+    assert thr.last_write == 0, (
+        "self.last_write must not advance when the tick is skipped — "
+        "otherwise the next-tick scheduler waits tick_interval seconds from "
+        "a fake timestamp instead of retrying promptly once a LOOP lands"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 0015 — rtgd skip-empty-source FieldMap entries
+# ---------------------------------------------------------------------------
+def check_0015_rtgd_skip_empty_source() -> None:
+    rtgd = _import("rtgd")
+    src = inspect.getsource(rtgd.RealtimeGaugeDataThread.calculate)
+    needle = "for field in self.field_map:"
+    start = src.index(needle)
+    end = src.index("return data", start)
+    loop_body = textwrap.dedent(src[start:end])
+
+    self_mock = Mock()
+    self_mock.field_map = {
+        "temp": {"source": "outTemp", "format": "%.1f"},
+        "inhum": {"source": ""},  # operator override -> must be skipped
+        "intemp": {},  # missing source key entirely -> must be skipped
+        "press": {"source": "barometer", "format": "%.3f"},
+    }
+    self_mock.get_field_value = Mock(side_effect=lambda f, p: f"<{f}>")
+
+    data: dict = {}
+    g = {"self": self_mock, "data": data, "packet": {}}
+    exec(loop_body, g)
+
+    assert "temp" in data and "press" in data, (
+        "fields with a populated source must still be emitted to gauge-data.txt"
+    )
+    assert "inhum" not in data, (
+        "field with empty `source =` must be dropped from gauge-data.txt — "
+        "that's the whole point of the operator-facing override; falling "
+        "back to None/default leaves the field visible"
+    )
+    assert "intemp" not in data, (
+        "field with no `source` key at all must also be dropped (defence "
+        "in depth: empty-string and missing both mean 'do not emit')"
+    )
+    assert self_mock.get_field_value.call_count == 2, (
+        "skipped fields must not invoke get_field_value — the skip has to "
+        "short-circuit before the lookup, otherwise units-dict access on "
+        "an empty source raises and the loop dies"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -493,6 +562,7 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("0012-rtldavis-merge-last-seen", check_0012_rtldavis_merge_last_seen),
     ("0013-rtgd-fieldmap-deepcopy", check_0013_rtgd_fieldmap_deepcopy),
     ("0014-rtgd-tick-interval", check_0014_rtgd_tick_interval),
+    ("0015-rtgd-skip-empty-source", check_0015_rtgd_skip_empty_source),
 ]
 
 

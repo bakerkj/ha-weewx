@@ -1,0 +1,29 @@
+# rtgd: skip emitting fields whose FieldMap source is empty.
+#
+# RealtimeGaugeDataThread.calculate() walks self.field_map and unconditionally
+# writes every field into the JSON payload, falling back to a default value
+# (or None) when the field's source observation is missing. There is no
+# upstream way to *drop* a field from gauge-data.txt short of replacing the
+# entire [[FieldMap]] block (~250 lines of config) — overriding `source =`
+# to empty via [[FieldMapExtensions]] still emits the field as `null` or 0.
+#
+# Treat an empty/missing `source` in the merged field_map as "do not emit".
+# This lets users prune the JSON via a small [[FieldMapExtensions]] override
+# (`[[[inhum]]] source =`) instead of restating the full default field map.
+# The check is intentionally on the source value rather than a separate flag
+# so the operator-facing config stays readable: blank source -> field gone.
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2457,6 +2457,12 @@
+ 
+         # now populate all fields in the field map
+         for field in self.field_map:
++            # Operator can prune a field from gauge-data.txt by setting its
++            # `source =` to empty in [[FieldMapExtensions]]; skip emitting
++            # those fields rather than falling back to None / default. See
++            # 0015-rtgd-skip-empty-source.patch.
++            if not self.field_map[field].get('source'):
++                continue
+             data[field] = self.get_field_value(field, packet)
+         return data
+ 
