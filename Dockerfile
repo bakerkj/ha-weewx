@@ -91,6 +91,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
     rsync=3.4.1+ds1-5+deb13u3 \
+ && echo "cache-test apt v=1" \
  && apt-get autoclean -y
 
 # Replace the distro nginx config with our ingress-port server. The user
