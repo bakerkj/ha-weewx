@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.19](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.18...ha-weewx-v0.1.19) (2026-06-15)
+
+
+### Features
+
+* **rtgd:** skip empty-source FieldMap entries; gate _emit_tick on first LOOP ([#158](https://github.com/bakerkj/ha-weewx/issues/158)) ([17536f4](https://github.com/bakerkj/ha-weewx/commit/17536f4306da1e5eb5300c551f6067dea6e76e87))
+
+
+### Miscellaneous Chores
+
+* **checks:** integration tests for the 14 extension patches inside the image ([#156](https://github.com/bakerkj/ha-weewx/issues/156)) ([7284ab0](https://github.com/bakerkj/ha-weewx/commit/7284ab0522b826b658189694f8e05f7679f1da01))
+
 ## [0.1.18](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.17...ha-weewx-v0.1.18) (2026-06-14)
 
 
