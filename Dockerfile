@@ -91,7 +91,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
     rsync=3.4.1+ds1-5+deb13u3 \
- && echo "cache-analysis bust apt" \
  && apt-get autoclean -y
 
 # Replace the distro nginx config with our ingress-port server. The user
@@ -113,8 +112,7 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.21,source=/uv,target=/usr/local/bin/u
     --mount=type=bind,source=.python-version,target=/build/.python-version \
     --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv sync --frozen --no-dev --no-install-project \
-      --project /build --python /usr/bin/python3 \
- && echo "cache-analysis bust uv"
+      --project /build --python /usr/bin/python3
 
 # ---------------------------------------------------------------------------
 # Prepare weewx data directory
