@@ -112,8 +112,7 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.21,source=/uv,target=/usr/local/bin/u
     --mount=type=bind,source=.python-version,target=/build/.python-version \
     --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv sync --frozen --no-dev --no-install-project \
-      --project /build --python /usr/bin/python3 \
- && echo "cache-test uv bust"
+      --project /build --python /usr/bin/python3
 
 # ---------------------------------------------------------------------------
 # Prepare weewx data directory
