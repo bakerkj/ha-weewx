@@ -79,8 +79,13 @@ RTGD
 # blocks).
 write_rtgd() {
   local section_body="$1"
-  docker exec -i "$CTR" python3 <<PYEOF
+  # Pass section_body as argv[1] (quoted heredoc) rather than interpolating
+  # it into a """...""" Python literal — keeps the script safe if the
+  # injected config ever contains `"""` or backslash-escape sequences.
+  docker exec -i "$CTR" python3 - "$section_body" <<'PYEOF'
 import re
+import sys
+section_body = sys.argv[1]
 p = "/config/weewx.conf"
 src = open(p).read()
 src = re.sub(
@@ -93,7 +98,7 @@ if "user.rtgd.RealtimeGaugeData" not in src:
         "        report_services  = weewx.engine.StdReport",
         "        report_services  = weewx.engine.StdReport, user.rtgd.RealtimeGaugeData",
     )
-src += """$section_body"""
+src += section_body
 open(p, "w").write(src)
 PYEOF
 }
@@ -130,6 +135,15 @@ while [ $(($(date +%s) - start)) -lt "$SEED_TIMEOUT" ]; do
   }
   sleep 1
 done
+# Without this guard a stalled seed (container failed to start, init
+# script crash, etc.) silently falls through to Phase 2 and the test
+# reports "baseline gauge-data.txt never appeared" — which misleads the
+# reader into thinking it's a Phase 2 failure rather than a container
+# startup failure.
+if ! docker exec "$CTR" test -f /config/weewx.conf 2>/dev/null; then
+  echo "FAIL  weewx.conf never seeded in ${SEED_TIMEOUT}s (container failed to start?)"
+  exit 1
+fi
 
 # Drop archive_interval to 5s so we hit the first archive fast (bypasses
 # the unrelated stats_unit_system=None startup race in rtgd).
@@ -157,6 +171,19 @@ except Exception: print(0)' 2>/dev/null)
   fi
   sleep 2
 done
+# Surface a silent archive timeout: Phase 2 may still emit gauge-data.txt
+# even without an archive row (rtgd doesn't hard-require one), which
+# would silently skip the workaround for the upstream
+# stats_unit_system=None startup race. WARN rather than exit — the
+# downstream phases may still pass and the reader needs to see this.
+n=$(docker exec "$CTR" /opt/weewx/bin/python3 -c '
+import sqlite3
+try:
+    print(sqlite3.connect("/config/db/weewx.sdb").execute("SELECT COUNT(*) FROM archive").fetchone()[0])
+except Exception: print(0)' 2>/dev/null)
+if [ "${n:-0}" -lt 1 ] 2>/dev/null; then
+  echo "WARN  no archive row in ${ARCHIVE_TIMEOUT}s — rtgd startup race (stats_unit_system=None) may fire"
+fi
 
 # --- Phase 2: BASELINE — rtgd with NO FieldMap overrides ---
 echo
