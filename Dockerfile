@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
