@@ -10,11 +10,28 @@
 # Treat an empty/missing `source` in the merged field_map as "do not emit".
 # This lets users prune the JSON via a small [[FieldMapExtensions]] override
 # (`[[[inhum]]] source =`) instead of restating the full default field map.
-# The check is intentionally on the source value rather than a separate flag
-# so the operator-facing config stays readable: blank source -> field gone.
+#
+# Two sites: the emit loop in calculate() (skip the field), AND the
+# constructor's defaults-to-ValueTuple loop (skip entirely, otherwise
+# _getUnitGroup('') -> None and self.units_dict[None] KeyErrors at boot
+# before any LOOP packet has arrived).
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -2457,6 +2457,12 @@
+@@ -1592,6 +1592,13 @@
+         # convert any defaults to ValueTuples
+         for field in list(_field_map.items()):
+             field_config = field[1]
++            # Operator may have pruned a field by setting its `source =`
++            # to empty in [[FieldMapExtensions]]; _getUnitGroup('') returns
++            # None which then KeyErrors self.units_dict[None]. Skip these
++            # entries entirely so the populate loop can skip them later
++            # (see 0015-rtgd-skip-empty-source.patch).
++            if not field_config.get('source'):
++                continue
+             _group = _getUnitGroup(field_config['source'])
+             _default = weeutil.weeutil.to_list(field_config.get('default', None))
+             if _default is None:
+@@ -2448,6 +2455,12 @@
  
          # now populate all fields in the field map
          for field in self.field_map:
