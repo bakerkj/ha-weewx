@@ -44,6 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
+        id: buildx
       # uv on the host runner — the MQTT-publisher unit validation host
       # script uses it to build a transient venv with homeassistant +
       # weewx. setup-uv caches the wheels keyed on HA_VERSION so a bump
@@ -83,6 +84,12 @@ jobs:
       - name: Inject host cache dirs as BuildKit mount caches
         uses: reproducible-containers/buildkit-cache-dance@v3.3.0
         with:
+          # Pin to the same docker-container builder that setup-buildx-action
+          # just created. v3.3.0 defaults to `default` (the engine builder),
+          # which is a separate BuildKit instance with an empty cache-mount
+          # namespace — so extraction ran against the wrong builder and the
+          # saved tarball was always ~500 bytes (manifest stub, no .debs).
+          builder: ${{ steps.buildx.outputs.name }}
           cache-map: |
             {
               "cache-var-cache-apt": "/var/cache/apt",

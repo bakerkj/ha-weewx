@@ -92,6 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
+        id: buildx
 
       # BuildKit `--mount=type=cache` contents (Dockerfile apt/uv mounts)
       # live in BuildKit's snapshotter, NOT in the gha-exported content
@@ -117,6 +118,11 @@ jobs:
       - name: Inject host cache dirs as BuildKit mount caches
         uses: reproducible-containers/buildkit-cache-dance@v3.3.0
         with:
+          # Pin to the same docker-container builder setup-buildx-action
+          # just created. v3.3.0 defaults to `default` (the engine builder)
+          # which is a separate BuildKit instance — extraction runs against
+          # the wrong cache-mount namespace and saves an empty tarball.
+          builder: ${{ steps.buildx.outputs.name }}
           cache-map: |
             {
               "cache-var-cache-apt": "/var/cache/apt",
