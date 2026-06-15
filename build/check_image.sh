@@ -125,20 +125,21 @@ done < <(grep -E '^# install: ' /work/build/extensions.txt | sed 's/^# install: 
 check "ext: rtgd module present" test -f "$WEEWX_BIN/user/rtgd.py"
 check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeGauges
 
-# Bundled-extension patches: assert the post-patch hunk is on disk.
-check "patch: previmeteo get_site_dict" has 'weewx.restx.get_site_dict' "$WEEWX_BIN/user/previmeteo.py"
-check "patch: emoncms skip_upload" has 'AbortedPost("skip_upload")' "$WEEWX_BIN/user/emoncms.py"
-check "patch: rtgd obs-in-self guard" has 'if obs in self:' "$WEEWX_BIN/user/rtgd.py"
-check "patch: forecast Zambretti SQL" has 'ORDER BY dateTime DESC LIMIT 1" % dbm.table_name' "$WEEWX_BIN/user/forecast.py"
+# weedb core patch — not under patches/extensions/; keep the substring check.
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
-check "patch: rtldavis low-battery regex" has 'r"^\d\d:\d\d:\d\d\.[\d]{6} [0-9A-F]{16}"' "$WEEWX_BIN/user/rtldavis.py"
-check "patch: rtldavis python313 r-strings" has "r'ChannelIdx:([\\d]+) ChannelFreq:" "$WEEWX_BIN/user/rtldavis.py"
-check "patch: rtldavis transmitters-override" has 'transmitters_override' "$WEEWX_BIN/user/rtldavis.py"
-check "patch: rtgd history-max none guard" has '_h is not None else 0.0' "$WEEWX_BIN/user/rtgd.py"
-check "patch: rtldavis last-seen merge" has '_last_seen' "$WEEWX_BIN/user/rtldavis.py"
-check "patch: rtgd fieldmap deepcopy" has '_field_map = {k: dict(_src_map[k])' "$WEEWX_BIN/user/rtgd.py"
-check "patch: purpleair dedupe" has '_last_inserted_ts' "$WEEWX_BIN/user/purpleair.py"
-check "patch: rtgd tick-interval" has 'def _emit_tick' "$WEEWX_BIN/user/rtgd.py"
+
+# Bundled-extension patches: behavioural assertions against the shipped
+# user/* code. Each patch under patches/extensions/0001..0014 has a
+# dedicated check_<name>() in build/check_patches.py that imports the
+# patched module and exercises the changed code path — same import path
+# (user.<mod>) the running addon uses. The script emits one
+# PASS/FAIL line per patch in the same format as the `check` helper
+# above, so the trailing fail-summary block catches any of them.
+if PYTHONPATH=$WEEWX_BIN python3 /work/build/check_patches.py; then
+  :
+else
+  fail=1
+fi
 
 # rtldavis Go binary built in the rtldavis-builder stage; weewx-rtldavis
 # popen()s it when station_type=Rtldavis. Image must contain it executable.
