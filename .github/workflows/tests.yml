@@ -18,6 +18,11 @@ jobs:
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
+          # Distinct cache-suffix so this job doesn't race with mypy.yaml
+          # / the integration job for the same setup-uv cache key — the
+          # cache reservation race logs "Failed to save: Unable to
+          # reserve cache with key setup-uv-…" on parallel runs.
+          cache-suffix: tests
       - name: Sync dev dependencies
         run: uv sync --group dev --frozen
       - name: Run pytest

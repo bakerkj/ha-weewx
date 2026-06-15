@@ -93,12 +93,13 @@ jobs:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v4
 
-      # Build a locally-loadable copy of the image FIRST, smoke-check it,
-      # then let the home-assistant/builder action do the actual publish.
-      # Both builds share the same gha layer cache, so the second build is
-      # near-free on cache hit. Catches per-arch regressions (different
-      # wheel set, libusb version, etc.) BEFORE the registry push.
-      - name: Build add-on image (smoke)
+      # Build a locally-loadable copy of the image FIRST so the next step
+      # can run in-image self-checks against it, then let the
+      # home-assistant/builder action do the actual publish. Both builds
+      # share the same gha layer cache, so the second build is near-free
+      # on cache hit. Catches per-arch regressions (different wheel set,
+      # libusb version, etc.) BEFORE the registry push.
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .
