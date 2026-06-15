@@ -9,6 +9,18 @@
 # stay at their most recent LOOP value; only the clock advances. Default
 # disabled — set `tick_interval = 1` (in seconds) in weewx.conf
 # [RealtimeGaugeData] to enable.
+#
+# Startup ordering: _emit_tick() builds gauge-data.txt by calling calculate()
+# against the cached LOOP packet and reading running aggregates off
+# self.buffer. self.buffer is primed lazily by process_new_loop_packet() as
+# each LOOP packet arrives, so derived observations (e.g. appTemp computed
+# by StdWXCalculate) aren't present until at least one full LOOP cycle has
+# been digested. Without a gate, the first tick fires before that first
+# LOOP and calculate() raises `KeyError: 'appTemp'` (or similar) out of
+# get_field_value's aggregate branch. _emit_tick() short-circuits when
+# self.buffer is empty — the buffer becomes non-empty as soon as
+# process_new_loop_packet() ingests the first real LOOP, which is exactly
+# the "wait for one LOOP packet" semantics we want.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
 @@ -1487,6 +1487,16 @@
@@ -42,7 +54,7 @@
                      else:
                          # a None record is our signal to exit
                          if _package is None:
-@@ -1858,6 +1871,43 @@
+@@ -1858,6 +1871,51 @@
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
 
@@ -52,6 +64,15 @@
 +        queue.Empty branch when tick_interval seconds have elapsed since
 +        the last write. No buffer/cache mutation — read-only re-render.
 +        """
++        # Wait until at least one real LOOP packet has been digested into
++        # self.buffer. calculate() reads running aggregates off
++        # self.buffer[source]; an empty buffer (pre-first-LOOP startup)
++        # raises KeyError out of get_field_value's aggregate branch for
++        # any derived obs (e.g. appTemp from StdWXCalculate). The buffer
++        # becomes non-empty as soon as process_new_loop_packet ingests
++        # the first LOOP. See 0014 header for the full rationale.
++        if not self.buffer:
++            return
 +        # ts is rounded to the nearest integer second so timeUTC
 +        # matches the LOOP-packet rounding (weewx Vantage stamps
 +        # `packet['dateTime'] = int(time.time() + 0.5)`). Without
