@@ -60,6 +60,36 @@ jobs:
       # so a bad commit fails immediately, not after the image cooks.
       - name: Verify extensions.txt URLs are annotated
         run: python3 build/check_extensions_annotated.py
+      # BuildKit `--mount=type=cache` contents (Dockerfile apt/uv mounts)
+      # live in BuildKit's snapshotter, NOT in the gha-exported content
+      # store, so they DON'T survive across runs on a fresh GHA runner.
+      # The cache-dance workaround: actions/cache restores host dirs;
+      # buildkit-cache-dance maps them into the BuildKit mount targets
+      # for the duration of the docker build; on job end actions/cache
+      # saves the populated host dirs for the next run.
+      - name: Restore BuildKit mount cache (apt + uv)
+        id: bk-cache
+        uses: actions/cache@v5.0.5
+        with:
+          path: |
+            cache-var-cache-apt
+            cache-var-lib-apt-lists
+            cache-root-cache-uv
+          key:
+            bk-cache-tests-${{ runner.os }}-${{ hashFiles('Dockerfile',
+            'uv.lock') }}
+          restore-keys: |
+            bk-cache-tests-${{ runner.os }}-
+      - name: Inject host cache dirs as BuildKit mount caches
+        uses: reproducible-containers/buildkit-cache-dance@v3.3.0
+        with:
+          cache-map: |
+            {
+              "cache-var-cache-apt": "/var/cache/apt",
+              "cache-var-lib-apt-lists": "/var/lib/apt/lists",
+              "cache-root-cache-uv": "/root/.cache/uv"
+            }
+          skip-extraction: ${{ steps.bk-cache.outputs.cache-hit }}
       # Build the addon image with the shared gha layer cache and load
       # it as ha-weewx-test (shared 'ha-weewx-test' scope with the e2e
       # jobs so unchanged builds skip the apt/uv/extension layers).
