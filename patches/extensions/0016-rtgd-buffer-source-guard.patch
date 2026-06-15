@@ -1,0 +1,70 @@
+# rtgd: guard self.buffer[source] aggregate lookups against unprimed entries,
+# and route the default-fallback path through strftime for time aggregates.
+#
+# RealtimeGaugeDataThread.get_field_value() reads running aggregates by
+# indexing self.buffer[source] in the min/max/last/sum/mintime/maxtime/
+# lasttime/count branches. self.buffer is populated lazily by
+# process_new_loop_packet() as each LOOP packet arrives, so derived
+# observations (e.g. appTemp computed by StdWXCalculate) may be absent
+# for the first ticks after addon startup while _emit_tick is already
+# firing against a cached packet. The bare lookup then raises KeyError:
+#
+#     KeyError: 'appTemp'
+#       File "rtgd.py", line N, in get_field_value
+#         _result_vt = ValueTuple(getattr(self.buffer[source], agg), ...
+#
+# The non-aggregate branch already does `if source in packet:` and falls
+# to a None result for missing observations. Mirror that here: if the
+# source isn't yet in self.buffer, the aggregate result is None and the
+# field falls through to its default. 'trend' is exempt (db, not buffer).
+#
+# Second hunk: the default-fallback path was `result = format % value`
+# unconditionally, which crashes for time-aggregate fields whose format
+# is a strftime pattern (e.g. TapptempTH carries `format = %H:%M`):
+#
+#     ValueError: unsupported format character 'H' (0x48) at index 1
+#
+# Route mintime/maxtime/lasttime through time.strftime against
+# time.localtime(default) so the default-fallback works for *all*
+# aggregate types, not just the numeric ones.
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2105,7 +2105,17 @@
+                     aggregate_period = None
+                 # obtain the raw aggregate value, any unit conversion and
+                 # formatting will be done later
+-                if agg == 'trend':
++                # Guard the buffer-dependent aggregates against the source
++                # obs not yet being in self.buffer. process_new_loop_packet
++                # adds entries to self.buffer as observations are seen;
++                # derived obs (e.g. appTemp from StdWXCalculate) may be
++                # absent during the startup window where _emit_tick fires
++                # against a cached packet but the first real LOOP carrying
++                # that obs hasn't been digested yet. 'trend' is exempt
++                # because it reads from the db, not the buffer.
++                if agg != 'trend' and source not in self.buffer:
++                    _result = None
++                elif agg == 'trend':
+                     # if no aggregate period was specified default to 3600 seconds
+                     trend_period = aggregate_period if aggregate_period is not None else 3600
+                     # the largest difference in time that is acceptable when
+@@ -2222,7 +2232,18 @@
+                     # we have a default, defaults are already a ValueTuple so we can just use it as is
+                     _conv_default = weewx.units.convert(this_field_map['default'],
+                                                         result_units).value
+-                    result = this_field_map['format'] % _conv_default
++                    if agg in ('mintime', 'maxtime', 'lasttime'):
++                        # mintime/maxtime/lasttime carry a strftime-style
++                        # format ('%H:%M'); the default is a numeric ts
++                        # ValueTuple, so route through time.localtime
++                        # before formatting. Without this, the 0016 guard's
++                        # `_result = None` fall-through above ends here and
++                        # raises ValueError: unsupported format character
++                        # 'H' against the numeric `%`-formatter.
++                        result = time.strftime(this_field_map['format'],
++                                               time.localtime(_conv_default or 0))
++                    else:
++                        result = this_field_map['format'] % _conv_default
+                 else:
+                     # we do not have a default so use None
+                     result = None

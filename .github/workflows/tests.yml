@@ -324,3 +324,33 @@ jobs:
         run:
           BUILD=0 IMAGE=ha-weewx-watchdog-test
           ./e2e-tests/scripts/test-watchdog.sh
+
+  rtgd-drop-fields:
+    name: "e2e: rtgd drop-fields"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      # Read the shared gha layer cache; build + load the add-on image, then
+      # boot it with the shipped template + Simulator + archive_interval=5s,
+      # wait for the first archive record (so rtgd.setup() reads a populated
+      # day_stats), inject [RealtimeGaugeData] with empty-source overrides
+      # for in*/inhum*, restart, and assert that gauge-data.txt drops those
+      # fields without a KeyError storm in the addon log. Exercises 0014
+      # (tick_interval) + 0015 (skip-empty-source) + 0016 (buffer-source
+      # guard) end-to-end against the actually-shipped image.
+      - name: Build add-on image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ha-weewx-rtgd-test
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+          cache-from: |
+            type=gha,scope=ha-weewx-test
+      - name: Run rtgd drop-fields e2e
+        run:
+          BUILD=0 IMAGE=ha-weewx-rtgd-test
+          ./e2e-tests/scripts/test-rtgd-drop-fields.sh

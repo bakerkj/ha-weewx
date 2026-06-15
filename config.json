@@ -4,7 +4,7 @@
   "description": "WeeWX weather station server with bundled extensions. Edit /config/weewx.conf directly (on the host: /addon_configs/<slug>_weewx/weewx.conf).",
   "url": "https://github.com/bakerkj/ha-weewx",
   "image": "ghcr.io/bakerkj/{arch}-ha-weewx",
-  "version": "0.1.19",
+  "version": "0.1.21",
   "arch": [
     "amd64",
     "aarch64"

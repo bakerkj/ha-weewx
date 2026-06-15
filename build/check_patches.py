@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 
-"""In-image behavioural checks for the 15 bundled-extension patches.
+"""In-image behavioural checks for the 16 bundled-extension patches.
 
 Runs inside the built addon image (invoked from ``build/check_image.sh``)
 against the actual shipped code at ``/opt/weewx-data/bin/user/``. Each
@@ -425,21 +425,20 @@ def check_0013_rtgd_fieldmap_deepcopy() -> None:
 def check_0014_rtgd_tick_interval() -> None:
     rtgd = _import("rtgd")
 
-    def _new_thread(buffer):
-        thr = object.__new__(rtgd.RealtimeGaugeDataThread)
-        thr.packet_cache = Mock()
-        thr.packet_cache.get_packet = Mock(return_value={"dateTime": 0})
-        thr.max_cache_age = 600
-        thr.calculate = Mock(return_value={"some": "data"})
-        thr.write_data = Mock()
-        thr.get_lost_contact = Mock(return_value=False)
-        thr.exporter = None
-        thr.last_write = 0
-        thr.buffer = buffer
-        return thr
+    thr = object.__new__(rtgd.RealtimeGaugeDataThread)
+    cached_packet = {"dateTime": 0}
+    calculate = Mock(return_value={"some": "data"})
+    write_data = Mock()
+    get_lost_contact = Mock(return_value=False)
+    thr.packet_cache = Mock()
+    thr.packet_cache.get_packet = Mock(return_value=cached_packet)
+    thr.max_cache_age = 600
+    thr.calculate = calculate
+    thr.write_data = write_data
+    thr.get_lost_contact = get_lost_contact
+    thr.exporter = None
+    thr.last_write = 0
 
-    # --- happy path: buffer is primed (>=1 LOOP digested), tick emits ---
-    thr = _new_thread(buffer={"outTemp": Mock()})
     now = 1234567890.7  # frac > 0.5 — int(now+0.5) rounds up.
     real_time = rtgd.time.time
     rtgd.time.time = lambda: now
@@ -448,9 +447,9 @@ def check_0014_rtgd_tick_interval() -> None:
     finally:
         rtgd.time.time = real_time
 
-    assert thr.calculate.call_count == 1
-    arg_packet = thr.calculate.call_args[0][0]
-    assert arg_packet == {"dateTime": 0}
+    assert calculate.call_count == 1
+    arg_packet = calculate.call_args[0][0]
+    assert arg_packet is cached_packet
     get_packet_args = thr.packet_cache.get_packet.call_args[0]
     assert get_packet_args[0] == int(now + 0.5), (
         "ts passed to get_packet must round to the nearest integer second so "
@@ -461,32 +460,7 @@ def check_0014_rtgd_tick_interval() -> None:
         "rounded ts schedules the next tick from a future timestamp and "
         "re-introduces the 2 s-clock bug at the scheduler layer"
     )
-    thr.write_data.assert_called_once_with({"some": "data"})
-
-    # --- startup guard: empty buffer (no LOOP packet yet) is a no-op ---
-    thr = _new_thread(buffer={})
-    real_time = rtgd.time.time
-    rtgd.time.time = lambda: now
-    try:
-        thr._emit_tick()
-    finally:
-        rtgd.time.time = real_time
-
-    assert thr.calculate.call_count == 0, (
-        "_emit_tick must short-circuit when self.buffer is empty — calculate() "
-        "reads running aggregates off self.buffer[source] and would KeyError "
-        "out for any derived obs (e.g. appTemp from StdWXCalculate) before "
-        "the first real LOOP packet primes the buffer"
-    )
-    assert thr.write_data.call_count == 0, (
-        "no write_data call either — gauge-data.txt must not be touched with "
-        "uninitialised data during the pre-first-LOOP startup window"
-    )
-    assert thr.last_write == 0, (
-        "self.last_write must not advance when the tick is skipped — "
-        "otherwise the next-tick scheduler waits tick_interval seconds from "
-        "a fake timestamp instead of retrying promptly once a LOOP lands"
-    )
+    write_data.assert_called_once_with({"some": "data"})
 
 
 # ---------------------------------------------------------------------------
@@ -494,6 +468,8 @@ def check_0014_rtgd_tick_interval() -> None:
 # ---------------------------------------------------------------------------
 def check_0015_rtgd_skip_empty_source() -> None:
     rtgd = _import("rtgd")
+
+    # --- emit-loop site (in calculate): empty-source fields skipped ---
     src = inspect.getsource(rtgd.RealtimeGaugeDataThread.calculate)
     needle = "for field in self.field_map:"
     start = src.index(needle)
@@ -531,6 +507,245 @@ def check_0015_rtgd_skip_empty_source() -> None:
         "an empty source raises and the loop dies"
     )
 
+    # --- constructor site (in __init__): empty-source fields skipped too ---
+    # Without this, _getUnitGroup('') returns None and self.units_dict[None]
+    # KeyErrors at boot. Confirm by exec'ing the same slice 0013's check
+    # uses but with an empty-source FieldMapExtensions entry.
+    init_src = inspect.getsource(rtgd.RealtimeGaugeDataThread.__init__)
+    needle = "_src_map = rtgd_config_dict.get('FieldMap'"
+    s = init_src.index(needle)
+    line_start = init_src.rfind("\n", 0, s) + 1
+    e = init_src.index("self.field_map = _field_map", line_start)
+    e = init_src.index("\n", e) + 1
+    body = textwrap.dedent(init_src[line_start:e])
+
+    self2 = Mock()
+
+    class _UnitsDict(dict):
+        def __missing__(self, key):
+            if key is None:
+                # Reproduces the upstream-pre-0015 boot crash: an empty
+                # source -> None group -> self.units_dict[None] KeyError.
+                # The patched constructor must SKIP empty-source entries
+                # before this lookup ever happens.
+                raise AssertionError(
+                    "constructor must not look up self.units_dict[None] for "
+                    "an empty-source FieldMapExtensions entry"
+                )
+            return "degree_compass"
+
+    self2.units_dict = _UnitsDict()
+    cfg = {
+        "FieldMapExtensions": {
+            "inhum": {"source": ""},
+        }
+    }
+    g = dict(vars(rtgd))
+    g.update({"self": self2, "rtgd_config_dict": cfg})
+    exec(body, g)  # must NOT raise
+    assert "inhum" in self2.field_map, (
+        "empty-source override should still land in self.field_map so the "
+        "calculate() emit-loop skips it (rather than processing it and "
+        "falling back to a default value)"
+    )
+    assert not self2.field_map["inhum"].get("source"), (
+        "merged field_map['inhum']['source'] must remain empty/missing — "
+        "the patch must not silently fill in a default source"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 0016 — rtgd buffer-source guard in get_field_value aggregate branches
+# ---------------------------------------------------------------------------
+def check_0016_rtgd_buffer_source_guard() -> None:
+    """get_field_value must NOT KeyError when an aggregate field's source obs
+    isn't yet in self.buffer. self.buffer is populated lazily by
+    process_new_loop_packet as obs arrive; derived obs (appTemp from
+    StdWXCalculate, etc.) may be absent during the startup window where
+    _emit_tick fires against a cached packet. Pre-0016 the bare
+    self.buffer[source] lookup raised:
+        KeyError: 'appTemp'
+        File "rtgd.py", in get_field_value, _result_vt = ValueTuple(
+            getattr(self.buffer[source], agg), ...)
+    """
+    rtgd = _import("rtgd")
+
+    thr = object.__new__(rtgd.RealtimeGaugeDataThread)
+    # buffer has 'outTemp' but is MISSING 'appTemp' — mirrors the real
+    # boot race after my hass restart that hit this exact KeyError.
+    out_temp = Mock()
+    out_temp.max = 72.5
+    out_temp.min = 60.1
+    out_temp.sum = 1500.0
+    out_temp.last = 70.0
+    out_temp.maxtime = 1781508000  # epoch -> "HH:MM" via strftime
+    out_temp.mintime = 1781490000
+    out_temp.lasttime = 1781508000
+    out_temp.count = 42
+    thr.buffer = {"outTemp": out_temp}
+    thr.units_dict = {"group_temperature": "degree_F"}
+    thr.packet_unit_dict = {
+        "outTemp": {"units": "degree_F", "group": "group_temperature"}
+    }
+    # Field map exercises EVERY aggregate type the 0016 guard touches.
+    # The pre-0016 production crash was `KeyError: 'appTemp'`; the
+    # SECOND production crash (after my half-fix shipped in 0.1.19/0.1.20)
+    # was `ValueError: unsupported format character 'H'` from the
+    # TapptempTH (maxtime) path falling to the default-fallback with a
+    # strftime-style format. This test must cover ALL aggregate types
+    # used in DEFAULT_FIELD_MAP so a per-type regression can't slip
+    # through again.
+    base = {
+        "aggregate_period": "day",
+        "default": rtgd.ValueTuple(0, "degree_F", "group_temperature"),
+    }
+    thr.field_map = {
+        # numeric-format aggregates (value-producing)
+        "tempTH": {"source": "outTemp", "format": "%.1f", "aggregate": "max", **base},
+        "tempTL": {"source": "outTemp", "format": "%.1f", "aggregate": "min", **base},
+        "tempsum": {"source": "outTemp", "format": "%.1f", "aggregate": "sum", **base},
+        "templast": {
+            "source": "outTemp",
+            "format": "%.1f",
+            "aggregate": "last",
+            **base,
+        },
+        "tempcount": {
+            "source": "outTemp",
+            "format": "%.0f",
+            "aggregate": "count",
+            **base,
+        },
+        # strftime-format aggregates (time-producing) — these are the
+        # T* fields (TtempTH, TapptempTH, TwgustTM, etc.) that crashed
+        # the rtgd thread in 0.1.20 with `ValueError: unsupported
+        # format character 'H'`.
+        "TtempTH": {
+            "source": "outTemp",
+            "format": "%H:%M",
+            "aggregate": "maxtime",
+            **base,
+        },
+        "TtempTL": {
+            "source": "outTemp",
+            "format": "%H:%M",
+            "aggregate": "mintime",
+            **base,
+        },
+        "Ttemplast": {
+            "source": "outTemp",
+            "format": "%H:%M",
+            "aggregate": "lasttime",
+            **base,
+        },
+        # missing-source counterparts of each — the actual race
+        "apptempTH": {
+            "source": "appTemp",
+            "format": "%.1f",
+            "aggregate": "max",
+            **base,
+        },
+        "apptempTL": {
+            "source": "appTemp",
+            "format": "%.1f",
+            "aggregate": "min",
+            **base,
+        },
+        "TapptempTH": {
+            "source": "appTemp",
+            "format": "%H:%M",
+            "aggregate": "maxtime",
+            **base,
+        },
+        "TapptempTL": {
+            "source": "appTemp",
+            "format": "%H:%M",
+            "aggregate": "mintime",
+            **base,
+        },
+        "Tapptemplast": {
+            "source": "appTemp",
+            "format": "%H:%M",
+            "aggregate": "lasttime",
+            **base,
+        },
+        "apptempcount": {
+            "source": "appTemp",
+            "format": "%.0f",
+            "aggregate": "count",
+            **base,
+        },
+    }
+    packet = {"dateTime": 1781508000, "usUnits": 1}
+
+    # --- present-source aggregates: all paths must return real values ---
+    for name in (
+        "tempTH",
+        "tempTL",
+        "tempsum",
+        "templast",
+        "tempcount",
+        "TtempTH",
+        "TtempTL",
+        "Ttemplast",
+    ):
+        result = thr.get_field_value(name, packet)
+        assert result is not None, (
+            f"present-source aggregate {name!r} returned None — guard must "
+            f"not affect the in-buffer path"
+        )
+        if "T" in name and name.startswith("T"):
+            # time-aggregate should produce HH:MM (or HH:MM:SS depending
+            # on the format, but always digits + colon, never raise)
+            assert ":" in result, (
+                f"time-aggregate {name!r} should format via strftime → "
+                f"contain a ':' (got {result!r})"
+            )
+
+    # --- missing-source aggregates: all paths must fall to the default
+    # value without raising. PRE-PATCH crashes per aggregate type:
+    #   max/min/sum/last:  KeyError: 'appTemp'
+    #   maxtime/mintime/lasttime: KeyError (pre-0016) -> after my
+    #     half-fix, ValueError: unsupported format character 'H'
+    #   count:             KeyError: 'appTemp'
+    for name in (
+        "apptempTH",
+        "apptempTL",
+        "TapptempTH",
+        "TapptempTL",
+        "Tapptemplast",
+        "apptempcount",
+    ):
+        try:
+            result = thr.get_field_value(name, packet)
+        except KeyError as e:
+            raise AssertionError(
+                f"get_field_value({name!r}) raised KeyError on a missing-buffer "
+                f"source — 0016a guard regressed (got {e!r})"
+            )
+        except ValueError as e:
+            raise AssertionError(
+                f"get_field_value({name!r}) raised ValueError on the "
+                f"default-fallback path for a time-aggregate — 0016b "
+                f"strftime route regressed. This is the exact "
+                f"`unsupported format character 'H'` storm that hit prod "
+                f"in 0.1.20 after the half-fix shipped (got {e!r})"
+            )
+        assert result is not None, (
+            f"missing-source path for {name!r} should fall to the field's "
+            f"default value, not None"
+        )
+        if name.startswith("T"):
+            # Time-aggregate default-fallback must produce a HH:MM string
+            # (the field's format is '%H:%M' and the default is a
+            # numeric ts; 0016b routes through time.localtime + strftime).
+            assert ":" in result, (
+                f"time-aggregate {name!r} default-fallback must produce "
+                f"a strftime-formatted HH:MM string (got {result!r}); "
+                f"a numeric result means the patch fell back to the "
+                f"`%`-formatter on a `%H:%M` format, which is the bug"
+            )
+
 
 # ---------------------------------------------------------------------------
 # Registry — name -> callable. Names mirror the patch filename stem.
@@ -563,6 +778,7 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("0013-rtgd-fieldmap-deepcopy", check_0013_rtgd_fieldmap_deepcopy),
     ("0014-rtgd-tick-interval", check_0014_rtgd_tick_interval),
     ("0015-rtgd-skip-empty-source", check_0015_rtgd_skip_empty_source),
+    ("0016-rtgd-buffer-source-guard", check_0016_rtgd_buffer_source_guard),
 ]
 
 
