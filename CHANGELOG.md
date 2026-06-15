@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.21](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.20...ha-weewx-v0.1.21) (2026-06-15)
+
+
+### Bug Fixes
+
+* **rtgd:** strftime route in 0016 default-fallback for time aggregates ([#162](https://github.com/bakerkj/ha-weewx/issues/162)) ([26ca600](https://github.com/bakerkj/ha-weewx/commit/26ca6004d6feffab4414832a1941ae95a13ec426))
+
 ## [0.1.20](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.19...ha-weewx-v0.1.20) (2026-06-15)
 
 
