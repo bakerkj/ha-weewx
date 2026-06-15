@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 
 # ---------------------------------------------------------------------------
@@ -11,7 +12,15 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie
 # runtime stage.
 # ---------------------------------------------------------------------------
 FROM debian:trixie-20260610 AS rtldavis-builder
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Persist .deb downloads + the apt package index between layer rebuilds via
+# BuildKit cache mounts. Drop the default `apt-get clean` hook that ships
+# in the Debian base image — without removing it, the post-RUN auto-clean
+# voids the cache mount we just populated. The mounts are detached after
+# the RUN, so nothing is baked into the image.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates=20250419 \
     gcc=4:14.2.0-1 \
     git=1:2.47.3-0+deb13u1 \
@@ -19,8 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc6-dev=2.41-12+deb13u3 \
     librtlsdr-dev=2.0.2-2+b1 \
     libusb-1.0-0-dev=2:1.0.28-1 \
-    pkg-config=1.8.1-4 \
- && rm -rf /var/lib/apt/lists/*
+    pkg-config=1.8.1-4
 ARG RTLDAVIS_REF=b95d5d734e4666c90f3d7539d5e2acd9f80f7e43
 ENV GOPATH=/go GO111MODULE=off
 RUN git clone https://github.com/lheijst/rtldavis \
@@ -62,7 +70,11 @@ LABEL \
 # (build-time extension patching). MariaDB access at runtime goes through
 # PyMySQL (Python lib, installed by uv below), so no mariadb CLI is needed.
 # Every Python library is installed by uv below, as wheels — nothing compiles.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Same cache-mount setup as the rtldavis-builder stage above.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
     curl=8.14.1-2+deb13u3 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
@@ -74,8 +86,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
-    rsync=3.4.1+ds1-5+deb13u3 \
- && rm -rf /var/lib/apt/lists/*
+    rsync=3.4.1+ds1-5+deb13u3
 
 # Replace the distro nginx config with our ingress-port server. The user
 # never edits this — they put files in /config/www/ and nginx serves them.
@@ -94,6 +105,7 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.21,source=/uv,target=/usr/local/bin/u
     --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/build/uv.lock \
     --mount=type=bind,source=.python-version,target=/build/.python-version \
+    --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv sync --frozen --no-dev --no-install-project \
       --project /build --python /usr/bin/python3
 
