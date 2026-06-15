@@ -1,0 +1,40 @@
+# rtgd: guard self.buffer[source] aggregate lookups against unprimed entries.
+#
+# RealtimeGaugeDataThread.get_field_value() reads running aggregates by
+# indexing self.buffer[source] in the min/max/last/sum/mintime/maxtime/
+# lasttime/count branches. self.buffer is populated lazily by
+# process_new_loop_packet() as each LOOP packet arrives, so derived
+# observations (e.g. appTemp computed by StdWXCalculate) may be absent
+# for the first ticks after addon startup while _emit_tick is already
+# firing against a cached packet. The bare lookup then raises KeyError:
+#
+#     KeyError: 'appTemp'
+#       File "rtgd.py", line N, in get_field_value
+#         _result_vt = ValueTuple(getattr(self.buffer[source], agg), ...
+#
+# The non-aggregate branch below already does `if source in packet:` and
+# falls to a None result for missing observations. Mirror that here: if
+# the source isn't yet in self.buffer, the aggregate result is None and
+# the field falls through to its default. 'trend' is exempt because it
+# reads from the db, not the buffer.
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2103,7 +2103,17 @@
+                     aggregate_period = None
+                 # obtain the raw aggregate value, any unit conversion and
+                 # formatting will be done later
+-                if agg == 'trend':
++                # Guard the buffer-dependent aggregates against the source
++                # obs not yet being in self.buffer. process_new_loop_packet
++                # adds entries to self.buffer as observations are seen;
++                # derived obs (e.g. appTemp from StdWXCalculate) may be
++                # absent during the startup window where _emit_tick fires
++                # against a cached packet but the first real LOOP carrying
++                # that obs hasn't been digested yet. 'trend' is exempt
++                # because it reads from the db, not the buffer.
++                if agg != 'trend' and source not in self.buffer:
++                    _result = None
++                elif agg == 'trend':
+                     # if no aggregate period was specified default to 3600 seconds
+                     trend_period = aggregate_period if aggregate_period is not None else 3600
+                     # the largest difference in time that is acceptable when
