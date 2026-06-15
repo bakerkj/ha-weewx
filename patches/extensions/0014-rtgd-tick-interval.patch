@@ -24,7 +24,7 @@
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
 @@ -1487,6 +1487,16 @@
-
+ 
          # setup file generation timing
          self.min_interval = rtgd_config_dict.get('min_interval', None)
 +        # tick_interval: when > 0, emit a synthetic gauge-data.txt
@@ -38,7 +38,7 @@
 +            _ti_f = 0.0
 +        self.tick_interval = _ti_f if _ti_f > 0 else None
          self.last_write = 0  # ts (actual) of last generation
-
+ 
          # get our file paths and names
 @@ -1801,8 +1811,11 @@
                          # received throw queue.Empty
@@ -57,7 +57,7 @@
 @@ -1858,6 +1871,51 @@
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
-
+ 
 +    def _emit_tick(self):
 +        """Emit a synthetic gauge-data.txt write using cached values
 +        with the current time as dateTime. Called from the run loop's

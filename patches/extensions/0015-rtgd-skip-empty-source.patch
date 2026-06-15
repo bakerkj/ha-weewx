@@ -1,6 +1,6 @@
 # rtgd: skip emitting fields whose FieldMap source is empty.
 #
-# RealtimeGaugeDataThread.populate_data() walks self.field_map and unconditionally
+# RealtimeGaugeDataThread.calculate() walks self.field_map and unconditionally
 # writes every field into the JSON payload, falling back to a default value
 # (or None) when the field's source observation is missing. There is no
 # upstream way to *drop* a field from gauge-data.txt short of replacing the
@@ -14,7 +14,7 @@
 # so the operator-facing config stays readable: blank source -> field gone.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -2449,4 +2449,10 @@
+@@ -2399,4 +2399,10 @@
          # now populate all fields in the field map
          for field in self.field_map:
 +            # Operator can prune a field from gauge-data.txt by setting its
