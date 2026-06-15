@@ -196,7 +196,12 @@ wait_for_gauge_data || {
   exit 1
 }
 
-python3 - <<'PYEOF'
+# `set -e` is intentionally off (see top of file), so the heredoc's
+# exit code is checked explicitly with `|| exit 1`. Without it, a
+# `sys.exit(1)` below would silently fall through; Phase 4 would then
+# crash on the missing /tmp/gd-baseline-fields.txt instead of
+# surfacing the clear baseline FAIL message.
+python3 - <<'PYEOF' || exit 1
 import json, sys
 d = json.load(open("/tmp/gd.json"))
 print(f"  baseline total fields: {len(d)}")
