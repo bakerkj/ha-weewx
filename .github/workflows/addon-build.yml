@@ -102,6 +102,12 @@ jobs:
       # for the duration of the docker build; on job end actions/cache
       # saves the populated host dirs for the next run. Key is scoped
       # per-matrix-arch so amd64 and aarch64 caches don't collide.
+      #
+      # Rolling-cache key shape: see the equivalent step in tests.yml
+      # for the full rationale. Short version: primary = `…-v1-${run_id}`
+      # (unique per run -> always saves), restore-keys = `…-v1-` (picks
+      # the most recent sibling so the mount starts pre-populated).
+      # Bump `-v1-` to `-v2-` to blow the whole prefix away.
       - name: Restore BuildKit mount cache (apt + uv)
         id: bk-cache
         uses: actions/cache@v5.0.5
@@ -111,10 +117,10 @@ jobs:
             cache-var-lib-apt-lists
             cache-root-cache-uv
           key:
-            bk-cache-addon-${{ matrix.arch }}-${{ runner.os }}-${{
-            hashFiles('Dockerfile', 'uv.lock') }}
+            bk-cache-addon-${{ matrix.arch }}-${{ runner.os }}-v1-${{
+            github.run_id }}
           restore-keys: |
-            bk-cache-addon-${{ matrix.arch }}-${{ runner.os }}-
+            bk-cache-addon-${{ matrix.arch }}-${{ runner.os }}-v1-
       - name: Inject host cache dirs as BuildKit mount caches
         uses: reproducible-containers/buildkit-cache-dance@v3.3.0
         with:
@@ -131,12 +137,13 @@ jobs:
             }
           skip-extraction: ${{ steps.bk-cache.outputs.cache-hit }}
 
-      # Build a locally-loadable copy of the image FIRST, smoke-check it,
-      # then let the home-assistant/builder action do the actual publish.
-      # Both builds share the same gha layer cache, so the second build is
-      # near-free on cache hit. Catches per-arch regressions (different
-      # wheel set, libusb version, etc.) BEFORE the registry push.
-      - name: Build add-on image (smoke)
+      # Build a locally-loadable copy of the image FIRST so the next step
+      # can run in-image self-checks against it, then let the
+      # home-assistant/builder action do the actual publish. Both builds
+      # share the same gha layer cache, so the second build is near-free
+      # on cache hit. Catches per-arch regressions (different wheel set,
+      # libusb version, etc.) BEFORE the registry push.
+      - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
           context: .

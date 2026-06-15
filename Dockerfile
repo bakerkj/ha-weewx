@@ -14,8 +14,12 @@ FROM debian:trixie-20260610 AS rtldavis-builder
 # Persist .deb downloads + the apt package index between layer rebuilds via
 # BuildKit cache mounts. Drop the default `apt-get clean` hook that ships
 # in the Debian base image — without removing it, the post-RUN auto-clean
-# voids the cache mount we just populated. The mounts are detached after
-# the RUN, so nothing is baked into the image.
+# voids the cache mount we just populated. Then run `apt-get autoclean`
+# AFTER install to drop .debs whose version is no longer in any apt index
+# (keeps the steady-state cache size bounded as pinned versions roll
+# forward); `autoclean` differs from `clean` in that it only removes
+# obsoleted versions, not the whole archive. The mounts are detached
+# after the RUN, so nothing is baked into the image.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -27,7 +31,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libc6-dev=2.41-12+deb13u3 \
     librtlsdr-dev=2.0.2-2+b1 \
     libusb-1.0-0-dev=2:1.0.28-1 \
-    pkg-config=1.8.1-4
+    pkg-config=1.8.1-4 \
+ && apt-get autoclean -y
 ARG RTLDAVIS_REF=b95d5d734e4666c90f3d7539d5e2acd9f80f7e43
 ENV GOPATH=/go GO111MODULE=off
 RUN git clone https://github.com/lheijst/rtldavis \
@@ -85,7 +90,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
-    rsync=3.4.1+ds1-5+deb13u3
+    rsync=3.4.1+ds1-5+deb13u3 \
+ && apt-get autoclean -y
 
 # Replace the distro nginx config with our ingress-port server. The user
 # never edits this — they put files in /config/www/ and nginx serves them.

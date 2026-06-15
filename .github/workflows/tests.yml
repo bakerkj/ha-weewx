@@ -68,6 +68,17 @@ jobs:
       # buildkit-cache-dance maps them into the BuildKit mount targets
       # for the duration of the docker build; on job end actions/cache
       # saves the populated host dirs for the next run.
+      #
+      # Rolling-cache key shape: primary = `<prefix>-v1-${run_id}` is
+      # unique per run, so save NEVER skips. Restore-keys narrows to the
+      # same `<prefix>-v1-` prefix and GHA picks the most recently saved
+      # sibling — the mount starts pre-populated with every .deb the
+      # last run downloaded. apt-get install just fetches the delta.
+      # `-v1-` is the manual bust knob: bump it (-> `-v2-`) and the
+      # restore prefix changes, no fallback hits, the next run rebuilds
+      # the cache from empty. `apt-get autoclean` in the Dockerfile
+      # keeps the steady-state size bounded by dropping .debs whose
+      # version is no longer in the apt index.
       - name: Restore BuildKit mount cache (apt + uv)
         id: bk-cache
         uses: actions/cache@v5.0.5
@@ -76,11 +87,9 @@ jobs:
             cache-var-cache-apt
             cache-var-lib-apt-lists
             cache-root-cache-uv
-          key:
-            bk-cache-tests-${{ runner.os }}-${{ hashFiles('Dockerfile',
-            'uv.lock') }}
+          key: bk-cache-tests-${{ runner.os }}-v1-${{ github.run_id }}
           restore-keys: |
-            bk-cache-tests-${{ runner.os }}-
+            bk-cache-tests-${{ runner.os }}-v1-
       - name: Inject host cache dirs as BuildKit mount caches
         uses: reproducible-containers/buildkit-cache-dance@v3.3.0
         with:
