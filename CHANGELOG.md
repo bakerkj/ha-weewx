@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.20](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.19...ha-weewx-v0.1.20) (2026-06-15)
+
+
+### Bug Fixes
+
+* **rtgd:** real fix for appTemp KeyError + 0015 constructor guard + e2e ([#159](https://github.com/bakerkj/ha-weewx/issues/159)) ([389f5f0](https://github.com/bakerkj/ha-weewx/commit/389f5f09bca5e817d346cddfeba8753303860a39))
+
 ## [0.1.19](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.18...ha-weewx-v0.1.19) (2026-06-15)
 
 
