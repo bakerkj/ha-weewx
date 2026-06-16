@@ -141,7 +141,7 @@ RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py
 # example. Some skins reference user.xstats but it is not installed by
 # default. Pull it from the upstream tag.
 # ---------------------------------------------------------------------------
-ADD https://raw.githubusercontent.com/weewx/weewx/v5.3.1/src/weewx_data/examples/xstats/bin/user/xstats.py \
+ADD https://raw.githubusercontent.com/weewx/weewx/v5.4.0/src/weewx_data/examples/xstats/bin/user/xstats.py \
     /opt/weewx-data/bin/user/xstats.py
 
 # ---------------------------------------------------------------------------
