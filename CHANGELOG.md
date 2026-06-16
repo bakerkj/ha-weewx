@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.22](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.21...ha-weewx-v0.1.22) (2026-06-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency weewx to v5.4.0 ([#170](https://github.com/bakerkj/ha-weewx/issues/170)) ([baa7ac0](https://github.com/bakerkj/ha-weewx/commit/baa7ac055ca7fdc64f388a2e78d80052b550e472))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency renovate to v43.227.0 ([#168](https://github.com/bakerkj/ha-weewx/issues/168)) ([167ddab](https://github.com/bakerkj/ha-weewx/commit/167ddab664dd42b2392b46260bac3a8ae9a00096))
+* **deps:** update weewx extensions to v2026.06.0 ([#167](https://github.com/bakerkj/ha-weewx/issues/167)) ([a43c74f](https://github.com/bakerkj/ha-weewx/commit/a43c74fa83f2264a038cde7210d17bcf3941c5ae))
+* **deps:** update weewx extensions to v5.4.0 ([#169](https://github.com/bakerkj/ha-weewx/issues/169)) ([3f29035](https://github.com/bakerkj/ha-weewx/commit/3f2903565d27cb2a6738c3ba029877ea31b42ce0))
+
+
+### Continuous Integration
+
+* add .mypy_cache step + setup-uv cache-suffix + step name cleanup ([#165](https://github.com/bakerkj/ha-weewx/issues/165)) ([4d8519b](https://github.com/bakerkj/ha-weewx/commit/4d8519b1ea27e967b0cd599c7f265968c935cc95))
+
 ## [0.1.21](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.20...ha-weewx-v0.1.21) (2026-06-15)
 
 
