@@ -142,7 +142,7 @@ requires-dist = [
     { name = "configobj", specifier = ">=5.0.9" },
     { name = "requests", specifier = ">=2.32" },
     { name = "six", specifier = ">=1.16" },
-    { name = "weewx", specifier = "==5.3.1" },
+    { name = "weewx", specifier = "==5.4.0" },
     { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip" },
 ]
 
@@ -450,7 +450,7 @@ wheels = [
 
 [[package]]
 name = "weewx"
-version = "5.3.1"
+version = "5.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "configobj" },
@@ -461,9 +461,9 @@ dependencies = [
     { name = "pyserial" },
     { name = "pyusb" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/df/80/b25726baf19c5350f46fa4519c3c7c912874a8bd0159ab4507ef053979a7/weewx-5.3.1.tar.gz", hash = "sha256:42abb9bd623bf984c5190488cf5cf2ff24a139dcd157f4028d41f30a50c69835", size = 1297925, upload-time = "2026-03-03T13:43:03.485Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/1d/ad0e93df3226152973555700596f5a0ededa4ac4650b161a33afd11b7e7d/weewx-5.4.0.tar.gz", hash = "sha256:529aaab110fc8a88c2014405dd4a2cf63369b024aab71db45de3065ea19bcbe5", size = 1304424, upload-time = "2026-06-16T15:10:25.705Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/59/4dc82aad5c55f0a65a3382e293b62aff141c54d4309fc2a515d02f3f1e2e/weewx-5.3.1-py3-none-any.whl", hash = "sha256:ee3e0bda4bcbdfa366632c7a2f673589eeca443a8f9bb88e58532212481d6c7a", size = 1447687, upload-time = "2026-03-03T13:43:15.241Z" },
+    { url = "https://files.pythonhosted.org/packages/13/cf/e97120c715c6166ffb02aa628ae17940ecb082df72d87907ad9e64b3bdcc/weewx-5.4.0-py3-none-any.whl", hash = "sha256:5fefe2deb2cdb3635c2174dc206e789f3544bd1e99a3b2852871463de7889996", size = 1456971, upload-time = "2026-06-16T15:10:37.365Z" },
 ]
 
 [[package]]
