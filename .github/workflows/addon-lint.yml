@@ -18,11 +18,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # ha-weewx is a single add-on living at the repo root (config.json here),
       # so lint the whole repo rather than a per-addon subdirectory.
       - name: Run Home Assistant add-on linter
-        uses: frenck/action-addon-linter@v2.21.0
+        uses: frenck/action-addon-linter@f995494fd84fae6310d23617e66d0e37de4f14eb # v2.21.0
         with:
           path: "."
