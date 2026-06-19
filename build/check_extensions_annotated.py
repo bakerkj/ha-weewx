@@ -12,7 +12,7 @@ annotation and the assertion silently disappears, so a broken or
 missing install ships undetected.
 
 Run via pre-commit (see ``.pre-commit-config.yaml``) and in CI from the
-``build-checks`` job in ``.github/workflows/tests.yml``.
+``build-checks`` job in ``.github/workflows/tests.yaml``.
 
 Exits 0 on success, 1 on the first unannotated URL (with the line
 number and URL printed to stderr).

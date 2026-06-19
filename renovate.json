@@ -76,7 +76,7 @@
     },
     {
       "customType": "regex",
-      "description": "home-assistant/builder sub-action pin in addon-build.yml. Renovate's built-in github-actions manager picks up `uses: owner/repo@vX.Y` but doesn't reliably track the `owner/repo/path/to/action@CalVer` form against github-tags, so handle it explicitly.",
+      "description": "home-assistant/builder sub-action pin in addon-build.yaml. Renovate's built-in github-actions manager picks up `uses: owner/repo@vX.Y` but doesn't reliably track the `owner/repo/path/to/action@CalVer` form against github-tags, so handle it explicitly.",
       "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
       "matchStrings": [
         "uses:\\s*(?<depName>home-assistant/builder)/actions/[\\w-]+@(?<currentValue>[\\d.]+)"

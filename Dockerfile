@@ -41,7 +41,7 @@ RUN git checkout "$RTLDAVIS_REF" && git submodule update --init --recursive \
 FROM ${BUILD_FROM} AS addon
 
 # HA Supervisor passes BUILD_VERSION=<config.json version> on installs; CI
-# does the same in addon-build.yml. Local builds (e2e, BUILD=1 in
+# does the same in addon-build.yaml. Local builds (e2e, BUILD=1 in
 # test-watchdog.sh) leave it at the default so they don't claim a real tag.
 ARG BUILD_VERSION=dev
 ENV HA_WEEWX_VERSION="${BUILD_VERSION}"
