@@ -31,7 +31,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       mode: ${{ steps.matrix.outputs.mode }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Build matrix from config.json
         id: matrix
@@ -90,8 +90,8 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v7.0.0
-      - uses: docker/setup-buildx-action@v4.1.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       # Build a locally-loadable copy of the image FIRST so the next step
       # can run in-image self-checks against it, then let the
@@ -100,7 +100,7 @@ jobs:
       # on cache hit. Catches per-arch regressions (different wheel set,
       # libusb version, etc.) BEFORE the registry push.
       - name: Build add-on image
-        uses: docker/build-push-action@v7.2.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           load: true
@@ -121,7 +121,7 @@ jobs:
             /work/build/check_image.sh
 
       - name: Build add-on image (publish)
-        uses: home-assistant/builder/actions/build-image@2026.06.0
+        uses: home-assistant/builder/actions/build-image@4de35182ce1e329181bffcbcc84d33db5e2c7e10 # 2026.06.0
         with:
           arch: ${{ matrix.arch }}
           container-registry: ghcr.io
