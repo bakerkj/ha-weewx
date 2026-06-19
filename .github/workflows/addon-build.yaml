@@ -121,7 +121,7 @@ jobs:
             /work/build/check_image.sh
 
       - name: Build add-on image (publish)
-        uses: home-assistant/builder/actions/build-image@4de35182ce1e329181bffcbcc84d33db5e2c7e10 # 2026.06.0
+        uses: home-assistant/builder/actions/build-image@4.5de35182ce1e329181bffcbcc84d33db5e2c7e10 # 2026.06.0
         with:
           arch: ${{ matrix.arch }}
           container-registry: ghcr.io
