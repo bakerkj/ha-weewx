@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
 
       # ha-weewx is a single add-on living at the repo root (config.json here),
       # so lint the whole repo rather than a per-addon subdirectory.
