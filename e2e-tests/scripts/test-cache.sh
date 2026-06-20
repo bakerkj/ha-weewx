@@ -148,6 +148,17 @@ exact "/NOAA/NOAA-$CYM.txt" 120 # current month -> njs archive_interval
 exact /NOAA/NOAA-2020.txt 86400 # immutable     -> njs 24h
 exact /NOAA/ 120                # autoindex listing -> njs archive_interval
 exact /gauge-data.txt 1
+# stale-while-revalidate ties to archive_interval (=120 in this fixture) so the
+# browser serves a stale gauge-data while revalidating, killing the inter-page
+# flash on SPA tab switches. The directive expands from $archive_interval, set
+# at server scope by nginx-init.sh via /tmp/nginx-archive-interval.conf.
+cc_gd="$(cc_of /gauge-data.txt)"
+if [[ "$cc_gd" == *stale-while-revalidate=120* ]]; then
+  echo "PASS  /gauge-data.txt -> stale-while-revalidate=120"
+else
+  echo "FAIL  /gauge-data.txt -> [$cc_gd], want stale-while-revalidate=120"
+  fail=1
+fi
 enc /index.html "br,gzip" br
 enc /index.html "gzip" gzip
 
