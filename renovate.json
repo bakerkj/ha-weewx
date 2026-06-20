@@ -9,16 +9,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Home Assistant add-on base images in Dockerfiles",
-      "managerFilePatterns": ["/Dockerfile$/"],
-      "matchStrings": [
-        "[\\s=](?<depName>ghcr\\.io/home-assistant/[^:]+):(?<currentValue>[^\\s]+)"
-      ],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "docker"
-    },
-    {
-      "customType": "regex",
       "description": "GitHub runner versions in shell scripts and YAML within workflows",
       "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
       "matchStrings": [
@@ -166,9 +156,13 @@
       "groupName": "uv tool"
     },
     {
-      "matchManagers": ["custom.regex"],
-      "matchPackageNames": ["/home-assistant/"],
+      "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
       "groupName": "home-assistant base images"
+    },
+    {
+      "description": "Constrain ghcr.io/home-assistant/base-debian bumps to the trixie-CalVer line. Regex versioning parses the prefixed tag directly (trixie-YYYY.MM.PATCH) and ignores bookworm-* tags or the rolling `:trixie`/`:latest`, which don't match. Default `docker` versioning can't parse the prefix.",
+      "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
+      "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
     },
     {
       "matchManagers": ["custom.regex"],
