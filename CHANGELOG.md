@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.23](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.22...ha-weewx-v0.1.23) (2026-06-20)
+
+
+### Features
+
+* **nginx:** stale-while-revalidate on gauge-data.txt to kill inter-page flash ([#183](https://github.com/bakerkj/ha-weewx/issues/183)) ([fa93382](https://github.com/bakerkj/ha-weewx/commit/fa93382673c019ea9cc8a0cde88668904659690a))
+
+
+### Bug Fixes
+
+* **renovate:** home-assistant/builder regex must survive digest pin ([#182](https://github.com/bakerkj/ha-weewx/issues/182)) ([235b781](https://github.com/bakerkj/ha-weewx/commit/235b781375bd2bef2987e2574cb7b41888802888))
+
+
+### Miscellaneous Chores
+
+* **deps:** pin dependencies ([#178](https://github.com/bakerkj/ha-weewx/issues/178)) ([2c9f244](https://github.com/bakerkj/ha-weewx/commit/2c9f244a62cac4f4a5bd373c608c9a5e7fd06191))
+* **deps:** update dependency pytest to v9.1.1 ([#185](https://github.com/bakerkj/ha-weewx/issues/185)) ([4a6c8ba](https://github.com/bakerkj/ha-weewx/commit/4a6c8ba17011202f19b9522cab4c2a3c1050c492))
+* **deps:** update dependency renovate to v43.232.0 ([#176](https://github.com/bakerkj/ha-weewx/issues/176)) ([5c34793](https://github.com/bakerkj/ha-weewx/commit/5c347939be71d3b42d1c2d8e0816bfd71dac158b))
+* **deps:** update github-actions to v7 ([#177](https://github.com/bakerkj/ha-weewx/issues/177)) ([5f172ce](https://github.com/bakerkj/ha-weewx/commit/5f172ce078f7e7d1da025d544d4622ff6e3c0b24))
+* **deps:** update pre-commit hooks to v0.15.18 ([#173](https://github.com/bakerkj/ha-weewx/issues/173)) ([3ce2181](https://github.com/bakerkj/ha-weewx/commit/3ce2181d600c607644685d2c6b15fc5b4210bd01))
+* **deps:** update uv tool to v0.11.22 ([#174](https://github.com/bakerkj/ha-weewx/issues/174)) ([1b35dcd](https://github.com/bakerkj/ha-weewx/commit/1b35dcdc025a00a760bb5f8f070c06b4e8e10196))
+* **deps:** update uv tool to v0.11.23 ([#184](https://github.com/bakerkj/ha-weewx/issues/184)) ([02a46c2](https://github.com/bakerkj/ha-weewx/commit/02a46c244b28dcde03056904b6a7bf32a753cfc4))
+* normalize workflow file extensions to .yaml ([#179](https://github.com/bakerkj/ha-weewx/issues/179)) ([13dd278](https://github.com/bakerkj/ha-weewx/commit/13dd27880469c54ee2f5a33f4a3097a0df1e91b3))
+* pin GitHub Actions to triple-digit tags ([#171](https://github.com/bakerkj/ha-weewx/issues/171)) ([9a41e75](https://github.com/bakerkj/ha-weewx/commit/9a41e75eb2cf57602bdb9a4633792c13f4890d96))
+* **renovate:** pin GitHub Action digests to semver ([#175](https://github.com/bakerkj/ha-weewx/issues/175)) ([c6c344e](https://github.com/bakerkj/ha-weewx/commit/c6c344e8b591fb81233011dd999a0f329af5bdca))
+
 ## [0.1.22](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.21...ha-weewx-v0.1.22) (2026-06-16)
 
 
