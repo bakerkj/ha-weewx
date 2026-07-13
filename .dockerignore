@@ -35,6 +35,7 @@ docker-compose.mariadb.yml
 docker-compose.mqtt.yml
 
 # Meta
+.git/
 .gitignore
 .dockerignore
 Dockerfile
