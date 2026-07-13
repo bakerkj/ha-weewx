@@ -38,5 +38,3 @@ docker-compose.mqtt.yml
 .gitignore
 .dockerignore
 Dockerfile
-</content>
-</invoke>
