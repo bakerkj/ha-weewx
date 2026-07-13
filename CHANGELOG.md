@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.24](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.23...ha-weewx-v0.1.24) (2026-07-13)
+
+
+### Miscellaneous Chores
+
+* **deps:** pin base-debian to CalVer + digest ([#186](https://github.com/bakerkj/ha-weewx/issues/186)) ([b72e863](https://github.com/bakerkj/ha-weewx/commit/b72e863e503330939129182968d7bc44902d2133))
+* **deps:** update actions/cache action to v6 ([#188](https://github.com/bakerkj/ha-weewx/issues/188)) ([fbe6762](https://github.com/bakerkj/ha-weewx/commit/fbe6762375a3b6f80d3eb6a0d61f8e70ba89abd3))
+* **deps:** update apt packages ([#203](https://github.com/bakerkj/ha-weewx/issues/203)) ([463ea2f](https://github.com/bakerkj/ha-weewx/commit/463ea2f34d42cee1ef18c07397f5024778695c18))
+* **deps:** update astral-sh/setup-uv action to v8.3.0 ([#197](https://github.com/bakerkj/ha-weewx/issues/197)) ([3aa1d28](https://github.com/bakerkj/ha-weewx/commit/3aa1d2847529728ab7dbdd3297852a286587336a))
+* **deps:** update debian docker tag to trixie-20260623 ([#191](https://github.com/bakerkj/ha-weewx/issues/191)) ([ebd73e6](https://github.com/bakerkj/ha-weewx/commit/ebd73e69788b047a6f65fdb6ad14c3703111d38f))
+* **deps:** update dependency nginx-light to v1.26.3-3+deb13u7 ([#195](https://github.com/bakerkj/ha-weewx/issues/195)) ([66d75dd](https://github.com/bakerkj/ha-weewx/commit/66d75dd7b8b841b0a0dbca12db8ba3bb58d5c033))
+* **deps:** update dependency renovate to v43.251.3 ([#192](https://github.com/bakerkj/ha-weewx/issues/192)) ([bb38d5f](https://github.com/bakerkj/ha-weewx/commit/bb38d5f73a7ba94b93501e1fba7ca1ed98498a9c))
+* **deps:** update dependency renovate to v43.257.5 ([#201](https://github.com/bakerkj/ha-weewx/issues/201)) ([ed266ba](https://github.com/bakerkj/ha-weewx/commit/ed266ba8f74af790ee7de2bc672ccb64a9af4ba7))
+* **deps:** update github-actions ([#194](https://github.com/bakerkj/ha-weewx/issues/194)) ([145e37b](https://github.com/bakerkj/ha-weewx/commit/145e37bc98354e5d6e4fe7682fa468e3182ab092))
+* **deps:** update github-actions ([#199](https://github.com/bakerkj/ha-weewx/issues/199)) ([6053f93](https://github.com/bakerkj/ha-weewx/commit/6053f93312e2887c47eb429aa2ed15adfb2a0caa))
+* **deps:** update pre-commit hooks ([#190](https://github.com/bakerkj/ha-weewx/issues/190)) ([54c31f2](https://github.com/bakerkj/ha-weewx/commit/54c31f2ff0a151f2bcc7e58dc853af8c4fd498e0))
+* **deps:** update pre-commit hooks ([#193](https://github.com/bakerkj/ha-weewx/issues/193)) ([21e897a](https://github.com/bakerkj/ha-weewx/commit/21e897a1cee211151138a774cade8f62215ae63e))
+* **deps:** update pre-commit hooks ([#200](https://github.com/bakerkj/ha-weewx/issues/200)) ([d7d704f](https://github.com/bakerkj/ha-weewx/commit/d7d704f7904ad4499acf7040c9d771122b3918dd))
+* **deps:** update uv tool to v0.11.24 ([#189](https://github.com/bakerkj/ha-weewx/issues/189)) ([48882e6](https://github.com/bakerkj/ha-weewx/commit/48882e6486196bbbccccc201ba66f7384ce3a498))
+* **deps:** update uv tool to v0.11.26 ([#196](https://github.com/bakerkj/ha-weewx/issues/196)) ([0290d54](https://github.com/bakerkj/ha-weewx/commit/0290d54cdf4e8aea35e66d5f435ba4a786ccc38b))
+* **deps:** update uv tool to v0.11.28 ([#198](https://github.com/bakerkj/ha-weewx/issues/198)) ([4f07e34](https://github.com/bakerkj/ha-weewx/commit/4f07e34295fe3520a0d2a3024e0c5012d2fde5d8))
+
+
+### Build System
+
+* add .dockerignore to trim CI build context ([#202](https://github.com/bakerkj/ha-weewx/issues/202)) ([8747440](https://github.com/bakerkj/ha-weewx/commit/87474404314b65aef4aa30e308b81da5b380127f))
+
 ## [0.1.23](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.22...ha-weewx-v0.1.23) (2026-06-20)
 
 
