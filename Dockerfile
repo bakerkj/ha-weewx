@@ -196,6 +196,8 @@ COPY --from=rtldavis-builder /out/rtldavis /opt/rtldavis/bin/rtldavis
 # ---------------------------------------------------------------------------
 COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
 
+COPY LICENSE /LICENSE
+
 # ---------------------------------------------------------------------------
 # s6-overlay services + the bundled conf template
 #
