@@ -64,7 +64,7 @@ LABEL \
 # Every Python library is installed by uv below, as wheels — nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b9 \
-    curl=8.14.1-2+deb13u3 \
+    curl=8.14.1-2+deb13u4 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
     librtlsdr0=2.0.2-2+b1 \
@@ -74,7 +74,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
-    rsync=3.4.1+ds1-5+deb13u3 \
+    rsync=3.4.1+ds1-5+deb13u4 \
  && rm -rf /var/lib/apt/lists/*
 
 # Replace the distro nginx config with our ingress-port server. The user
