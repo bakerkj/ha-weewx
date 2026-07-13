@@ -197,6 +197,12 @@ COPY --from=rtldavis-builder /out/rtldavis /opt/rtldavis/bin/rtldavis
 COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
 
 # ---------------------------------------------------------------------------
+# Ship the project LICENSE at the image root so it travels with the image
+# and is discoverable by tooling (grype/syft, `docker cp`, image scanners).
+# ---------------------------------------------------------------------------
+COPY LICENSE /LICENSE
+
+# ---------------------------------------------------------------------------
 # s6-overlay services + the bundled conf template
 #
 # Services (in /etc/s6-overlay/s6-rc.d/):

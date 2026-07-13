@@ -1,0 +1,41 @@
+# The Dockerfile references only these paths (COPY or --mount=type=bind):
+#   nginx.conf, extensions/, rootfs/, pyproject.toml, uv.lock, .python-version,
+#   build/, patches/
+# Everything else in the tracked tree is docs, HA Supervisor metadata, CI
+# config, or test suites — none of which are consumed by the image build.
+
+# Docs (LICENSE is kept — COPY'd into the image at /LICENSE)
+CHANGELOG.md
+README.md
+
+# HA Supervisor metadata (read by Supervisor before build, not by Dockerfile)
+config.json
+repository.json
+translations/
+icon.png
+logo.png
+
+# CI / release / lint config
+.github/
+renovate.json
+release-please-config.json
+.release-please-manifest.json
+.pre-commit-config.yaml
+.prettierrc.json
+.prettierignore
+.commitlintrc.json
+.copyright-header.txt
+
+# Test suites — never run inside the image
+tests/
+e2e-tests/
+
+# Local dev harnesses
+docker-compose.mariadb.yml
+docker-compose.mqtt.yml
+
+# Meta
+.git/
+.gitignore
+.dockerignore
+Dockerfile
