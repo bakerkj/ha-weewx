@@ -30,6 +30,68 @@ RUN git checkout "$RTLDAVIS_REF" && git submodule update --init --recursive \
  && go build -trimpath -ldflags="-s -w" -o /out/rtldavis .
 
 # ---------------------------------------------------------------------------
+# xtide + libtcd + harmonics-dwf — Debian dropped the `xtide` package after
+# bullseye (11), so trixie has no `apt install xtide`. weewx-forecast's
+# [Forecast] XTide source popen()s the `tide` binary and reads tide
+# constants from a `.tcd` harmonics file; both must ship in the image.
+#
+# The three upstream tarballs live on flaterco.com and have no supported
+# Renovate datasource — bump ARG versions AND the paired sha256 manually
+# when flaterco publishes a new release. Confirm sha256 against a fresh
+# `curl -sL https://flaterco.com/files/xtide/<file> | sha256sum`.
+#
+# libtcd is built with --disable-shared so xtide links it statically and
+# libtcd.so is not needed at runtime. xtide is built --without-x (headless,
+# no X11) and dynamically links libpng16 (added to the runtime apt list).
+# ---------------------------------------------------------------------------
+FROM debian:13.6@sha256:fac46bff2e02f51425b6e33b0e1169f55dfb053d83511ca28aa50c09fd5ed7a4 AS xtide-builder
+# `-o pipefail` propagates a curl/wget failure through `| sha256sum -c -`;
+# without it the pipeline masks the fetch error and hadolint (DL4006) flags
+# every piped RUN in the stage.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates=20250419 \
+    g++=4:14.2.0-1 \
+    libpng-dev=1.6.48-1+deb13u5 \
+    make=4.4.1-2 \
+    wget=1.25.0-2 \
+    xz-utils=5.8.1-1+deb13u1 \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG LIBTCD_VERSION=2.2.7-r3
+ARG LIBTCD_SHA256=e1dde9aafb771eab57c676a99b4b79d61c6800990a0e72782bc20057a8a2d877
+ARG XTIDE_VERSION=2.16
+ARG XTIDE_SHA256=ed9415340ae60de1d76fb15ef142798fe227195909c97b0b1a32456d1c9b0d3e
+ARG HARMONICS_DATE=20251228
+ARG HARMONICS_SHA256=7639d4bb8311a66d75e1de45c69c908c46b26b24c6a305c0050b6cc16933f980
+
+WORKDIR /build
+RUN wget -q "https://flaterco.com/files/xtide/libtcd-${LIBTCD_VERSION}.tar.xz" \
+ && echo "${LIBTCD_SHA256}  libtcd-${LIBTCD_VERSION}.tar.xz" | sha256sum -c - \
+ && tar xf "libtcd-${LIBTCD_VERSION}.tar.xz"
+WORKDIR /build/libtcd-${LIBTCD_VERSION}
+RUN ./configure --disable-shared && make && make install
+
+WORKDIR /build
+RUN wget -q "https://flaterco.com/files/xtide/xtide-${XTIDE_VERSION}.tar.xz" \
+ && echo "${XTIDE_SHA256}  xtide-${XTIDE_VERSION}.tar.xz" | sha256sum -c - \
+ && tar xf "xtide-${XTIDE_VERSION}.tar.xz"
+WORKDIR /build/xtide-${XTIDE_VERSION}
+RUN ./configure --without-x --disable-shared \
+      CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib" \
+ && make && make install
+
+WORKDIR /build
+RUN wget -q "https://flaterco.com/files/xtide/harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" \
+ && echo "${HARMONICS_SHA256}  harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" | sha256sum -c - \
+ && tar xf "harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" \
+ && install -d /out/bin /out/share/xtide /out/etc \
+ && install -m 0755 /usr/local/bin/tide /out/bin/tide \
+ && install -m 0644 "harmonics-dwf-${HARMONICS_DATE}/harmonics-dwf-${HARMONICS_DATE}-free.tcd" \
+      /out/share/xtide/ \
+ && printf '/usr/share/xtide\n' > /out/etc/xtide.conf
+
+# ---------------------------------------------------------------------------
 # Single-stage runtime image. apt provides only OS-level bits (python3,
 # libusb, librtlsdr0, and the mariadb/nginx/ssh/rsync runtime tools); every
 # Python library — weewx, the MQTT publisher (by felddy), and their
@@ -67,6 +129,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl=8.14.1-2+deb13u4 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
+    libpng16-16t64=1.6.48-1+deb13u5 \
     librtlsdr0=2.0.2-2+b1 \
     libusb-1.0-0=2:1.0.28-1 \
     nginx-light=1.26.3-3+deb13u7 \
@@ -188,6 +251,17 @@ RUN rm -f /opt/weewx-data/weewx.conf
 # path when station_type=Rtldavis in /config/weewx.conf.
 # ---------------------------------------------------------------------------
 COPY --from=rtldavis-builder /out/rtldavis /opt/rtldavis/bin/rtldavis
+
+# ---------------------------------------------------------------------------
+# xtide binary + harmonics data built in the xtide-builder stage above.
+# /usr/bin/tide matches weewx-forecast's default prog path, so enabling the
+# [Forecast] XTide source needs only a location setting in weewx.conf.
+# /etc/xtide.conf points tide at /usr/share/xtide, where the harmonics-dwf
+# `.tcd` file lives.
+# ---------------------------------------------------------------------------
+COPY --from=xtide-builder /out/bin/tide /usr/bin/tide
+COPY --from=xtide-builder /out/share/xtide/ /usr/share/xtide/
+COPY --from=xtide-builder /out/etc/xtide.conf /etc/xtide.conf
 
 # ---------------------------------------------------------------------------
 # Bundled extra extension: log_to_file (per-record CSV file writer, bakerkj).

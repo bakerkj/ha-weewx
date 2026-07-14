@@ -149,6 +149,16 @@ check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
 check "rtldavis links to librtlsdr" \
   sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep librtlsdr | grep -qv "not found"'
 
+# xtide built in the xtide-builder stage; weewx-forecast's [Forecast] XTide
+# source popen()s /usr/bin/tide (its default prog path) and reads harmonics
+# constants from /usr/share/xtide via /etc/xtide.conf. All three must ship.
+check "xtide: tide binary present" test -x /usr/bin/tide
+check "xtide: harmonics data present" \
+  sh -c 'ls /usr/share/xtide/harmonics-dwf-*-free.tcd >/dev/null 2>&1'
+check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.conf
+check "xtide: tide runs and reads harmonics" \
+  sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -f c -n 1'
+
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
 check "weewx-mqtt NOT installed" test ! -f "$WEEWX_BIN/user/mqtt.py"
