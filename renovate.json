@@ -160,6 +160,12 @@
       "groupName": "home-assistant base images"
     },
     {
+      "description": "Silent-refresh policy for the plain `debian` image (rtldavis-builder stage): accept minor and major tag bumps (13.6 → 13.7, 13.x → 14.0) but drop digest-only PRs. Docker Hub rebuilds `13.x` in place for CVE refreshes, which shows up as digest updates that don't communicate what changed. Point releases already bundle the accumulated rebuilds, so nothing is lost — the interstitial rebuilds get swept up on the next tag bump.",
+      "matchPackageNames": ["debian"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false
+    },
+    {
       "description": "Constrain ghcr.io/home-assistant/base-debian bumps to the trixie-CalVer line. Regex versioning parses the prefixed tag directly (trixie-YYYY.MM.PATCH) and ignores bookworm-* tags or the rolling `:trixie`/`:latest`, which don't match. Default `docker` versioning can't parse the prefix.",
       "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
       "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
