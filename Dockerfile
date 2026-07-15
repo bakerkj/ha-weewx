@@ -65,30 +65,37 @@ ARG XTIDE_SHA256=ed9415340ae60de1d76fb15ef142798fe227195909c97b0b1a32456d1c9b0d3
 ARG HARMONICS_DATE=20251228
 ARG HARMONICS_SHA256=7639d4bb8311a66d75e1de45c69c908c46b26b24c6a305c0050b6cc16933f980
 
-WORKDIR /build
-RUN wget -q "https://flaterco.com/files/xtide/libtcd-${LIBTCD_VERSION}.tar.xz" \
- && echo "${LIBTCD_SHA256}  libtcd-${LIBTCD_VERSION}.tar.xz" | sha256sum -c - \
- && tar xf "libtcd-${LIBTCD_VERSION}.tar.xz"
-WORKDIR /build/libtcd-${LIBTCD_VERSION}
-RUN ./configure --disable-shared && make && make install
+# Each tarball is extracted with --strip-components=1 into a fixed
+# directory name so WORKDIR doesn't depend on the exact upstream layout
+# (libtcd-2.2.7-r3.tar.xz unpacks to libtcd-2.2.7/, not libtcd-2.2.7-r3/;
+# harmonics-dwf-20251228-free.tar.xz unpacks to harmonics-dwf-20251228/).
+WORKDIR /build/libtcd
+RUN wget -q -O /build/libtcd.tar.xz \
+      "https://flaterco.com/files/xtide/libtcd-${LIBTCD_VERSION}.tar.xz" \
+ && echo "${LIBTCD_SHA256}  /build/libtcd.tar.xz" | sha256sum -c - \
+ && tar --strip-components=1 -xf /build/libtcd.tar.xz \
+ && ./configure --disable-shared \
+ && make \
+ && make install
 
-WORKDIR /build
-RUN wget -q "https://flaterco.com/files/xtide/xtide-${XTIDE_VERSION}.tar.xz" \
- && echo "${XTIDE_SHA256}  xtide-${XTIDE_VERSION}.tar.xz" | sha256sum -c - \
- && tar xf "xtide-${XTIDE_VERSION}.tar.xz"
-WORKDIR /build/xtide-${XTIDE_VERSION}
-RUN ./configure --without-x --disable-shared \
+WORKDIR /build/xtide
+RUN wget -q -O /build/xtide.tar.xz \
+      "https://flaterco.com/files/xtide/xtide-${XTIDE_VERSION}.tar.xz" \
+ && echo "${XTIDE_SHA256}  /build/xtide.tar.xz" | sha256sum -c - \
+ && tar --strip-components=1 -xf /build/xtide.tar.xz \
+ && ./configure --without-x --disable-shared \
       CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib" \
- && make && make install
+ && make \
+ && make install
 
-WORKDIR /build
-RUN wget -q "https://flaterco.com/files/xtide/harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" \
- && echo "${HARMONICS_SHA256}  harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" | sha256sum -c - \
- && tar xf "harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" \
+WORKDIR /build/harmonics
+RUN wget -q -O /build/harmonics.tar.xz \
+      "https://flaterco.com/files/xtide/harmonics-dwf-${HARMONICS_DATE}-free.tar.xz" \
+ && echo "${HARMONICS_SHA256}  /build/harmonics.tar.xz" | sha256sum -c - \
+ && tar --strip-components=1 -xf /build/harmonics.tar.xz \
  && install -d /out/bin /out/share/xtide /out/etc \
  && install -m 0755 /usr/local/bin/tide /out/bin/tide \
- && install -m 0644 "harmonics-dwf-${HARMONICS_DATE}/harmonics-dwf-${HARMONICS_DATE}-free.tcd" \
-      /out/share/xtide/ \
+ && install -m 0644 "harmonics-dwf-${HARMONICS_DATE}-free.tcd" /out/share/xtide/ \
  && printf '/usr/share/xtide\n' > /out/etc/xtide.conf
 
 # ---------------------------------------------------------------------------

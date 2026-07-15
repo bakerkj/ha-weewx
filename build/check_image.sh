@@ -156,8 +156,15 @@ check "xtide: tide binary present" test -x /usr/bin/tide
 check "xtide: harmonics data present" \
   sh -c 'ls /usr/share/xtide/harmonics-dwf-*-free.tcd >/dev/null 2>&1'
 check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.conf
+# End-to-end: exercise binary + libtcd + harmonics load + xtide.conf.
+# XTide flag syntax is concatenated (e.g. -mp = mode plain, -ft = format
+# text); a space between the letter and its value (`-f t`) is parsed as an
+# ambiguous command line and fails. The date window is fixed and known to
+# lie within the current harmonics-dwf release's coverage — bump the year
+# alongside HARMONICS_DATE in Dockerfile if the harmonics window shrinks.
 check "xtide: tide runs and reads harmonics" \
-  sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -f c -n 1'
+  sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -ft \
+    -b "2026-06-01 00:00" -e "2026-06-01 06:00"'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
