@@ -159,12 +159,16 @@ check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.co
 # End-to-end: exercise binary + libtcd + harmonics load + xtide.conf.
 # XTide flag syntax is concatenated (e.g. -mp = mode plain, -ft = format
 # text); a space between the letter and its value (`-f t`) is parsed as an
-# ambiguous command line and fails. The date window is fixed and known to
-# lie within the current harmonics-dwf release's coverage — bump the year
-# alongside HARMONICS_DATE in Dockerfile if the harmonics window shrinks.
+# ambiguous command line and fails. The window spans 24h so at least two
+# tide events must be present, and the grep on 'High Tide|Low Tide' is
+# what actually proves the harmonics loaded — without it, a corrupt/empty
+# .tcd would still exit 0 on sunrise/sunset output alone. If
+# 'Palo Alto Yacht Harbor' is renamed or removed from the free harmonics
+# set in a future release, pick another covered station and update below.
 check "xtide: tide runs and reads harmonics" \
   sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -ft \
-    -b "2026-06-01 00:00" -e "2026-06-01 06:00"'
+    -b "2026-06-01 00:00" -e "2026-06-02 00:00" \
+    | grep -qE "High Tide|Low Tide"'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
