@@ -149,6 +149,25 @@ check "rtldavis binary present" test -x /opt/rtldavis/bin/rtldavis
 check "rtldavis links to librtlsdr" \
   sh -c 'ldd /opt/rtldavis/bin/rtldavis | grep librtlsdr | grep -qv "not found"'
 
+# xtide built in the xtide-builder stage; weewx-forecast's [Forecast] XTide
+# source popen()s /usr/bin/tide (its default prog path) and reads harmonics
+# constants from /usr/share/xtide via /etc/xtide.conf. All three must ship.
+check "xtide: tide binary present" test -x /usr/bin/tide
+check "xtide: harmonics data present" \
+  sh -c 'ls /usr/share/xtide/harmonics-dwf-*-free.tcd >/dev/null 2>&1'
+check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.conf
+# Full integration test: brings up the real XTideForecast service against
+# a scratch weewx.conf + SQLite database, invokes the same do_forecast
+# entry point NEW_ARCHIVE_RECORD dispatches to, and reads the resulting
+# archive_forecast table back to prove ≥1 XTide row was persisted via
+# weewx.manager.addRecord. No shortcuts — every layer that runs in
+# production runs here. See build/check_xtide_forecast.py.
+# If 'Palo Alto Yacht Harbor' is renamed or removed from the free
+# harmonics set in a future release, pick another covered station in
+# that script.
+check "xtide: weewx-forecast persists XTide rows via do_forecast" \
+  env PYTHONPATH=$WEEWX_BIN python3 /work/build/check_xtide_forecast.py
+
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
 check "weewx-mqtt NOT installed" test ! -f "$WEEWX_BIN/user/mqtt.py"
