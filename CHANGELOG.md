@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.25](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.24...ha-weewx-v0.1.25) (2026-07-15)
+
+
+### Miscellaneous Chores
+
+* **deps:** update actions/setup-node action to v7 ([#207](https://github.com/bakerkj/ha-weewx/issues/207)) ([3aa7be6](https://github.com/bakerkj/ha-weewx/commit/3aa7be689140fa2bfcbed88d35d3118ff331c444))
+* **deps:** update dependency chaunceygardiner/weewx-forecast to v4.2 ([#204](https://github.com/bakerkj/ha-weewx/issues/204)) ([0b0a079](https://github.com/bakerkj/ha-weewx/commit/0b0a079adc46d5a060da6e0a215aa92337a84be4))
+* **deps:** update dependency renovate to v43.263.2 ([#209](https://github.com/bakerkj/ha-weewx/issues/209)) ([e1c6763](https://github.com/bakerkj/ha-weewx/commit/e1c6763566701657088478fe1afd52eb94b87641))
+* **deps:** update github-actions ([#206](https://github.com/bakerkj/ha-weewx/issues/206)) ([dd60583](https://github.com/bakerkj/ha-weewx/commit/dd60583a9c2700072789198b1c061213dd171554))
+
+
+### Build System
+
+* add xtide-builder stage for tide predictions ([#211](https://github.com/bakerkj/ha-weewx/issues/211)) ([89f6349](https://github.com/bakerkj/ha-weewx/commit/89f6349d2c1d9120b06e2e10768510d81aef14cf))
+* switch rtldavis-builder base to debian:13.6 with digest pin ([#210](https://github.com/bakerkj/ha-weewx/issues/210)) ([40e64ec](https://github.com/bakerkj/ha-weewx/commit/40e64ecf16ed414b0106dc1703ae69b235c738fb))
+
 ## [0.1.24](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.23...ha-weewx-v0.1.24) (2026-07-13)
 
 
