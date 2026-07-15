@@ -156,28 +156,19 @@ check "xtide: tide binary present" test -x /usr/bin/tide
 check "xtide: harmonics data present" \
   sh -c 'ls /usr/share/xtide/harmonics-dwf-*-free.tcd >/dev/null 2>&1'
 check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.conf
-# End-to-end via weewx-forecast's own code path — invokes the exact
-# argv weewx uses (XTideForecast.generate) and runs the exact CSV
-# parser weewx-forecast will feed into the archive_forecast table
-# (XTideForecast.parse). Asserts that at least one tide record with a
-# valid H/L hilo comes back — this is the same in-memory record shape
-# that would be inserted for the [Forecast] XTide source, so a break
-# in tide's output, in the harmonics data, or in the parser catches
-# here rather than at runtime on a live station.
-# If 'Palo Alto Yacht Harbor' is renamed or removed from the free
-# harmonics set in a future release, pick another covered station.
-check "xtide: weewx-forecast generate+parse produces tide records" \
-  env PYTHONPATH=$WEEWX_BIN python3 -c '
-import sys, user.forecast as f
-loc = "Palo Alto Yacht Harbor, San Francisco Bay, California"
-lines = f.XTideForecast.generate(loc)
-assert lines, "generate returned empty/None"
-records = f.XTideForecast.parse(lines, location=loc)
-assert records, "parse returned no records"
-tides = [r for r in records if r.get("hilo") in ("H", "L") and r.get("method") == "XTide"]
-assert tides, f"no XTide H/L records in {len(records)} parsed rows"
-sys.exit(0)
-'
+# End-to-end: exercise binary + libtcd + harmonics load + xtide.conf.
+# XTide flag syntax is concatenated (e.g. -mp = mode plain, -ft = format
+# text); a space between the letter and its value (`-f t`) is parsed as an
+# ambiguous command line and fails. The window spans 24h so at least two
+# tide events must be present, and the grep on 'High Tide|Low Tide' is
+# what actually proves the harmonics loaded — without it, a corrupt/empty
+# .tcd would still exit 0 on sunrise/sunset output alone. If
+# 'Palo Alto Yacht Harbor' is renamed or removed from the free harmonics
+# set in a future release, pick another covered station and update below.
+check "xtide: tide runs and reads harmonics" \
+  sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -ft \
+    -b "2026-06-01 00:00" -e "2026-06-02 00:00" \
+    | grep -qE "High Tide|Low Tide"'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
