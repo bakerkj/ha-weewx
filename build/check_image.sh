@@ -156,19 +156,17 @@ check "xtide: tide binary present" test -x /usr/bin/tide
 check "xtide: harmonics data present" \
   sh -c 'ls /usr/share/xtide/harmonics-dwf-*-free.tcd >/dev/null 2>&1'
 check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.conf
-# End-to-end: exercise binary + libtcd + harmonics load + xtide.conf.
-# XTide flag syntax is concatenated (e.g. -mp = mode plain, -ft = format
-# text); a space between the letter and its value (`-f t`) is parsed as an
-# ambiguous command line and fails. The window spans 24h so at least two
-# tide events must be present, and the grep on 'High Tide|Low Tide' is
-# what actually proves the harmonics loaded — without it, a corrupt/empty
-# .tcd would still exit 0 on sunrise/sunset output alone. If
-# 'Palo Alto Yacht Harbor' is renamed or removed from the free harmonics
-# set in a future release, pick another covered station and update below.
-check "xtide: tide runs and reads harmonics" \
-  sh -c '/usr/bin/tide -l "Palo Alto Yacht Harbor" -mp -ft \
-    -b "2026-06-01 00:00" -e "2026-06-02 00:00" \
-    | grep -qE "High Tide|Low Tide"'
+# Full integration test: brings up the real XTideForecast service against
+# a scratch weewx.conf + SQLite database, invokes the same do_forecast
+# entry point NEW_ARCHIVE_RECORD dispatches to, and reads the resulting
+# archive_forecast table back to prove ≥1 XTide row was persisted via
+# weewx.manager.addRecord. No shortcuts — every layer that runs in
+# production runs here. See build/check_xtide_forecast.py.
+# If 'Palo Alto Yacht Harbor' is renamed or removed from the free
+# harmonics set in a future release, pick another covered station in
+# that script.
+check "xtide: weewx-forecast persists XTide rows via do_forecast" \
+  env PYTHONPATH=$WEEWX_BIN python3 /work/build/check_xtide_forecast.py
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
