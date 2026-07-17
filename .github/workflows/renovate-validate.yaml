@@ -38,6 +38,12 @@ jobs:
           LOG_FORMAT: json
           LOG_LEVEL: debug
           GITHUB_COM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bearer token for github-apt-helper.keneli.org (our proxy that
+          # serves trixie-updates/trixie-security Packages.gz — Debian only
+          # publishes those as .xz which the built-in `deb` datasource
+          # can't read; upstream renovatebot/renovate#35865). renovate.json's
+          # hostRules block references this via {{ env.GITHUB_APT_HELPER_TOKEN }}.
+          GITHUB_APT_HELPER_TOKEN: ${{ secrets.GITHUB_APT_HELPER_TOKEN }}
         run: |
           # LOG_FORMAT=json emits one JSON event per line so downstream
           # checks can parse the structured log instead of regex-scraping

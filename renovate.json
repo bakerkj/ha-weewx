@@ -6,6 +6,12 @@
   "pre-commit": {
     "enabled": true
   },
+  "hostRules": [
+    {
+      "matchHost": "github-apt-helper.keneli.org",
+      "token": "{{ env.GITHUB_APT_HELPER_TOKEN }}"
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -27,14 +33,14 @@
     },
     {
       "customType": "regex",
-      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'.",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'. Uses the built-in `deb` datasource pointing at deb.debian.org for the main trixie suite; the trixie-updates and trixie-security suites Debian publishes only as .xz (unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865) so we route those two through our github-apt-helper.keneli.org proxy (see additionalRegistryUrls in the packageRule below, and the hostRules block above for the bearer token).",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": [
         "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
       ],
-      "datasourceTemplate": "repology",
+      "datasourceTemplate": "deb",
       "versioningTemplate": "deb",
-      "packageNameTemplate": "debian_13/{{depName}}"
+      "registryUrlTemplate": "https://deb.debian.org/debian?suite=trixie&components=main&binaryArch=amd64"
     },
     {
       "customType": "regex",
@@ -171,30 +177,13 @@
       "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
     },
     {
-      "matchManagers": ["custom.regex"],
-      "matchPackageNames": ["/^debian_13//"],
-      "groupName": "apt packages"
-    },
-    {
-      "description": "Map binary packages to their Debian source project name. Required where the binary name doesn't match a Repology project of the same name.",
-      "matchPackageNames": ["debian_13/nginx-light"],
-      "overridePackageName": "debian_13/nginx"
-    },
-    {
-      "matchPackageNames": ["debian_13/openssh-client"],
-      "overridePackageName": "debian_13/openssh"
-    },
-    {
-      "matchPackageNames": ["debian_13/libusb-1.0-0"],
-      "overridePackageName": "debian_13/libusb-1.0"
-    },
-    {
-      "matchPackageNames": ["debian_13/libusb-1.0-0-dev"],
-      "overridePackageName": "debian_13/libusb-1.0"
-    },
-    {
-      "matchPackageNames": ["debian_13/libc6-dev"],
-      "overridePackageName": "debian_13/glibc"
+      "description": "Group all apt-package updates into one PR. Also injects the trixie-updates + trixie-security suites (served by our github-apt-helper.keneli.org proxy) as additional registries alongside the customManager's primary deb.debian.org main-trixie URL.",
+      "matchDatasources": ["deb"],
+      "groupName": "apt packages",
+      "additionalRegistryUrls": [
+        "https://github-apt-helper.keneli.org/debian?suite=trixie-updates&components=main&binaryArch=amd64",
+        "https://github-apt-helper.keneli.org/debian?suite=trixie-security&components=main&binaryArch=amd64"
+      ]
     },
     {
       "matchManagers": ["custom.regex"],
