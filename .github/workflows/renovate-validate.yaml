@@ -38,6 +38,18 @@ jobs:
           LOG_FORMAT: json
           LOG_LEVEL: debug
           GITHUB_COM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bearer-token auth for github-apt-helper.keneli.org (our proxy
+          # that serves trixie-updates/trixie-security Packages.gz — Debian
+          # publishes those as .xz only, unsupported by Renovate's built-in
+          # `deb` datasource; upstream renovatebot/renovate#35865). Mend's
+          # scheduled Renovate runs pick up the token via a bakerkj-org-level
+          # Host Rule; this CI dry-run injects it via RENOVATE_HOST_RULES as
+          # an inline-JSON env-var overlay (Mend's org config is not in
+          # scope on a GH Actions runner). Matches the sibling pattern
+          # documented in /tmp/apk-apt-coordination-decisions.md §4.
+          RENOVATE_HOST_RULES: >-
+            [{"matchHost":"github-apt-helper.keneli.org","token":"${{
+            secrets.APT_HELPER_TOKEN }}"}]
         run: |
           # LOG_FORMAT=json emits one JSON event per line so downstream
           # checks can parse the structured log instead of regex-scraping

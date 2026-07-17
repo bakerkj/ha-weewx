@@ -6,17 +6,16 @@
 # archives. Reads Renovate's JSON-format dry-run log from argv[1] (each line a
 # JSON event, produced by LOG_FORMAT=json LOG_LEVEL=debug), locates the
 # "packageFiles with updates" event, walks its config tree to find every
-# dependency, and for each one whose datasource is "repology" and
-# packageName starts with "debian_13/" verifies:
+# dependency, and for each one whose datasource is "deb" verifies:
 #
 #   (a) `dpkg --compare-versions <newVersion> ge <currentValue>` -- no
 #       downgrades;
 #   (b) <newVersion> appears in `apt-cache madison <depName>` -- whatever
 #       Renovate concluded, apt knows of the same version for that exact
 #       binary in trixie / -updates / -security. This catches the failure
-#       mode where Repology resolves a binary to a wrong-upstream source
-#       and Renovate happily lifts a "newer" version that doesn't exist
-#       for the binary in the actual archive.
+#       mode where the datasource resolves a binary to a wrong-upstream
+#       source and Renovate happily lifts a "newer" version that doesn't
+#       exist for the binary in the actual archive.
 
 import json
 import subprocess
@@ -60,10 +59,7 @@ def main() -> int:
     failures: list[str] = []
     checked = 0
     for dep in iter_deps(event.get("config", event)):
-        if dep.get("datasource") != "repology":
-            continue
-        pkg = dep.get("packageName", "")
-        if not pkg.startswith("debian_13/"):
+        if dep.get("datasource") != "deb":
             continue
         updates = dep.get("updates") or []
         if not updates:
