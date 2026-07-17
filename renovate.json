@@ -6,12 +6,6 @@
   "pre-commit": {
     "enabled": true
   },
-  "hostRules": [
-    {
-      "matchHost": "github-apt-helper.keneli.org",
-      "token": "{{ env.GITHUB_APT_HELPER_TOKEN }}"
-    }
-  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -33,7 +27,7 @@
     },
     {
       "customType": "regex",
-      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'. Uses the built-in `deb` datasource pointing at deb.debian.org for the main trixie suite; the trixie-updates and trixie-security suites Debian publishes only as .xz (unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865) so we route those two through our github-apt-helper.keneli.org proxy (see additionalRegistryUrls in the packageRule below, and the hostRules block above for the bearer token).",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'. Uses the built-in `deb` datasource pointing at deb.debian.org for the main trixie suite; the trixie-updates and trixie-security suites Debian publishes only as .xz (unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865) so we route those two through our github-apt-helper.keneli.org proxy (see additionalRegistryUrls in the packageRule below). Bearer-token auth for the proxy is injected out-of-band: Mend's Renovate uses an org-level Host Rule (bakerkj org Credentials → Host Rules); the renovate-validate CI dry-run uses a RENOVATE_HOST_RULES env-var overlay (see .github/workflows/renovate-validate.yaml).",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": [
         "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
