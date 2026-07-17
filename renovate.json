@@ -171,10 +171,11 @@
       "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
     },
     {
-      "description": "Group all apt-package updates into one PR. Also injects the trixie-updates + trixie-security suites (served by our github-apt-helper.keneli.org proxy) as additional registries alongside the customManager's primary deb.debian.org main-trixie URL.",
+      "description": "Group all apt-package updates into one PR. Also overrides the customManager's single registryUrlTemplate with the full list of three URLs — main trixie direct from deb.debian.org, plus trixie-updates + trixie-security via our github-apt-helper.keneli.org proxy (Debian publishes those two only as .xz, unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865). Renovate merges lookups across the three registries.",
       "matchDatasources": ["deb"],
       "groupName": "apt packages",
-      "additionalRegistryUrls": [
+      "registryUrls": [
+        "https://deb.debian.org/debian?suite=trixie&components=main&binaryArch=amd64",
         "https://github-apt-helper.keneli.org/debian?suite=trixie-updates&components=main&binaryArch=amd64",
         "https://github-apt-helper.keneli.org/debian?suite=trixie-security&components=main&binaryArch=amd64"
       ]
