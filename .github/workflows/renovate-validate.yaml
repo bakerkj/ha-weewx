@@ -30,7 +30,7 @@ jobs:
 
       - name: Schema validation
         run:
-          npx --package renovate@43.263.2 -- renovate-config-validator
+          npx --package renovate@43.268.0 -- renovate-config-validator
           renovate.json
 
       - name: Dry-run lookup test
@@ -54,7 +54,7 @@ jobs:
           # LOG_FORMAT=json emits one JSON event per line so downstream
           # checks can parse the structured log instead of regex-scraping
           # interleaved text output.
-          npx --package renovate@43.263.2 -- renovate --dry-run --platform=local > renovate-dry-run.jsonl 2>&1 || true
+          npx --package renovate@43.268.0 -- renovate --dry-run --platform=local > renovate-dry-run.jsonl 2>&1 || true
 
           # Check for datasource lookup failures (msg field per log event).
           errors=$(jq -r 'select(.msg | tostring | test("no-result|Failed to look up"; "i")) | .msg' renovate-dry-run.jsonl 2>/dev/null | grep -v "python-version" || true)
