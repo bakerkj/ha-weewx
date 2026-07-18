@@ -110,7 +110,7 @@ single source of truth.
 | Option                    | Default   | Meaning                                                                                                                                                                                    |
 | ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `report_hook_command`     | `[]`      | argv list — first entry is the executable, rest are arguments. Empty = disabled. Each element passes through `expandvars` at runtime, so `$TOKEN` references entries in `report_hook_env`. |
-| `report_hook_frequency`   | `"every"` | `every` (each report cycle) or `once` (only the first successful cycle after addon start; marker in `/tmp`).                                                                               |
+| `report_hook_frequency`   | `"every"` | `every` (each report cycle) or `once` (only the first successful cycle after addon start; state kept in-process, cleared on restart).                                                      |
 | `report_hook_timeout`     | `10`      | Kill the command after this many seconds.                                                                                                                                                  |
 | `report_hook_verify_file` | `""`      | Optional absolute path — command runs only when the file exists and is non-empty.                                                                                                          |
 | `report_hook_env`         | `[]`      | List of `{name, value}` pairs. `value` is masked in the UI. Referenced as `$name` from `report_hook_command`.                                                                              |
@@ -368,9 +368,9 @@ Options (all optional except `command`; empty/missing `command` is a no-op):
 | `env_<NAME>`  | _(none)_ | Exports `NAME=<value>` to the subprocess env; `env_TOKEN = abc` makes `$TOKEN` available for `expandvars` substitution in `command`. |
 
 Non-zero exit, timeout, or spawn failure is logged at WARNING and never breaks
-the report cycle. `frequency = once` uses a marker file at
-`/tmp/.weewx-report-hook-<report-name>` (characters in the report name outside
-`[A-Za-z0-9._-]` are replaced with `_`); container restart clears the marker so
+the report cycle. `frequency = once` tracks "already fired" in a module-level
+set that persists across report cycles within a single `weewxd` process;
+container restart spawns a fresh interpreter and the set is empty again, so
 "once per boot" is the semantic.
 
 **Configuring via HA add-on options.** When running inside the `ha-weewx` addon,

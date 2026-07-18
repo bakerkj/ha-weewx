@@ -36,8 +36,9 @@ disabled no-op so the module is safe to leave in the generator_list):
     command      argv list, first element is the executable (looked up on
                  PATH). Empty or missing = disabled. Each element runs
                  through ``expandvars`` at runtime.
-    frequency    ``once`` (fire once per addon boot, tracked by a marker
-                 file in /tmp) or ``every`` (default: every report cycle).
+    frequency    ``once`` (fire once per addon boot, tracked in a
+                 module-level set cleared at process restart) or ``every``
+                 (default: every report cycle).
     timeout      Command timeout in seconds. Default: 10.
     verify_file  Optional path; if set, the command runs only when this
                  file exists and is non-empty. Cheetah catches per-template
@@ -76,19 +77,17 @@ from weewx.reportengine import ReportGenerator
 
 log = logging.getLogger(__name__)
 
-# Marker files for ``frequency = once`` live in /tmp so container restart
-# resets the "already fired" state — which matches the intended semantic
-# ("run once per addon boot").
-MARKER_DIR = "/tmp"
+# Which report_names have already fired under ``frequency = once``. The
+# module is imported once per ``weewxd`` process; addon/container restart
+# spawns a fresh interpreter and this set is empty again — matching the
+# intended "run once per addon boot" semantic without any filesystem
+# state. WeeWX serialises report threads (``launch_report_thread`` refuses
+# to start a second thread while one is alive), so a plain set is safe.
+_fired: set[str] = set()
 
 # HA Supervisor writes the addon's options here inside the container.
-# The path is a class-level constant so tests can point it at tmp_path.
+# Module-level constant so tests can point it at tmp_path.
 HA_OPTIONS_PATH = "/data/options.json"
-
-# Restrict marker-file basenames to safe filesystem characters. WeeWX skin
-# names are conventionally CamelCase / snake_case, so a permissive [\w.-]
-# filter is more than enough; anything else collapses to underscore.
-_SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]")
 
 # ``os.path.expandvars`` grammar, replicated so we can substitute against a
 # caller-supplied env dict instead of touching ``os.environ`` — mutating
@@ -264,16 +263,12 @@ def run_hook(
     timeout = to_int(hook_cfg.get("timeout", 10))
     verify_file = (hook_cfg.get("verify_file") or "").strip()
 
-    # Order matters: check the once-marker BEFORE the verify_file gate. A
+    # Order matters: check the once-gate BEFORE the verify_file gate. A
     # transiently missing/empty verify_file after we've already fired
     # should stay reported as "once-per-boot already fired", not confuse
     # the user with a stale verify_file warning.
-    marker: str | None = None
-    if frequency == "once":
-        safe = _SAFE_NAME.sub("_", report_name) or "unknown"
-        marker = os.path.join(MARKER_DIR, f".weewx-report-hook-{safe}")
-        if os.path.exists(marker):
-            return "skipped: once-per-boot already fired"
+    if frequency == "once" and report_name in _fired:
+        return "skipped: once-per-boot already fired"
 
     if verify_file and not _verify_ok(verify_file):
         return f"skipped: verify_file '{verify_file}' missing or empty"
@@ -285,16 +280,10 @@ def run_hook(
     if not ok:
         return f"failed: {err}"
 
-    if marker:
-        try:
-            open(marker, "w").close()
-        except OSError as e:
-            # Best-effort: log but treat the actual command run as success.
-            # A missing marker just means "will fire again on next report
-            # cycle" — annoying but not broken.
-            log.warning(
-                "ReportHook[%s]: could not create marker %s: %s", report_name, marker, e
-            )
+    if frequency == "once":
+        # Only mark on success — a transient failure must not disable the
+        # hook for the rest of the boot.
+        _fired.add(report_name)
 
     return "ok"
 
@@ -316,8 +305,8 @@ class ReportHook(ReportGenerator):
         hook_cfg = {**skin_cfg, **ha_cfg}
 
         # skin_dict includes REPORT_NAME (set by StdReportEngine when it
-        # walks each skin). Fall back to a stable literal so marker-file
-        # collision on the "unknown" bucket is at least deterministic.
+        # walks each skin). Fall back to a stable literal so the "unknown"
+        # bucket in _fired is at least deterministic across nameless skins.
         report_name = str(self.skin_dict.get("REPORT_NAME") or "unknown")
 
         # Belt-and-suspenders: run_hook is designed never to raise, but a

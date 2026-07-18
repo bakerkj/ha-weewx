@@ -2,10 +2,10 @@
 # All rights reserved.
 """Behavioural tests for extensions/report_hook.py.
 
-Drives ``run_hook`` directly with fixture-controlled marker + HA-options
-directories; ``subprocess`` is real, but every command is an argv list
-touching only files under ``tmp_path``, so the tests never hit the network
-and never depend on WeeWX's report engine being importable.
+Drives ``run_hook`` directly with a fresh once-gate set and a per-test
+HA-options path; ``subprocess`` is real, but every command is an argv
+list touching only files under ``tmp_path``, so the tests never hit the
+network and never depend on WeeWX's report engine being importable.
 """
 
 from __future__ import annotations
@@ -19,16 +19,12 @@ import report_hook as hook_module
 
 
 @pytest.fixture(autouse=True)
-def _isolated_paths(tmp_path, monkeypatch):
-    """Point every ``.weewx-report-hook-*`` marker at ``tmp_path`` AND redirect
-    the HA options-file lookup to a per-test path.
-
-    The module's defaults (``/tmp``, ``/data/options.json``) are the
-    production locations; tests substitute per-test paths so parallel
-    runs don't clobber each other and no test needs to write to root
-    dirs it doesn't own.
+def _isolated_state(tmp_path, monkeypatch):
+    """Give each test a fresh ``_fired`` set (once-per-boot state persists
+    across cycles in production, but MUST be empty between tests) and a
+    per-test HA options-file path so parallel test runs don't collide.
     """
-    monkeypatch.setattr(hook_module, "MARKER_DIR", str(tmp_path))
+    monkeypatch.setattr(hook_module, "_fired", set())
     monkeypatch.setattr(hook_module, "HA_OPTIONS_PATH", str(tmp_path / "options.json"))
     return tmp_path
 
@@ -135,31 +131,20 @@ def test_once_fires_exactly_once(tmp_path):
     assert len(sentinel.read_text().splitlines()) == 1
 
 
-def test_once_marker_is_per_report_name(tmp_path):
-    """Attaching the extension to two skins gives each its own marker.
+def test_once_is_per_report_name(tmp_path):
+    """Attaching the extension to two skins gives each its own once-gate.
 
     Prevents a "skin A fires, skin B silently suppressed on the same boot"
-    footgun that a shared marker would introduce.
+    footgun that shared state would introduce.
     """
     sentinel = tmp_path / "hit.txt"
     cmd = ["sh", "-c", f"echo x >> {sentinel}"]
     cfg = {"command": cmd, "frequency": "once"}
     assert hook_module.run_hook(cfg, "SkinA") == "ok"
     assert hook_module.run_hook(cfg, "SkinB") == "ok"
+    assert hook_module.run_hook(cfg, "SkinA") == "skipped: once-per-boot already fired"
     assert len(sentinel.read_text().splitlines()) == 2
-
-
-def test_once_report_name_with_unsafe_chars_sanitised(tmp_path):
-    """A report_name containing path separators must NOT create the marker
-    outside the intended MARKER_DIR — i.e., no path traversal via skin
-    name. The sanitiser replaces every non-``[A-Za-z0-9._-]`` char with
-    ``_``, so the marker lands in tmp_path exactly."""
-    cfg = {"command": ["true"], "frequency": "once"}
-    assert hook_module.run_hook(cfg, "../evil/name") == "ok"
-    markers = [
-        p.name for p in tmp_path.iterdir() if p.name.startswith(".weewx-report-hook-")
-    ]
-    assert markers == [".weewx-report-hook-.._evil_name"]
+    assert hook_module._fired == {"SkinA", "SkinB"}
 
 
 # --------------------------------------------------------------------------
@@ -278,16 +263,13 @@ def test_non_zero_exit_returns_failed_with_stderr_snippet():
     assert "boom" in result
 
 
-def test_failed_command_does_not_write_marker(tmp_path):
-    """A failed 'once' run leaves the marker UNwritten so a retry can
+def test_failed_command_does_not_mark_fired():
+    """A failed 'once' run leaves the once-gate open so a retry can
     succeed on the next report cycle — otherwise a single early failure
     would permanently disable the hook for the boot."""
     cfg = {"command": ["false"], "frequency": "once"}
     assert hook_module.run_hook(cfg, "MySkin").startswith("failed:")
-    markers = [
-        p.name for p in tmp_path.iterdir() if p.name.startswith(".weewx-report-hook-")
-    ]
-    assert markers == []
+    assert "MySkin" not in hook_module._fired
 
 
 def test_timeout_returns_failed():
@@ -302,24 +284,7 @@ def test_missing_executable_returns_failed():
     assert result.startswith("failed: spawn failed")
 
 
-def test_marker_write_failure_still_returns_ok(monkeypatch):
-    """If the marker file can't be written (e.g. /tmp mounted read-only),
-    the command *did* succeed and the caller should still see ``ok``. The
-    downside is only that the hook may fire again next report cycle —
-    annoying but not incorrect."""
-    real_open = open
-
-    def _fail_marker_open(path, *args, **kwargs):
-        if isinstance(path, str) and path.startswith(str(hook_module.MARKER_DIR)):
-            raise OSError("simulated: read-only marker dir")
-        return real_open(path, *args, **kwargs)
-
-    monkeypatch.setattr("builtins.open", _fail_marker_open)
-    cfg = {"command": ["true"], "frequency": "once"}
-    assert hook_module.run_hook(cfg, "MySkin") == "ok"
-
-
-def test_once_marker_gate_wins_over_verify_file(tmp_path):
+def test_once_gate_wins_over_verify_file(tmp_path):
     """A once-hook that has already fired must return 'once-per-boot
     already fired' even if verify_file is transiently missing/empty —
     otherwise a stale verify_file would rename the outcome and mislead
@@ -327,11 +292,11 @@ def test_once_marker_gate_wins_over_verify_file(tmp_path):
     empty = tmp_path / "empty.html"
     empty.write_text("")
     cfg = {"command": ["true"], "frequency": "once", "verify_file": str(empty)}
-    # First call: verify_file gate fires (marker not yet created).
+    # First call: verify_file gate fires (once-gate not yet set).
     assert hook_module.run_hook(cfg, "MySkin").startswith("skipped: verify_file")
-    # Create marker as if a prior successful run had left it.
-    (tmp_path / ".weewx-report-hook-MySkin").write_text("")
-    # Marker gate now precedes the verify_file gate.
+    # Simulate a prior successful run by marking the skin fired.
+    hook_module._fired.add("MySkin")
+    # Once-gate now precedes the verify_file gate.
     assert hook_module.run_hook(cfg, "MySkin") == "skipped: once-per-boot already fired"
 
 
@@ -434,10 +399,10 @@ def test_ha_overrides_win_over_skin_dict(tmp_path):
 
     # If HA didn't win we'd get "failed:" (from `false`); we should get "ok".
     _StubGen().run()
-    # Marker present with the skin name → confirms HA's frequency=once
-    # took effect on the skin from the weewx.conf side.
-    marker = tmp_path / ".weewx-report-hook-SkinFromWeewxConf"
-    assert marker.exists()
+    # SkinFromWeewxConf now in the once-gate set → confirms HA's
+    # frequency=once and command=["true"] took effect over the skin's
+    # frequency=every and command=["false"].
+    assert "SkinFromWeewxConf" in hook_module._fired
 
 
 def test_ha_env_var_merges_with_skin_env_and_wins(tmp_path):

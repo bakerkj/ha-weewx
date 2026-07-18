@@ -40,8 +40,8 @@ configuration:
     name: Post-report frequency
     description: >-
       `every` fires the command after each report cycle. `once` fires it only on
-      the first successful report cycle after addon start (a marker file in
-      `/tmp` tracks the "already fired" state; container restart clears it).
+      the first successful report cycle after addon start (in-process state
+      tracks the "already fired" flag; container restart clears it).
   report_hook_timeout:
     name: Post-report timeout (seconds)
     description:
