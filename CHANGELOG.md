@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.26](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.25...ha-weewx-v0.1.26) (2026-07-18)
+
+
+### Features
+
+* **report_hook:** bundled ReportGenerator for post-report shell hooks ([#223](https://github.com/bakerkj/ha-weewx/issues/223)) ([7642563](https://github.com/bakerkj/ha-weewx/commit/764256395ec839fa48225947f982197c51a34fbc))
+
+
+### Bug Fixes
+
+* **nginx:** align default cache tiers with actual regen cadence ([#222](https://github.com/bakerkj/ha-weewx/issues/222)) ([e249bb6](https://github.com/bakerkj/ha-weewx/commit/e249bb6730bd1244c8c54d89ca3cf6e271836fab))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.176 ([#217](https://github.com/bakerkj/ha-weewx/issues/217)) ([a00d29f](https://github.com/bakerkj/ha-weewx/commit/a00d29f9dd9e8a0847dde72337c5d3c90aafa684))
+* **deps:** update dependency chaunceygardiner/weewx-forecast to v5 ([#221](https://github.com/bakerkj/ha-weewx/issues/221)) ([8bc83fd](https://github.com/bakerkj/ha-weewx/commit/8bc83fd13bdf668be858a3f9044a997f9a772fba))
+* **deps:** update dependency renovate to v43.268.0 ([#212](https://github.com/bakerkj/ha-weewx/issues/212)) ([08cc4f1](https://github.com/bakerkj/ha-weewx/commit/08cc4f15e64e568e4c8545ad212499317526b216))
+* **deps:** update dependency renovate to v43.268.2 ([#219](https://github.com/bakerkj/ha-weewx/issues/219)) ([db8c501](https://github.com/bakerkj/ha-weewx/commit/db8c501474d07867d000b0d3c31955b4b6b167d7))
+* **deps:** update dependency renovate to v43.268.4 ([#220](https://github.com/bakerkj/ha-weewx/issues/220)) ([77bb2a9](https://github.com/bakerkj/ha-weewx/commit/77bb2a9fc96494554ff35a63cbc085bc3e5a27ee))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.15.22 ([#216](https://github.com/bakerkj/ha-weewx/issues/216)) ([71fcf6a](https://github.com/bakerkj/ha-weewx/commit/71fcf6a239a33e131bbdbff64fea5fd7839c2fa5))
+* **deps:** update pre-commit hook codespell-project/codespell to v2.4.3 ([#213](https://github.com/bakerkj/ha-weewx/issues/213)) ([605fc43](https://github.com/bakerkj/ha-weewx/commit/605fc43971520440d784a977b4ec13fdcc3f4f99))
+* **deps:** update uv tool to v0.11.29 ([#215](https://github.com/bakerkj/ha-weewx/issues/215)) ([4a896da](https://github.com/bakerkj/ha-weewx/commit/4a896daec9d7f67f0e1b6aeca2a9517c5a714f80))
+* **renovate:** route trixie-{updates,security} via github-apt-helper proxy ([#218](https://github.com/bakerkj/ha-weewx/issues/218)) ([6f8fb24](https://github.com/bakerkj/ha-weewx/commit/6f8fb24e670cb32c510b06328e255ebfdca97f83))
+
 ## [0.1.25](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.24...ha-weewx-v0.1.25) (2026-07-15)
 
 
