@@ -32,7 +32,7 @@ S6=/etc/s6-overlay/s6-rc.d
 # binary + import health
 check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
-check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.forecast, user.xstats, user.rain24h, user.xaggs'
+check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs'
 
 # MQTT publisher (by felddy) patches applied.
 #

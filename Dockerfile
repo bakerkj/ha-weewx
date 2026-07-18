@@ -272,15 +272,21 @@ COPY --from=xtide-builder /out/etc/xtide.conf /etc/xtide.conf
 
 # ---------------------------------------------------------------------------
 # Bundled extra extensions:
-#   log_to_file  — per-record CSV file writer (bakerkj).
-#   report_hook  — post-report shell-command hook (bakerkj); wire into a
-#                  skin's [Generators] generator_list to fire an arbitrary
-#                  command when that skin's report cycle finishes.
+#   log_to_file             — per-record CSV file writer (bakerkj).
+#   report_hook             — post-report shell-command hook (bakerkj); wire
+#                             into a skin's [Generators] generator_list to fire
+#                             an arbitrary command when that skin's report
+#                             cycle finishes.
+#   refresh_stale_outputs   — StdService that ages-out stale_age-gated Cheetah
+#                             and ImageGenerator outputs on weewx.STARTUP so
+#                             the first report cycle after each weewxd start
+#                             re-renders them regardless of the age gate.
 # Custom skins are NOT baked in — they are user customizations supplied at
 # runtime (e.g. under /config), not part of the generic add-on.
 # ---------------------------------------------------------------------------
-COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
-COPY extensions/report_hook.py        /opt/weewx-data/bin/user/report_hook.py
+COPY extensions/log_to_file.py             /opt/weewx-data/bin/user/log_to_file.py
+COPY extensions/report_hook.py             /opt/weewx-data/bin/user/report_hook.py
+COPY extensions/refresh_stale_outputs.py   /opt/weewx-data/bin/user/refresh_stale_outputs.py
 
 # ---------------------------------------------------------------------------
 # Ship the project LICENSE at the image root so it travels with the image
