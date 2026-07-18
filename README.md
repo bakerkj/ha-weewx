@@ -176,8 +176,10 @@ regenerates it, then revalidated. The default tiers:
 | ----------------------------------------- | -------------------------------------- |
 | `gauge-data.txt` (only with rtgd enabled) | `max-age=1` (rewritten every loop)     |
 | HTML pages + the directory index          | `archive_interval` (from `weewx.conf`) |
+| `forecast.html` (weewx-forecast skin)     | ~1 hour (`stale_age = 3570`)           |
 | `day*.png` and any other `*.png`          | `archive_interval`                     |
-| `week*.png`, `month*.png`                 | 1 hour                                 |
+| `week*.png`                               | 1 hour                                 |
+| `month*.png`                              | 3 hours                                |
 | `year*.png`                               | 24 hours                               |
 | `icons/`, `*.css`, `*.js`, fonts, `*.ico` | 1 hour (flat)                          |
 | `NOAA/` directory listing                 | `archive_interval` (per request)       |
@@ -185,10 +187,12 @@ regenerates it, then revalidated. The default tiers:
 | `NOAA/` past months + years               | 24 hours (immutable)                   |
 | `robots.txt`                              | 24 hours (flat)                        |
 
-These PNG windows assume day plots regenerate every archive cycle, week/month
-hourly, and year daily — the cadence of the bundled exfoliation skin. A skin
-that regenerates plots on a different schedule (e.g. every archive cycle) can
-serve a stale chart with a too-long window; retune via the override below.
+These PNG windows assume day plots regenerate every archive cycle, week hourly,
+month every 3 hours (matching `aggregate_interval = 10800` in
+`[[month_images]]`), and year daily — the cadence of the bundled exfoliation
+skin. A skin that regenerates plots on a different schedule (e.g. every archive
+cycle) can serve a stale chart with a too-long window; retune via the override
+below.
 
 The `NOAA/` text reports are handled by a small njs filter (the
 `ngx_http_js_module`) rather than a static rule. WeeWX rewrites only the current
@@ -219,8 +223,8 @@ interval instead of hardcoding it.
 Start from the defaults below and adjust the windows you need:
 
 > **Order matters.** nginx picks the first matching `location` block, so put
-> specific patterns above catch-alls — e.g. the `^/day*.png`,
-> `^/week|month*.png`, and `^/year*.png` rules must stay above the unprefixed
+> specific patterns above catch-alls — e.g. the `^/day*.png`, `^/week*.png`,
+> `^/month*.png`, and `^/year*.png` rules must stay above the unprefixed
 > `\.png$` fallback, or the fallback shadows them and every chart gets the same
 > window.
 
@@ -233,8 +237,15 @@ Start from the defaults below and adjust the windows you need:
 > ignore the warning.
 
 ```nginx
+location = /forecast.html {
+    expires modified +3570s;         # skin regenerates hourly (stale_age=3570)
+    add_header Cache-Control "public" always;
+}
 location ^~ /icons/ {
-    try_files $uri =404;
+    autoindex on;                    # consistent with / and /NOAA/
+    autoindex_exact_size off;
+    autoindex_localtime on;
+    try_files $uri $uri/ =404;
     expires 1h;
     add_header Cache-Control "public" always;
 }
@@ -247,8 +258,12 @@ location ~* ^/day[^/]*\.png$ {
     expires modified +__ARCHIVE__s;  # tracks archive_interval
     add_header Cache-Control "public" always;
 }
-location ~* ^/(?:week|month)[^/]*\.png$ {
-    expires modified +1h;
+location ~* ^/week[^/]*\.png$ {
+    expires modified +1h;            # week_images regen hourly
+    add_header Cache-Control "public" always;
+}
+location ~* ^/month[^/]*\.png$ {
+    expires modified +3h;            # month_images aggregate_interval=10800
     add_header Cache-Control "public" always;
 }
 location ~* ^/year[^/]*\.png$ {

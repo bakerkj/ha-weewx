@@ -51,9 +51,10 @@ CONF
   } >"$WORK/config/www/index.html"
   printf 'body{color:#000}/*%s*/\n' "$(head -c 1500 /dev/zero | tr '\0' x)" >"$WORK/config/www/seasons.css"
   printf 'console.log(1);//%s\n' "$(head -c 1500 /dev/zero | tr '\0' x)" >"$WORK/config/www/exfoliation.js"
-  for f in daybarometer weekbarometer yearbarometer custombarometer; do
+  for f in daybarometer weekbarometer monthbarometer yearbarometer custombarometer; do
     echo PNG >"$WORK/config/www/$f.png"
   done
+  echo "<!doctype html><title>forecast</title>" >"$WORK/config/www/forecast.html"
   echo PNG >"$WORK/config/www/icons/AF.png"
   echo WOFF >"$WORK/config/www/font/Roboto.woff2"
   printf 'User-agent: *\nDisallow:\n' >"$WORK/config/www/robots.txt"
@@ -134,10 +135,22 @@ enc() {
 echo "### Scenario 1: default cache tiers (archive_interval=120)"
 make_config ""
 start_nginx || exit 1
-range /index.html 90 120 # HTML: expires modified +archive_interval
+range /index.html 90 120       # HTML: expires modified +archive_interval
+range /forecast.html 3510 3570 # skin regenerates hourly (stale_age=3570)
 range /daybarometer.png 90 120
 range /weekbarometer.png 3540 3600
+range /monthbarometer.png 10740 10800 # month_images aggregate_interval=10800
 range /yearbarometer.png 86340 86400
+# /icons/ directory listing must return 200 (autoindex), matching the behavior
+# already in place for location / and /NOAA/. A 404 here would break any client
+# that enumerates the icon set.
+icons_code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/icons/")"
+if [[ "$icons_code" == "200" ]]; then
+  echo "PASS  /icons/ (autoindex) -> HTTP $icons_code"
+else
+  echo "FAIL  /icons/ (autoindex) -> got HTTP $icons_code, want 200"
+  fail=1
+fi
 range /custombarometer.png 90 120 # unprefixed png -> day-tier fallback
 exact /seasons.css 3600
 exact /exfoliation.js 3600
@@ -148,10 +161,10 @@ exact "/NOAA/NOAA-$CYM.txt" 120 # current month -> njs archive_interval
 exact /NOAA/NOAA-2020.txt 86400 # immutable     -> njs 24h
 exact /NOAA/ 120                # autoindex listing -> njs archive_interval
 exact /gauge-data.txt 1
-# stale-while-revalidate ties to archive_interval (=120 in this fixture) so the
-# browser serves a stale gauge-data while revalidating, killing the inter-page
-# flash on SPA tab switches. The directive expands from $archive_interval, set
-# at server scope by nginx-init.sh via /tmp/nginx-archive-interval.conf.
+# stale-while-revalidate ties to archive_interval (=120 in this fixture) so a
+# client can serve the cached copy immediately while revalidating in the
+# background. The directive expands from $archive_interval, set at server
+# scope by nginx-init.sh via /tmp/nginx-archive-interval.conf.
 cc_gd="$(cc_of /gauge-data.txt)"
 if [[ "$cc_gd" == *stale-while-revalidate=120* ]]; then
   echo "PASS  /gauge-data.txt -> stale-while-revalidate=120"
@@ -175,6 +188,7 @@ start_nginx || exit 1
 # 3600/86400 to the archive_interval (120) — proving both the override took and
 # __ARCHIVE__ expanded.
 range /weekbarometer.png 90 120
+range /monthbarometer.png 90 120
 range /yearbarometer.png 90 120
 
 echo "### Scenario 3: broken override -> fallback to generated defaults"
@@ -184,7 +198,9 @@ start_nginx || {
   echo "FAIL: a broken override must fall back, not break startup"
   exit 1
 }
-range /yearbarometer.png 86340 86400 # default per-period tier restored
+range /yearbarometer.png 86340 86400  # default per-period tier restored
+range /forecast.html 3510 3570        # /forecast.html tier restored
+range /monthbarometer.png 10740 10800 # month tier restored
 
 echo
 if [[ "$fail" == 0 ]]; then
