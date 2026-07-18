@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.28](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.27...ha-weewx-v0.1.28) (2026-07-18)
+
+
+### Features
+
+* **nginx:** /config/nginx-extra.conf user override for server-scope directives ([#229](https://github.com/bakerkj/ha-weewx/issues/229)) ([bd7f990](https://github.com/bakerkj/ha-weewx/commit/bd7f990f40273adfa0a5c221175e1aec46127e94))
+* **refresh_stale_outputs:** age-out stale_age-gated outputs on weewx.STARTUP ([#230](https://github.com/bakerkj/ha-weewx/issues/230)) ([abc7061](https://github.com/bakerkj/ha-weewx/commit/abc7061b37e0206723774d666b7cf216e4212f7d))
+
+
+### Bug Fixes
+
+* **patches/weewx:** atomic weeutil.deep_copy_path (tmp + os.replace) ([#231](https://github.com/bakerkj/ha-weewx/issues/231)) ([c17f9a6](https://github.com/bakerkj/ha-weewx/commit/c17f9a60ca5472e2a54dae0291caeb0328b4b128))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.177 ([#224](https://github.com/bakerkj/ha-weewx/issues/224)) ([1101aeb](https://github.com/bakerkj/ha-weewx/commit/1101aeb3e3bd707a580a5a3bd45a7577a6828d5c))
+* **deps:** update dependency renovate to v43.270.0 ([#225](https://github.com/bakerkj/ha-weewx/issues/225)) ([584b9ce](https://github.com/bakerkj/ha-weewx/commit/584b9cee593c0cde5d7b68fb587d2b745b736387))
+
+
+### Code Refactoring
+
+* **nginx:** regex-ify /robots.txt + /gauge-data.txt tiers for extras-overridability ([#232](https://github.com/bakerkj/ha-weewx/issues/232)) ([55b89ad](https://github.com/bakerkj/ha-weewx/commit/55b89adb70cded4c2fe8635605c7baa90c4e999c))
+
 ## [0.1.27](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.26...ha-weewx-v0.1.27) (2026-07-18)
 
 
