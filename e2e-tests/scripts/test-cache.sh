@@ -204,6 +204,23 @@ range /yearbarometer.png 86340 86400  # default per-period tier restored
 range /forecast.html 3510 3570        # /forecast.html tier restored
 range /monthbarometer.png 10740 10800 # month tier restored
 
+# ---- helper: assert response body equals a fixture ----
+# Used to prove an extras block preempts the addon default and serves
+# its own content (e.g. an operator-defined robots.txt or gauge-data.txt
+# payload). Not a redirect — 200 body-equality check.
+body_equals() {
+  local path="$1" expected_body="$2"
+  local body
+  body="$(curl -s "http://localhost:$PORT$path")"
+  if [[ "$body" == "$expected_body" ]]; then
+    echo "PASS  $path -> body matches fixture"
+  else
+    echo "FAIL  $path -> body mismatch"
+    diff <(printf '%s' "$expected_body") <(printf '%s' "$body") || true
+    fail=1
+  fi
+}
+
 # ---- helper: assert HTTP status + Location header on a redirect ----
 # We expect a RELATIVE Location target (e.g. `index.html#/live`) — nginx
 # passes bare relative paths through verbatim rather than absolutising them
@@ -232,8 +249,13 @@ echo "### Scenario 4: /config/nginx-extra.conf drops in server-scope directives"
 cat >"$WORK/extra.conf" <<'EXTRA'
 location = /live.html      { return 301 "index.html#/live"; }
 location = /forecast.html  { return 301 "index.html#/forecast"; }
-location = /robots.txt     { return 302 "index.html#/robots"; }
-location = /gauge-data.txt { return 302 "index.html#/gauge-data"; }
+# For /robots.txt and /gauge-data.txt, use `return 200 <body>` rather than
+# a redirect: robots.txt in particular MUST NOT redirect to an HTML SPA
+# route or crawlers get confused. Semantic overrides here are things like
+# "return 200 with a stricter robots policy" or "return 200 with a
+# fixture JSON payload"; that's what the fixtures below assert.
+location = /robots.txt     { default_type text/plain; return 200 "user-agent: * disallow: /"; }
+location = /gauge-data.txt { default_type application/json; return 200 "{\"extras\": \"override\"}"; }
 EXTRA
 make_config "" "$WORK/extra.conf"
 start_nginx || exit 1
@@ -245,10 +267,12 @@ redirect /forecast.html 301 "index.html#/forecast"
 # either exact-match block to nginx-extra.conf would fail `nginx -t`
 # (duplicate exact-match location) and the extras revert-on-fail branch
 # of nginx-init.sh would drop the whole extras file to empty — asserting
-# both redirects fire proves both the mechanism works AND no other
-# tier of ours shadows it.
-redirect /robots.txt 302 "index.html#/robots"
-redirect /gauge-data.txt 302 "index.html#/gauge-data"
+# both overrides fire proves both the mechanism works AND no other tier
+# of ours shadows it. Semantic overrides (not the previous
+# index.html#/robots redirect target, which would break search crawlers):
+# a stricter robots policy and a fixture JSON gauge payload.
+body_equals /robots.txt "user-agent: * disallow: /"
+body_equals /gauge-data.txt "{\"extras\": \"override\"}"
 # A path not in the extras still hits location / normally — index.html is a
 # fixture and gets the HTML tier (archive_interval, 90-120 given =120 above).
 range /index.html 90 120
