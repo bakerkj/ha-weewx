@@ -26,10 +26,13 @@
 # The stray-tmp cleanup uses `except BaseException` (not `Exception`) so a
 # KeyboardInterrupt/SystemExit during a copy still unlinks the `.weewx-tmp-*`
 # fragment before re-raising. A hard-kill (SIGKILL/OOM/power loss) can still
-# leave a `.weewx-tmp-*` file in the destination directory; nginx would serve
-# it if asked by name. The leading `.` keeps them out of autoindex listings
-# and no in-repo caller guesses the pathname, so this is an operator-visible
-# hygiene issue rather than a user-facing bug.
+# leave a `.weewx-tmp-*` file in the destination directory — the leading `.`
+# keeps them out of autoindex listings and no in-repo caller guesses the
+# pathname, but nginx would serve one if asked by name. The bundled
+# `user.refresh_stale_outputs` StdService walks every enabled StdReport's
+# HTML_ROOT on `weewx.STARTUP` and sweeps every `.weewx-tmp-*` fragment as
+# part of its existing stale-output-aging pass, so the fragment survives at
+# most until the next weewxd start.
 #
 # Semantic change vs. stock `shutil.copy`: if the destination pathname pre-
 # existed as a symlink, `shutil.copy` wrote *through* it (target got the new

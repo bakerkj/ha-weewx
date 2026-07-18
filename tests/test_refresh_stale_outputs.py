@@ -416,7 +416,7 @@ def test_age_out_all_ages_stale_gated_outputs_only(tmp_path):
             "StdReport": {"MySkin": {}},
         }
     )
-    n = svc._age_out_all()
+    n, _html_roots = svc._age_out_all()
     # forecast (stale_age) + weekcloudbase (stale_age) = 2
     assert n == 2
     assert int(os.stat(html_root / "views" / "forecast.html").st_mtime) == 0
@@ -434,7 +434,7 @@ def test_age_out_all_respects_disabled_reports(tmp_path):
             "StdReport": {"MySkin": {"enable": "false"}},
         }
     )
-    assert svc._age_out_all() == 0
+    assert svc._age_out_all()[0] == 0
     # forecast.html and weekcloudbase.png still fresh
     assert os.stat(html_root / "views" / "forecast.html").st_mtime > now - 5
     assert os.stat(html_root / "weekcloudbase.png").st_mtime > now - 5
@@ -448,7 +448,7 @@ def test_age_out_all_skips_missing_output_files(tmp_path):
     (html_root / "views" / "forecast.html").unlink()
     svc = _FakeService({"WEEWX_ROOT": str(weewx_root), "StdReport": {"MySkin": {}}})
     # weekcloudbase.png still exists and is aged; forecast just skipped.
-    assert svc._age_out_all() == 1
+    assert svc._age_out_all()[0] == 1
 
 
 def test_age_out_all_honours_weewx_conf_html_root_override(tmp_path):
@@ -470,7 +470,7 @@ def test_age_out_all_honours_weewx_conf_html_root_override(tmp_path):
             "StdReport": {"MySkin": {"HTML_ROOT": str(alt)}},
         }
     )
-    n = svc._age_out_all()
+    n, _html_roots = svc._age_out_all()
     assert n == 2
     assert int(os.stat(alt / "views" / "forecast.html").st_mtime) == 0
     assert int(os.stat(alt / "weekcloudbase.png").st_mtime) == 0
@@ -510,7 +510,7 @@ def test_age_out_all_skips_defaults_pseudo_report(tmp_path):
             },
         }
     )
-    n = svc._age_out_all()
+    n, _html_roots = svc._age_out_all()
     # MySkin's forecast + weekcloudbase; Defaults not walked as a report.
     assert n == 2
     # views/live.html was NOT aged (Defaults section was skipped)
@@ -534,7 +534,7 @@ def test_age_out_all_skips_report_with_missing_skin_conf(tmp_path):
             },
         }
     )
-    n = svc._age_out_all()
+    n, _html_roots = svc._age_out_all()
     # Ghost skipped; MySkin's two aged as normal.
     assert n == 2
 
@@ -579,7 +579,7 @@ def test_age_out_all_isolates_per_report_failures(tmp_path):
             },
         }
     )
-    n = svc._age_out_all()
+    n, _html_roots = svc._age_out_all()
     # MySkin's forecast + weekcloudbase still get aged even though
     # BadSkin exploded partway through.
     assert n == 2
@@ -597,7 +597,128 @@ def test_age_out_all_swallows_bad_skin_conf(tmp_path):
     )
     svc = _FakeService({"WEEWX_ROOT": str(weewx_root), "StdReport": {"BadSkin": {}}})
     # Shouldn't raise. Return 0 because nothing was aged.
-    assert svc._age_out_all() == 0
+    assert svc._age_out_all()[0] == 0
+
+
+# --------------------------------------------------------------------------
+# _sweep_tmp_all — remove hard-kill-left ``.weewx-tmp-*`` fragments
+# --------------------------------------------------------------------------
+
+
+def test_sweep_removes_only_weewx_tmp_prefix(tmp_path):
+    """Only files whose basename starts with ``.weewx-tmp-`` are
+    unlinked. Everything else — real assets, other dotfiles, oddly-
+    named files — is left alone."""
+    svc = _FakeService({})
+    (tmp_path / "asset.css").write_text("real")
+    (tmp_path / ".weewx-tmp-abc123").write_text("orphan")
+    (tmp_path / ".weewx-tmp-def456.tmp").write_text("orphan")
+    (tmp_path / "weewx-tmp-nope").write_text("no dot prefix; skip")
+    (tmp_path / ".weewx-real").write_text("dot prefix but wrong pattern")
+    (tmp_path / ".hidden").write_text("unrelated dotfile")
+    swept = svc._sweep_tmp_all({str(tmp_path)})
+    assert swept == 2
+    # Real files still present.
+    assert (tmp_path / "asset.css").exists()
+    assert (tmp_path / "weewx-tmp-nope").exists()
+    assert (tmp_path / ".weewx-real").exists()
+    assert (tmp_path / ".hidden").exists()
+    # Orphans gone.
+    assert not (tmp_path / ".weewx-tmp-abc123").exists()
+    assert not (tmp_path / ".weewx-tmp-def456.tmp").exists()
+
+
+def test_sweep_recurses_into_html_root_subtree(tmp_path):
+    """weewx's CopyGenerator copies files at arbitrary depth under
+    HTML_ROOT — ``.weewx-tmp-*`` fragments could land in any
+    subdirectory, so the sweep must walk the whole tree."""
+    svc = _FakeService({})
+    for rel in (
+        ".weewx-tmp-root",
+        "views/.weewx-tmp-view",
+        "icons/AF/.weewx-tmp-icon",
+    ):
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("orphan")
+    swept = svc._sweep_tmp_all({str(tmp_path)})
+    assert swept == 3
+
+
+def test_sweep_dedups_shared_html_root(tmp_path):
+    """Several [StdReport] entries commonly share the same HTML_ROOT
+    (e.g. every user skin writing under ``/config/www``). The set
+    passed to _sweep_tmp_all dedups them — the caller can pass a set
+    with duplicates via string-vs-list and we still walk once."""
+    svc = _FakeService({})
+    (tmp_path / ".weewx-tmp-one").write_text("orphan")
+    swept = svc._sweep_tmp_all({str(tmp_path), str(tmp_path)})
+    assert swept == 1
+
+
+def test_sweep_skips_missing_html_root(tmp_path):
+    """A stale HTML_ROOT config entry pointing at a nonexistent path
+    (e.g. a skin the user later reconfigured) must not raise."""
+    svc = _FakeService({})
+    swept = svc._sweep_tmp_all({str(tmp_path / "does-not-exist")})
+    assert swept == 0
+
+
+def test_sweep_survives_unlink_permission_error(tmp_path, monkeypatch, caplog):
+    """A single ``os.unlink`` OSError (e.g. permission denied on a
+    read-only filesystem) must be logged and the sweep continue past
+    it — not tear down the entire pass."""
+    svc = _FakeService({})
+    (tmp_path / ".weewx-tmp-blocked").write_text("orphan")
+    (tmp_path / ".weewx-tmp-ok").write_text("orphan")
+
+    real_unlink = os.unlink
+
+    def _selective_unlink(path):
+        if path.endswith(".weewx-tmp-blocked"):
+            raise OSError("simulated read-only fs")
+        real_unlink(path)
+
+    monkeypatch.setattr(mod.os, "unlink", _selective_unlink)
+    caplog.set_level("DEBUG", logger=mod.log.name)
+    swept = svc._sweep_tmp_all({str(tmp_path)})
+    assert swept == 1
+    assert not (tmp_path / ".weewx-tmp-ok").exists()
+    assert (tmp_path / ".weewx-tmp-blocked").exists()
+    assert any("could not sweep" in r.message for r in caplog.records)
+
+
+def test_on_startup_runs_sweep_after_aging(tmp_path):
+    """End-to-end: _on_startup must call the aging pass first, then
+    sweep every HTML_ROOT the walk resolved. An orphan tmp fragment
+    left behind by a hard-killed prior process gets cleared on this
+    boot."""
+    weewx_root, html_root = _fixture_skin(tmp_path)
+    (html_root / ".weewx-tmp-orphan").write_text("orphan")
+
+    svc = _FakeService({"WEEWX_ROOT": str(weewx_root), "StdReport": {"MySkin": {}}})
+    svc._on_startup(None)
+    # aging: forecast.html + weekcloudbase.png
+    assert int(os.stat(html_root / "views" / "forecast.html").st_mtime) == 0
+    assert int(os.stat(html_root / "weekcloudbase.png").st_mtime) == 0
+    # sweep: orphan gone
+    assert not (html_root / ".weewx-tmp-orphan").exists()
+
+
+def test_on_startup_sweep_failure_doesnt_propagate(monkeypatch):
+    """If the sweep pass raises, _on_startup must swallow it — the
+    report thread continues. Same guarantee as the aging pass."""
+
+    def _boom(_self, _roots):
+        raise RuntimeError("simulated sweep failure")
+
+    monkeypatch.setattr(mod.RefreshStaleOutputs, "_sweep_tmp_all", _boom)
+
+    svc = _FakeService({"WEEWX_ROOT": ".", "StdReport": {}})
+    try:
+        svc._on_startup(None)
+    except Exception as e:
+        pytest.fail(f"_on_startup must not propagate sweep failure: {e!r}")
 
 
 def test_on_startup_never_raises(monkeypatch):
