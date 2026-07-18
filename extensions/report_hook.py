@@ -50,14 +50,6 @@ disabled no-op so the module is safe to leave in the generator_list):
                  expandvars substitution into argv elements. Keeps secrets
                  in their own config line for rotation / grep.
 
-HA add-on integration: at run time the module also reads
-``/data/options.json`` (Home Assistant Supervisor writes this file inside
-the addon container). Any ``report_hook_*`` key found there overlays the
-corresponding ``[ReportHook]`` value from the skin dict — so an operator can
-configure everything from the addon's Configuration tab and leave the skin
-config empty. In vanilla WeeWX ``/data/options.json`` doesn't exist and
-the module behaves exactly as if it weren't there.
-
 Failures (non-zero exit, timeout, spawn error) are logged at WARNING and
 never propagate — this is a fire-and-forget hook and must not break the
 report cycle.
@@ -65,7 +57,6 @@ report cycle.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
@@ -84,10 +75,6 @@ log = logging.getLogger(__name__)
 # state. WeeWX serialises report threads (``launch_report_thread`` refuses
 # to start a second thread while one is alive), so a plain set is safe.
 _fired: set[str] = set()
-
-# HA Supervisor writes the addon's options here inside the container.
-# Module-level constant so tests can point it at tmp_path.
-HA_OPTIONS_PATH = "/data/options.json"
 
 # ``os.path.expandvars`` grammar, replicated so we can substitute against a
 # caller-supplied env dict instead of touching ``os.environ`` — mutating
@@ -202,50 +189,6 @@ def _run_command(
     return False, f"exit {r.returncode}: {stderr_snippet}"
 
 
-def _load_ha_overrides() -> dict[str, Any]:
-    """Read ``HA_OPTIONS_PATH`` and return an override dict shaped like
-    the ``[ReportHook]`` skin dict.
-
-    - Missing file, unreadable file, or invalid JSON → ``{}`` (silent).
-    - Only ``report_hook_*`` keys are considered; the prefix is stripped.
-    - ``report_hook_env`` is expected to be a list of ``{"name": ..., "value": ...}``
-      dicts (matches the HA options-schema convention for repeated fields)
-      and is unrolled into ``env_NAME`` entries so it merges naturally
-      with skin-dict env_* keys.
-    - Empty / falsy override values are dropped so a blank field in the HA
-      UI doesn't clobber a real value in the skin's ``[ReportHook]`` block.
-    """
-    try:
-        with open(HA_OPTIONS_PATH) as f:
-            opts = json.load(f)
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(opts, dict):
-        return {}
-
-    override: dict[str, Any] = {}
-    for k, v in opts.items():
-        if not k.startswith("report_hook_"):
-            continue
-        if v in (None, "", [], {}):
-            continue
-        override[k[len("report_hook_") :]] = v
-
-    # env is a list of {name, value} in the HA schema — unroll it.
-    env_list = override.pop("env", None) or []
-    if isinstance(env_list, list):
-        for item in env_list:
-            if not isinstance(item, dict):
-                continue
-            name = item.get("name")
-            if not name:
-                continue
-            value = item.get("value")
-            override[f"env_{name}"] = "" if value is None else str(value)
-
-    return override
-
-
 def run_hook(
     hook_cfg: dict[str, Any],
     report_name: str,
@@ -291,18 +234,13 @@ def run_hook(
 class ReportHook(ReportGenerator):
     """WeeWX ``ReportGenerator`` that runs a subprocess on each cycle.
 
-    Reads ``[ReportHook]`` from the skin dict, merges any ``report_hook_*`` overrides
-    from the addon options file (see ``_load_ha_overrides``), and hands
-    off to ``run_hook``. ``run()`` returns nothing and never raises — the
-    report thread continues regardless of the outcome.
+    Reads ``[ReportHook]`` from the skin dict and hands off to ``run_hook``.
+    ``run()`` returns nothing and never raises — the report thread continues
+    regardless of the outcome.
     """
 
     def run(self) -> None:
-        skin_cfg = dict(self.skin_dict.get("ReportHook", {}) or {})
-        ha_cfg = _load_ha_overrides()
-        # HA options WIN over skin dict — the addon UI is the intended
-        # single source of truth once the operator starts using it.
-        hook_cfg = {**skin_cfg, **ha_cfg}
+        hook_cfg = dict(self.skin_dict.get("ReportHook", {}) or {})
 
         # skin_dict includes REPORT_NAME (set by StdReportEngine when it
         # walks each skin). Fall back to a stable literal so the "unknown"
