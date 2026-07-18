@@ -27,3 +27,34 @@ configuration:
       as large as "Maximum Last-Modified age" — otherwise the first probe will
       trip on a file that hasn't been refreshed yet, and the watchdog will kill
       the addon for no real reason.
+  report_hook_command:
+    name: Post-report command (argv)
+    description: >-
+      Command to run when a report cycle finishes, as an argv list (first entry
+      is the executable, subsequent entries are its arguments). Empty =
+      disabled. Requires `user.report_hook.ReportHook` to be added to the skin's
+      `[Generators] generator_list` in `weewx.conf`. Each element is passed
+      through `expandvars`, so `$TOKEN` / `${TOKEN}` substitutes from the
+      "Post-report env vars" list below.
+  report_hook_frequency:
+    name: Post-report frequency
+    description: >-
+      `every` fires the command after each report cycle. `once` fires it only on
+      the first successful report cycle after addon start (a marker file in
+      `/tmp` tracks the "already fired" state; container restart clears it).
+  report_hook_timeout:
+    name: Post-report timeout (seconds)
+    description:
+      Kill the command if it hasn't finished within this many seconds.
+  report_hook_verify_file:
+    name: Post-report verify-file gate
+    description: >-
+      Optional absolute path — the command runs only when this file exists and
+      is non-empty. Guards against firing after a half-finished report cycle
+      (e.g. Cheetah caught a per-template exception but the generator ran).
+  report_hook_env:
+    name: Post-report env vars
+    description: >-
+      Extra environment variables exposed to the command. `name` becomes the
+      shell variable and can be referenced in the command as `$name`; `value` is
+      masked in the UI so secrets stay hidden.
