@@ -1,0 +1,87 @@
+# weeutil.weeutil.deep_copy_path is called by weewx.CopyGenerator.run (in
+# weewx.reportengine) once per non-directory source path when copying skin
+# assets into HTML_ROOT. The stock implementation uses
+#
+#     shutil.copy(path, d)
+#
+# which opens the destination file with mode 'wb', truncating any pre-existing
+# file in place before writing. A concurrent reader — the addon's nginx serving
+# public_html/ — can hit that URL between the truncate and the first fwrite,
+# see zero bytes (or a partial file), and cache the empty response.
+#
+# In steady state the CopyGenerator only re-copies files matched by the skin's
+# `copy_always` list (usually short — dynamically rendered assets), but at every
+# `first_run` (fresh weewxd startup, first StdReportEngine invocation) it also
+# re-copies every `copy_once` entry — historically the entire skin asset tree
+# (CSS, JS, fonts, icons). During that pass an ingress HTTP request for a
+# static asset can silently drop bytes.
+#
+# Fix: write to a same-directory temp file (`tempfile.mkstemp` in the
+# destination dir, so the rename is guaranteed intra-filesystem) then
+# `os.replace`, which is atomic on POSIX. `shutil.copymode` preserves file mode
+# to match the original semantics; mtime is deliberately NOT copied, matching
+# the pre-patch shutil.copy behaviour so downstream rsync/ftp still sees a
+# "new" file per report cycle.
+#
+# The stray-tmp cleanup uses `except BaseException` (not `Exception`) so a
+# KeyboardInterrupt/SystemExit during a copy still unlinks the `.weewx-tmp-*`
+# fragment before re-raising. A hard-kill (SIGKILL/OOM/power loss) can still
+# leave a `.weewx-tmp-*` file in the destination directory — the leading `.`
+# keeps them out of autoindex listings and no in-repo caller guesses the
+# pathname, but nginx would serve one if asked by name. The bundled
+# `user.refresh_stale_outputs` StdService walks every enabled StdReport's
+# HTML_ROOT on `weewx.STARTUP` and sweeps every `.weewx-tmp-*` fragment as
+# part of its existing stale-output-aging pass, so the fragment survives at
+# most until the next weewxd start.
+#
+# Semantic change vs. stock `shutil.copy`: if the destination pathname pre-
+# existed as a symlink, `shutil.copy` wrote *through* it (target got the new
+# bytes, link preserved). `os.replace` unlinks the old inode and swaps in the
+# new one — the pathname is now a plain file. Likewise a pre-existing hardlink
+# at the destination path becomes independent of its siblings after this
+# copy. Neither shape is used inside a stock skin's `copy_once`/`copy_always`
+# tree (weewx ships regular files), so no in-tree caller is affected; noted
+# here for downstream users with unusual `HTML_ROOT` layouts.
+--- a/weeutil/weeutil.py
++++ b/weeutil/weeutil.py
+@@ -18,6 +18,7 @@
+ import os
+ import re
+ import shutil
++import tempfile
+ import time
+ from collections import ChainMap
+
+@@ -1858,9 +1859,28 @@
+         d = os.path.dirname(os.path.join(dest_dir, path))
+         # Make the destination directory:
+         os.makedirs(d, exist_ok=True)
+-        # This version of copy does not copy over modification time,
+-        # so it will look like a new file, causing it to be (for
+-        # example) ftp'd to the server:
+-        shutil.copy(path, d)
++        # Atomic copy: write to a same-directory temp file then os.replace,
++        # so a concurrent reader (nginx serving public_html/ during the
++        # first-run copy pass) never observes a truncated dest file.
++        # shutil.copy opens the destination with 'wb', which truncates
++        # any existing file before writing; a browser hitting the URL
++        # between the truncate and the last write sees empty or partial
++        # bytes. os.replace is atomic on POSIX inside one filesystem.
++        # Modification time is deliberately NOT copied, matching the
++        # original shutil.copy semantics (so downstream rsync/ftp still
++        # sees a "new" file after each report cycle).
++        final = os.path.join(d, os.path.basename(path))
++        tmp_fd, tmp_path = tempfile.mkstemp(dir=d, prefix=".weewx-tmp-")
++        try:
++            with os.fdopen(tmp_fd, "wb") as fdst, open(path, "rb") as fsrc:
++                shutil.copyfileobj(fsrc, fdst)
++            shutil.copymode(path, tmp_path)
++            os.replace(tmp_path, final)
++        except BaseException:
++            try:
++                os.unlink(tmp_path)
++            except OSError:
++                pass
++            raise
+         ncopy += 1
+     return ncopy

@@ -1,7 +1,9 @@
 # Copyright (c) 2026 Kenneth Baker <bakerkj@umich.edu>
 # All rights reserved.
 """RefreshStaleOutputs: on weewxd startup, age-out every skin output whose
-config has ``stale_age`` set so the next report cycle re-renders it.
+config has ``stale_age`` set so the next report cycle re-renders it,
+and sweep any ``.weewx-tmp-*`` fragments left over from a hard-killed
+copy in the same walk.
 
 WeeWX's CheetahGenerator and ImageGenerator both honour ``stale_age``: if a
 template's output file is younger than that many seconds, they skip
@@ -20,6 +22,16 @@ file whose skin config has ``stale_age`` set — in both
 then sees the file as ancient, the stale-age branch trivially decides it
 must re-render, and Cheetah's atomic tmp+rename replaces the aged content
 before anyone reads the ancient mtime.
+
+The same walk also sweeps ``.weewx-tmp-*`` fragments from every visited
+``HTML_ROOT``. weewx's patched ``weeutil.deep_copy_path`` writes to a
+same-directory tmp file then ``os.replace``s it over the final path.
+Normal-path cleanup on Python-visible exceptions is in place; a hard
+kill (SIGKILL/OOM/power loss) can leave a tmp fragment behind. Any that
+survives the previous weewxd process is a stale artefact — its final
+destination either already got the newer content on a subsequent copy
+cycle or will on the next one — so unlinking it at startup is always
+safe.
 
 Wire in ``weewx.conf``:
 
@@ -59,19 +71,36 @@ class RefreshStaleOutputs(StdService):
 
     def _on_startup(self, _event) -> None:
         try:
-            n = self._age_out_all()
+            aged, html_roots = self._age_out_all()
         except Exception as e:
             # Never break weewxd startup over a config quirk. Log and move on.
             log.warning("RefreshStaleOutputs: unexpected error: %s", e)
             return
-        if n:
-            log.info("RefreshStaleOutputs: aged %d stale-gated output files", n)
+        if aged:
+            log.info("RefreshStaleOutputs: aged %d stale-gated output files", aged)
+        # Independent from the aging pass so a failure in either doesn't
+        # abandon the other. `html_roots` is the deduped set of every
+        # HTML_ROOT the walk resolved — sweep tmp fragments in each.
+        try:
+            swept = self._sweep_tmp_all(html_roots)
+        except Exception as e:
+            log.warning("RefreshStaleOutputs: tmp-sweep failed: %s", e)
+            return
+        if swept:
+            log.info(
+                "RefreshStaleOutputs: swept %d stale .weewx-tmp-* fragments",
+                swept,
+            )
 
-    def _age_out_all(self) -> int:
+    def _age_out_all(self) -> tuple[int, set[str]]:
         """Walk every enabled ``[StdReport]`` skin, load its skin.conf,
         find every leaf with ``stale_age``, and age-out the corresponding
-        output. Returns the count of files touched."""
+        output. Returns ``(aged_count, html_roots)`` — the number of files
+        touched and the deduped set of every ``HTML_ROOT`` the walk
+        resolved. The tmp-sweep pass consumes ``html_roots`` next, so
+        both concerns share the same skin-config resolution work."""
         aged = 0
+        html_roots: set[str] = set()
         weewx_root = self.config_dict.get("WEEWX_ROOT", ".")
         std_report_cfg = self.config_dict.get("StdReport", {})
         skin_root = std_report_cfg.get("SKIN_ROOT", "skins")
@@ -138,6 +167,7 @@ class RefreshStaleOutputs(StdService):
                 html_root = _resolve_html_root(
                     weewx_root, report_name, report_cfg, skin_dict, std_report_cfg
                 )
+                html_roots.add(html_root)
 
                 for rel_out in _stale_outputs(skin_dict):
                     out = os.path.join(html_root, rel_out)
@@ -150,7 +180,54 @@ class RefreshStaleOutputs(StdService):
                     e,
                 )
                 continue
-        return aged
+        return aged, html_roots
+
+    def _sweep_tmp_all(self, html_roots: set[str]) -> int:
+        """Delete every ``.weewx-tmp-*`` fragment beneath each of
+        ``html_roots``. Returns the count of files unlinked.
+
+        ``weeutil.deep_copy_path`` writes to a same-directory tmp file
+        (``tempfile.mkstemp(dir=d, prefix=".weewx-tmp-")``) then
+        ``os.replace``s it over the final path. On a Python-visible
+        exception the cleanup ``except`` block unlinks the tmp; on a
+        hard kill (SIGKILL/OOM/power loss) the fragment can survive.
+        Any tmp fragment older than the previous weewxd process is a
+        stale artefact whose final destination already got the newer
+        content on a subsequent copy cycle, so unlinking it is always
+        safe. Per-directory os.walk failures are logged and skipped so
+        one bad HTML_ROOT doesn't halt the sweep."""
+        swept = 0
+        for html_root in html_roots:
+            if not os.path.isdir(html_root):
+                continue
+            try:
+                walker = os.walk(html_root, onerror=self._walk_error)
+                for dirpath, _dirnames, filenames in walker:
+                    for name in filenames:
+                        if not name.startswith(".weewx-tmp-"):
+                            continue
+                        path = os.path.join(dirpath, name)
+                        try:
+                            os.unlink(path)
+                            swept += 1
+                            log.debug("RefreshStaleOutputs: swept %s", path)
+                        except OSError as e:
+                            log.debug(
+                                "RefreshStaleOutputs: could not sweep %s: %s",
+                                path,
+                                e,
+                            )
+            except Exception as e:
+                log.debug(
+                    "RefreshStaleOutputs: sweep of %s failed: %s",
+                    html_root,
+                    e,
+                )
+        return swept
+
+    @staticmethod
+    def _walk_error(err: OSError) -> None:
+        log.debug("RefreshStaleOutputs: os.walk error: %s", err)
 
 
 # --------------------------------------------------------------------------
