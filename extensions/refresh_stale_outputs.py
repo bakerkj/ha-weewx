@@ -97,42 +97,59 @@ class RefreshStaleOutputs(StdService):
                 )
                 continue
 
-            skin_conf_path = _resolve_skin_conf(
-                weewx_root, skin_root, report_name, report_cfg
-            )
-            if not skin_conf_path or not os.path.isfile(skin_conf_path):
-                continue
-
+            # Everything below this point is per-report scoped: one
+            # malformed report (e.g. configobj coercing a trailing-comma
+            # scalar into a list, which breaks `template.endswith()` in
+            # the stale-outputs walk) must NOT abort the remaining
+            # reports. Log the offender, skip it, move on.
             try:
-                skin_dict: dict[str, Any] = configobj.ConfigObj(skin_conf_path)
+                skin_conf_path = _resolve_skin_conf(
+                    weewx_root, skin_root, report_name, report_cfg
+                )
+                if not skin_conf_path or not os.path.isfile(skin_conf_path):
+                    continue
+
+                try:
+                    skin_dict: dict[str, Any] = configobj.ConfigObj(skin_conf_path)
+                except Exception as e:
+                    log.debug(
+                        "RefreshStaleOutputs: could not load %s: %s",
+                        skin_conf_path,
+                        e,
+                    )
+                    continue
+
+                # Merge weewx.conf's report-scoped overrides onto skin.conf so
+                # a stale_age set in weewx.conf (not just skin.conf) still
+                # contributes to the walk. Merges shallowly-onto-deeply, so
+                # weewx.conf wins where it defines a value — matching what
+                # StdReportEngine does when it builds each skin's real config.
+                # HTML_ROOT is resolved separately below with the full
+                # weewx precedence, not from this merge.
+                try:
+                    weeutil.config.merge_config(skin_dict, report_cfg)
+                except Exception as e:
+                    log.debug(
+                        "RefreshStaleOutputs: merge failed for %s: %s",
+                        report_name,
+                        e,
+                    )
+
+                html_root = _resolve_html_root(
+                    weewx_root, report_name, report_cfg, skin_dict, std_report_cfg
+                )
+
+                for rel_out in _stale_outputs(skin_dict):
+                    out = os.path.join(html_root, rel_out)
+                    if _age_out(out):
+                        aged += 1
             except Exception as e:
                 log.debug(
-                    "RefreshStaleOutputs: could not load %s: %s", skin_conf_path, e
+                    "RefreshStaleOutputs: skipping report %s after unexpected error: %s",
+                    report_name,
+                    e,
                 )
                 continue
-
-            # Merge weewx.conf's report-scoped overrides onto skin.conf so
-            # a stale_age set in weewx.conf (not just skin.conf) still
-            # contributes to the walk. Merges shallowly-onto-deeply, so
-            # weewx.conf wins where it defines a value — matching what
-            # StdReportEngine does when it builds each skin's real config.
-            # HTML_ROOT is resolved separately below with the full
-            # weewx precedence, not from this merge.
-            try:
-                weeutil.config.merge_config(skin_dict, report_cfg)
-            except Exception as e:
-                log.debug(
-                    "RefreshStaleOutputs: merge failed for %s: %s", report_name, e
-                )
-
-            html_root = _resolve_html_root(
-                weewx_root, report_name, report_cfg, skin_dict, std_report_cfg
-            )
-
-            for rel_out in _stale_outputs(skin_dict):
-                out = os.path.join(html_root, rel_out)
-                if _age_out(out):
-                    aged += 1
         return aged
 
 

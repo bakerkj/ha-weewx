@@ -539,6 +539,54 @@ def test_age_out_all_skips_report_with_missing_skin_conf(tmp_path):
     assert n == 2
 
 
+def test_age_out_all_isolates_per_report_failures(tmp_path):
+    """A malformed skin.conf earlier in the walk must NOT prevent later,
+    well-formed reports from being aged. Realistic trigger: configobj
+    coerces a trailing-comma scalar (e.g. ``template = views/x.html.tmpl,``)
+    into a single-element list, and downstream ``template.endswith(".tmpl")``
+    inside ``_cheetah_stale_outputs`` raises AttributeError. Without
+    per-report exception isolation, that one bad skin silently kills
+    aging for every following report."""
+    weewx_root, well_formed_html_root = _fixture_skin(tmp_path)
+
+    # First (alphabetically-earlier) report: skin.conf with a trailing
+    # comma on the template value → configobj parses it as a list.
+    # Write raw so the comma survives (ConfigObj.write() would quote it).
+    bad_dir = weewx_root / "skins" / "BadSkin"
+    bad_dir.mkdir(parents=True, exist_ok=True)
+    (bad_dir / "skin.conf").write_text(
+        f"HTML_ROOT = {tmp_path / 'bad-html'}\n"
+        "[CheetahGenerator]\n"
+        "    [[view_broken]]\n"
+        "        template = views/broken.html.tmpl,\n"
+        "        stale_age = 1\n"
+    )
+    # Sanity: configobj really does coerce this to a list.
+    reparsed = configobj.ConfigObj(str(bad_dir / "skin.conf"))
+    assert isinstance(reparsed["CheetahGenerator"]["view_broken"]["template"], list), (
+        "test fixture no longer triggers configobj list-coercion; rewrite it"
+    )
+
+    svc = _FakeService(
+        {
+            "WEEWX_ROOT": str(weewx_root),
+            "StdReport": {
+                # Alphabetical iteration on Python dicts preserves insertion
+                # order — put the bad one first so the well-formed one comes
+                # after the fault point.
+                "BadSkin": {},
+                "MySkin": {},
+            },
+        }
+    )
+    n = svc._age_out_all()
+    # MySkin's forecast + weekcloudbase still get aged even though
+    # BadSkin exploded partway through.
+    assert n == 2
+    assert int(os.stat(well_formed_html_root / "views" / "forecast.html").st_mtime) == 0
+    assert int(os.stat(well_formed_html_root / "weekcloudbase.png").st_mtime) == 0
+
+
 def test_age_out_all_swallows_bad_skin_conf(tmp_path):
     """A skin.conf that fails to parse must not crash the walk. The
     service just logs debug and moves on to the next report."""
