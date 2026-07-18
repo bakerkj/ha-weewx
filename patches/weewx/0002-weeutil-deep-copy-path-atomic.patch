@@ -49,7 +49,7 @@
  import time
  from collections import ChainMap
 
-@@ -1858,10 +1859,29 @@
+@@ -1858,9 +1859,28 @@
          d = os.path.dirname(os.path.join(dest_dir, path))
          # Make the destination directory:
          os.makedirs(d, exist_ok=True)
