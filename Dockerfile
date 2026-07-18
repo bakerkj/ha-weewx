@@ -271,11 +271,16 @@ COPY --from=xtide-builder /out/share/xtide/ /usr/share/xtide/
 COPY --from=xtide-builder /out/etc/xtide.conf /etc/xtide.conf
 
 # ---------------------------------------------------------------------------
-# Bundled extra extension: log_to_file (per-record CSV file writer, bakerkj).
+# Bundled extra extensions:
+#   log_to_file  — per-record CSV file writer (bakerkj).
+#   report_hook  — post-report shell-command hook (bakerkj); wire into a
+#                  skin's [Generators] generator_list to fire an arbitrary
+#                  command when that skin's report cycle finishes.
 # Custom skins are NOT baked in — they are user customizations supplied at
 # runtime (e.g. under /config), not part of the generic add-on.
 # ---------------------------------------------------------------------------
 COPY extensions/log_to_file.py /opt/weewx-data/bin/user/log_to_file.py
+COPY extensions/report_hook.py        /opt/weewx-data/bin/user/report_hook.py
 
 # ---------------------------------------------------------------------------
 # Ship the project LICENSE at the image root so it travels with the image

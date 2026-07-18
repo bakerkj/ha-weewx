@@ -98,6 +98,27 @@ Pick a `watchdog_path` whose source you trust to rewrite regularly:
 `/gauge-data.txt` (rewritten by `realtime-gauge-data` every LOOP packet once
 rtgd is enabled) is much sharper.
 
+### Post-report hook (`report_hook_*`)
+
+Fires an arbitrary subprocess when a report cycle finishes — useful for purging
+a downstream CDN, poking a webhook, kicking off a rsync, etc. Wired into weewx
+via the bundled `user.report_hook.ReportHook` (see
+[Bundled extensions](#bundled-extensions) below); these HA options overlay
+whatever lives in the skin's `[ReportHook]` block, so the addon UI can be the
+single source of truth.
+
+| Option                    | Default   | Meaning                                                                                                                                                                                    |
+| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `report_hook_command`     | `[]`      | argv list — first entry is the executable, rest are arguments. Empty = disabled. Each element passes through `expandvars` at runtime, so `$TOKEN` references entries in `report_hook_env`. |
+| `report_hook_frequency`   | `"every"` | `every` (each report cycle) or `once` (only the first successful cycle after addon start; state kept in-process, cleared on restart).                                                      |
+| `report_hook_timeout`     | `10`      | Kill the command after this many seconds.                                                                                                                                                  |
+| `report_hook_verify_file` | `""`      | Optional absolute path — command runs only when the file exists and is non-empty.                                                                                                          |
+| `report_hook_env`         | `[]`      | List of `{name, value}` pairs. `value` is masked in the UI. Referenced as `$name` from `report_hook_command`.                                                                              |
+
+The generator only fires for skins whose `[Generators] generator_list` includes
+`user.report_hook.ReportHook` in `weewx.conf`. See the extension section below
+for the full config reference and a standalone-WeeWX example.
+
 ---
 
 ## Database
@@ -285,27 +306,80 @@ applicable) `/opt/weewx-data/skins/`. To enable one, add its service path to the
 appropriate `*_services` entry in `[Engine] [[Services]]` and add its
 configuration section to `weewx.conf`.
 
-| Extension            | Service path                              | Service list       | Notes                                                        |
-| -------------------- | ----------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`  | MQTT discovery for HA (by felddy)                            |
-| emoncms              | `user.emoncms.EmonCMS`                    | `restful_services` | matthewwall                                                  |
-| exfoliation          | _(skin only)_                             | —                  | Replacement skin                                             |
-| forecast             | `user.forecast.NWSForecast` (etc.)        | `archive_services` | Multiple forecast providers, chaunceygardiner                |
-| fuzzy-archer         | _(skin only)_                             | —                  | Bootstrap-themed skin                                        |
-| MQTTSubscribe        | `user.MQTTSubscribe.MQTTSubscribeService` | `data_services`    | Ingest data from MQTT topics, bellrichm                      |
-| opensensemap         | `user.opensensemap.OpenSenseMap`          | `restful_services` | sbsrouteur                                                   |
-| owm                  | `user.owm.OpenWeatherMap`                 | `restful_services` | matthewwall                                                  |
-| previmeteo           | `user.previmeteo.Previmeteo`              | `restful_services` | Patched for Python 3                                         |
-| purpleair            | `user.purpleair.PurpleAirMonitor`         | `process_services` | bakerkj                                                      |
-| rain24h              | `user.rain24h.Rain24h`                    | `data_services`    | Injects rolling 24h rain into loop packets, chaunceygardiner |
-| realtime-gauge-data  | `user.rtgd.RealtimeGaugeData`             | `report_services`  | + RealtimeGauges skin                                        |
-| thingspeak           | `user.thingspeak.ThingSpeak`              | `restful_services` | matthewwall                                                  |
-| wcloud               | `user.wcloud.WeatherCloud`                | `restful_services` | matthewwall                                                  |
-| wetter               | `user.wetter.Wetter`                      | `restful_services` | matthewwall                                                  |
-| windfinder           | `user.windfinder.WindFinder`              | `restful_services` | matthewwall                                                  |
-| windguru             | `user.windguru.WindGuru`                  | `restful_services` | claudobahn                                                   |
-| windy                | `user.windy.Windy`                        | `restful_services` | matthewwall                                                  |
-| xaggs                | `user.xaggs.XAggsService`                 | `xtype_services`   | Historical-day aggregation tags for skins, tkeffer           |
+| Extension            | Service path                              | Service list              | Notes                                                        |
+| -------------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------ |
+| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`         | MQTT discovery for HA (by felddy)                            |
+| emoncms              | `user.emoncms.EmonCMS`                    | `restful_services`        | matthewwall                                                  |
+| report_hook          | `user.report_hook.ReportHook`             | _(skin `generator_list`)_ | Post-report shell hook — see below                           |
+| exfoliation          | _(skin only)_                             | —                         | Replacement skin                                             |
+| forecast             | `user.forecast.NWSForecast` (etc.)        | `archive_services`        | Multiple forecast providers, chaunceygardiner                |
+| fuzzy-archer         | _(skin only)_                             | —                         | Bootstrap-themed skin                                        |
+| MQTTSubscribe        | `user.MQTTSubscribe.MQTTSubscribeService` | `data_services`           | Ingest data from MQTT topics, bellrichm                      |
+| opensensemap         | `user.opensensemap.OpenSenseMap`          | `restful_services`        | sbsrouteur                                                   |
+| owm                  | `user.owm.OpenWeatherMap`                 | `restful_services`        | matthewwall                                                  |
+| previmeteo           | `user.previmeteo.Previmeteo`              | `restful_services`        | Patched for Python 3                                         |
+| purpleair            | `user.purpleair.PurpleAirMonitor`         | `process_services`        | bakerkj                                                      |
+| rain24h              | `user.rain24h.Rain24h`                    | `data_services`           | Injects rolling 24h rain into loop packets, chaunceygardiner |
+| realtime-gauge-data  | `user.rtgd.RealtimeGaugeData`             | `report_services`         | + RealtimeGauges skin                                        |
+| thingspeak           | `user.thingspeak.ThingSpeak`              | `restful_services`        | matthewwall                                                  |
+| wcloud               | `user.wcloud.WeatherCloud`                | `restful_services`        | matthewwall                                                  |
+| wetter               | `user.wetter.Wetter`                      | `restful_services`        | matthewwall                                                  |
+| windfinder           | `user.windfinder.WindFinder`              | `restful_services`        | matthewwall                                                  |
+| windguru             | `user.windguru.WindGuru`                  | `restful_services`        | claudobahn                                                   |
+| windy                | `user.windy.Windy`                        | `restful_services`        | matthewwall                                                  |
+| xaggs                | `user.xaggs.XAggsService`                 | `xtype_services`          | Historical-day aggregation tags for skins, tkeffer           |
+
+### Post-report shell hook (`report_hook`)
+
+`user.report_hook.ReportHook` runs an arbitrary shell command when a skin's
+report cycle finishes. It slots into the skin's `[Generators] generator_list`
+after the generators whose output the command depends on, so WeeWX fires it
+exactly when everything else for that skin has completed — no polling.
+
+The command is an **argv list** (`subprocess.run(..., shell=False)`) — no shell,
+no injection surface. Each argv element runs through `os.path.expandvars`, so
+`$TOKEN` / `${TOKEN}` substitutes from the subprocess env (which is preloaded
+with the process's own env plus every `env_*` entry).
+
+Minimal config in `weewx.conf` — configobj parses a comma-separated
+`command = a, b, c` line as a Python list, which is exactly the argv shape:
+
+```ini
+[StdReport]
+    [[MySkin]]
+        [[[ReportHook]]]
+            command = curl, -fsS, -X, POST,
+                      -H, "Authorization: Bearer $TOKEN",
+                      https://example.com/hook
+            env_TOKEN = xyz-secret
+
+[Generators]
+    generator_list = weewx.cheetahgenerator.CheetahGenerator, user.report_hook.ReportHook
+```
+
+Options (all optional except `command`; empty/missing `command` is a no-op):
+
+| Option        | Default  | Meaning                                                                                                                              |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `command`     | _(none)_ | argv list. First element is the executable (looked up on `PATH`); the rest are its arguments. Empty = disabled.                      |
+| `frequency`   | `every`  | `every` (each report cycle) or `once` (once per addon boot).                                                                         |
+| `timeout`     | `10`     | Seconds before the command is killed.                                                                                                |
+| `verify_file` | _(none)_ | Optional path — command runs only when the file exists and is non-empty.                                                             |
+| `env_<NAME>`  | _(none)_ | Exports `NAME=<value>` to the subprocess env; `env_TOKEN = abc` makes `$TOKEN` available for `expandvars` substitution in `command`. |
+
+Non-zero exit, timeout, or spawn failure is logged at WARNING and never breaks
+the report cycle. `frequency = once` tracks "already fired" in a module-level
+set that persists across report cycles within a single `weewxd` process;
+container restart spawns a fresh interpreter and the set is empty again, so
+"once per boot" is the semantic.
+
+**Configuring via HA add-on options.** When running inside the `ha-weewx` addon,
+the extension also reads `/data/options.json` (written by HA Supervisor from the
+addon's Configuration tab). Any `report_hook_*` key set there overlays the
+corresponding `[ReportHook]` value — so the UI can be the single source of
+truth. See [Add-on options](#add-on-options) above for the full HA-side option
+table. In vanilla WeeWX (no `/data/options.json`), the module ignores this path
+entirely.
 
 ---
 
