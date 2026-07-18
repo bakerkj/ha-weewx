@@ -45,13 +45,26 @@ printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-int
 # Per-period default tiers for static assets and chart PNGs. Static assets
 # (libraries/fonts/weather icons) change only on a skin update -> flat 1h. Chart
 # PNGs expire relative to mtime, keyed to how often WeeWX regenerates each
-# period: day plots every archive cycle, week/month hourly, year daily; an
-# unprefixed-PNG fallback is treated like a day plot. expires emits only
-# max-age, so a second add_header supplies "public" (caches merge the two).
+# period: day plots every archive cycle, week hourly, month 3-hourly (matches
+# aggregate_interval=10800 in [[month_images]]), year daily; an unprefixed-PNG
+# fallback is treated like a day plot. /forecast.html has its own tier because
+# the skin regenerates it hourly (stale_age=3570) — the default location-/
+# window would revalidate every archive cycle for a file that never changed.
+# /icons/ enables autoindex for consistency with the other directory tiers
+# (location / and location /NOAA/ both already have it on), so a client can
+# enumerate available icons the same way it can enumerate reports. expires
+# emits only max-age, so a second add_header supplies "public" (caches merge
+# the two).
 gen_default_cache() {
   cat >/tmp/nginx-cache.conf <<'EOF'
+location = /forecast.html {
+    expires modified +3570s;
+    add_header Cache-Control "public" always;
+}
 location ^~ /icons/ {
-    try_files $uri =404;
+    autoindex on;
+    autoindex_exact_size off;
+    try_files $uri $uri/ =404;
     expires 1h;
     add_header Cache-Control "public" always;
 }
@@ -64,8 +77,12 @@ location ~* ^/day[^/]*\.png$ {
     expires modified +__ARCHIVE__s;
     add_header Cache-Control "public" always;
 }
-location ~* ^/(?:week|month)[^/]*\.png$ {
+location ~* ^/week[^/]*\.png$ {
     expires modified +3600s;
+    add_header Cache-Control "public" always;
+}
+location ~* ^/month[^/]*\.png$ {
+    expires modified +10800s;
     add_header Cache-Control "public" always;
 }
 location ~* ^/year[^/]*\.png$ {
