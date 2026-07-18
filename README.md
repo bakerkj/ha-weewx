@@ -324,28 +324,29 @@ applicable) `/opt/weewx-data/skins/`. To enable one, add its service path to the
 appropriate `*_services` entry in `[Engine] [[Services]]` and add its
 configuration section to `weewx.conf`.
 
-| Extension            | Service path                              | Service list              | Notes                                                        |
-| -------------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------ |
-| weewx-home-assistant | `weewx_ha.Controller`                     | `report_services`         | MQTT discovery for HA (by felddy)                            |
-| emoncms              | `user.emoncms.EmonCMS`                    | `restful_services`        | matthewwall                                                  |
-| report_hook          | `user.report_hook.ReportHook`             | _(skin `generator_list`)_ | Post-report shell hook — see below                           |
-| exfoliation          | _(skin only)_                             | —                         | Replacement skin                                             |
-| forecast             | `user.forecast.NWSForecast` (etc.)        | `archive_services`        | Multiple forecast providers, chaunceygardiner                |
-| fuzzy-archer         | _(skin only)_                             | —                         | Bootstrap-themed skin                                        |
-| MQTTSubscribe        | `user.MQTTSubscribe.MQTTSubscribeService` | `data_services`           | Ingest data from MQTT topics, bellrichm                      |
-| opensensemap         | `user.opensensemap.OpenSenseMap`          | `restful_services`        | sbsrouteur                                                   |
-| owm                  | `user.owm.OpenWeatherMap`                 | `restful_services`        | matthewwall                                                  |
-| previmeteo           | `user.previmeteo.Previmeteo`              | `restful_services`        | Patched for Python 3                                         |
-| purpleair            | `user.purpleair.PurpleAirMonitor`         | `process_services`        | bakerkj                                                      |
-| rain24h              | `user.rain24h.Rain24h`                    | `data_services`           | Injects rolling 24h rain into loop packets, chaunceygardiner |
-| realtime-gauge-data  | `user.rtgd.RealtimeGaugeData`             | `report_services`         | + RealtimeGauges skin                                        |
-| thingspeak           | `user.thingspeak.ThingSpeak`              | `restful_services`        | matthewwall                                                  |
-| wcloud               | `user.wcloud.WeatherCloud`                | `restful_services`        | matthewwall                                                  |
-| wetter               | `user.wetter.Wetter`                      | `restful_services`        | matthewwall                                                  |
-| windfinder           | `user.windfinder.WindFinder`              | `restful_services`        | matthewwall                                                  |
-| windguru             | `user.windguru.WindGuru`                  | `restful_services`        | claudobahn                                                   |
-| windy                | `user.windy.Windy`                        | `restful_services`        | matthewwall                                                  |
-| xaggs                | `user.xaggs.XAggsService`                 | `xtype_services`          | Historical-day aggregation tags for skins, tkeffer           |
+| Extension             | Service path                                     | Service list              | Notes                                                               |
+| --------------------- | ------------------------------------------------ | ------------------------- | ------------------------------------------------------------------- |
+| weewx-home-assistant  | `weewx_ha.Controller`                            | `report_services`         | MQTT discovery for HA (by felddy)                                   |
+| emoncms               | `user.emoncms.EmonCMS`                           | `restful_services`        | matthewwall                                                         |
+| report_hook           | `user.report_hook.ReportHook`                    | _(skin `generator_list`)_ | Post-report shell hook — see below                                  |
+| exfoliation           | _(skin only)_                                    | —                         | Replacement skin                                                    |
+| forecast              | `user.forecast.NWSForecast` (etc.)               | `archive_services`        | Multiple forecast providers, chaunceygardiner                       |
+| fuzzy-archer          | _(skin only)_                                    | —                         | Bootstrap-themed skin                                               |
+| MQTTSubscribe         | `user.MQTTSubscribe.MQTTSubscribeService`        | `data_services`           | Ingest data from MQTT topics, bellrichm                             |
+| opensensemap          | `user.opensensemap.OpenSenseMap`                 | `restful_services`        | sbsrouteur                                                          |
+| owm                   | `user.owm.OpenWeatherMap`                        | `restful_services`        | matthewwall                                                         |
+| previmeteo            | `user.previmeteo.Previmeteo`                     | `restful_services`        | Patched for Python 3                                                |
+| purpleair             | `user.purpleair.PurpleAirMonitor`                | `process_services`        | bakerkj                                                             |
+| rain24h               | `user.rain24h.Rain24h`                           | `data_services`           | Injects rolling 24h rain into loop packets, chaunceygardiner        |
+| realtime-gauge-data   | `user.rtgd.RealtimeGaugeData`                    | `report_services`         | + RealtimeGauges skin                                               |
+| refresh_stale_outputs | `user.refresh_stale_outputs.RefreshStaleOutputs` | `report_services`         | Force-refresh stale_age-gated outputs on weewxd startup — see below |
+| thingspeak            | `user.thingspeak.ThingSpeak`                     | `restful_services`        | matthewwall                                                         |
+| wcloud                | `user.wcloud.WeatherCloud`                       | `restful_services`        | matthewwall                                                         |
+| wetter                | `user.wetter.Wetter`                             | `restful_services`        | matthewwall                                                         |
+| windfinder            | `user.windfinder.WindFinder`                     | `restful_services`        | matthewwall                                                         |
+| windguru              | `user.windguru.WindGuru`                         | `restful_services`        | claudobahn                                                          |
+| windy                 | `user.windy.Windy`                               | `restful_services`        | matthewwall                                                         |
+| xaggs                 | `user.xaggs.XAggsService`                        | `xtype_services`          | Historical-day aggregation tags for skins, tkeffer                  |
 
 ### Post-report shell hook (`report_hook`)
 
@@ -390,6 +391,34 @@ the report cycle. `frequency = once` tracks "already fired" in a module-level
 set that persists across report cycles within a single `weewxd` process;
 container restart spawns a fresh interpreter and the set is empty again, so
 "once per boot" is the semantic.
+
+### Refresh stale_age-gated outputs on startup (`refresh_stale_outputs`)
+
+`user.refresh_stale_outputs.RefreshStaleOutputs` closes a small but persistent
+papercut: a Cheetah template or ImageGenerator plot with `stale_age` set is
+**skipped even on the first cycle after a weewxd restart**, up to the length of
+its stale window. That means an edit to (say) `views/forecast.html.tmpl` with
+`stale_age = 3570` doesn't reach the served output for up to ~59 minutes after
+you restart the addon.
+
+The service binds to `weewx.STARTUP`, walks every enabled `[StdReport]` skin's
+config, and `os.utime(<output>, (0, 0))` on every output whose skin entry has
+`stale_age`. The next report cycle sees the file as ancient, the stale-age
+branch decides it must re-render, and the atomic tmp+rename write replaces the
+aged file before anyone consumes the ancient mtime.
+
+Wire in `weewx.conf`:
+
+```ini
+[Engine]
+    [[Services]]
+        report_services = ..., user.refresh_stale_outputs.RefreshStaleOutputs
+```
+
+No config knobs — it always ages every stale_age-gated output for every enabled
+report on every weewxd start. Failures (unreadable skin.conf, read-only
+filesystem, missing output files) are logged and skipped; the report thread
+continues.
 
 ---
 
