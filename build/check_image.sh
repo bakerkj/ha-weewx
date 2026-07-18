@@ -128,6 +128,84 @@ check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeG
 # weedb core patch — not under patches/extensions/; keep the substring check.
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
 
+# weewx core patch: weeutil.deep_copy_path atomic copy (tmp + os.replace).
+# Behavioural rather than substring: exercise the real function against a
+# concurrent reader mid-copy and assert the reader never observes a
+# truncated file. A regression to shutil.copy would zero-truncate the
+# destination in place and this check would trip.
+check "patch: weewx weeutil.deep_copy_path atomic copy" \
+  python3 -c "
+import os, threading, tempfile
+from weeutil.weeutil import deep_copy_path
+
+with tempfile.TemporaryDirectory() as tmpdir:
+    # 4 MiB widens the copy window enough for the observer thread to
+    # sample the dest mid-write on tmpfs. Small enough to keep the
+    # check under a second overall.
+    payload = b'x' * (4 * 1024 * 1024)
+
+    # deep_copy_path is called by CopyGenerator with a RELATIVE source
+    # path (via Path().glob() in reportengine.py) — the joined
+    # os.path.join(dest_dir, path) only makes sense when path is
+    # relative. Mirror that: cd into src_root so 'assets/data.bin' is
+    # relative, and dest ends up at <dst_dir>/assets/data.bin.
+    src_root = os.path.join(tmpdir, 'src_root')
+    dst_dir = os.path.join(tmpdir, 'dst_dir')
+    os.makedirs(os.path.join(src_root, 'assets'))
+    os.makedirs(dst_dir)
+    rel_path = os.path.join('assets', 'data.bin')
+    src_abs = os.path.join(src_root, rel_path)
+    dst_abs = os.path.join(dst_dir, rel_path)
+    with open(src_abs, 'wb') as f:
+        f.write(payload)
+    os.makedirs(os.path.dirname(dst_abs), exist_ok=True)
+    # Prime dest with a full-size file, matching real skin-asset behaviour
+    # where public_html/<file> already exists from a previous cycle.
+    with open(dst_abs, 'wb') as f:
+        f.write(payload)
+
+    observed_sizes = []
+    stop = threading.Event()
+
+    def observer():
+        # Sample the dest file size while the copy runs. Without the
+        # patch, shutil.copy opens dst with 'wb' (truncate-in-place),
+        # so the observer occasionally samples 0 or a partial size.
+        # With the patch, os.replace flips dst between two complete
+        # inodes (old and new) — reader only ever sees len(payload).
+        while not stop.is_set():
+            try:
+                observed_sizes.append(os.path.getsize(dst_abs))
+            except OSError:
+                pass
+
+    t = threading.Thread(target=observer, daemon=True)
+    t.start()
+    os.chdir(src_root)
+    # 200 iterations to make sure the observer wins the race at least
+    # a few dozen times on any reasonable scheduler.
+    for _ in range(200):
+        deep_copy_path(rel_path, dst_dir)
+    stop.set()
+    t.join(timeout=2)
+
+    # Guard against a vacuously-passing observer: if the sampler never
+    # ran we haven't verified anything and must fail loudly.
+    assert len(observed_sizes) >= 10, (
+        'observer collected only ' + str(len(observed_sizes))
+        + ' samples; the check would pass vacuously'
+    )
+    bad = [s for s in observed_sizes if s != len(payload)]
+    assert not bad, (
+        'non-atomic copy exposed sizes '
+        + repr(sorted(set(bad)))
+        + '; expected only ' + str(len(payload))
+    )
+    # Final dest must have the full payload after the copy loop.
+    with open(dst_abs, 'rb') as f:
+        assert f.read() == payload, 'final dest content differs from source'
+"
+
 # Bundled-extension patches: behavioural assertions against the shipped
 # user/* code. Each patch under patches/extensions/0001..0014 has a
 # dedicated check_<name>() in build/check_patches.py that imports the
