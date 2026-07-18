@@ -42,6 +42,14 @@ EOF
 # nginx variable.
 printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-interval.conf
 
+# Seed an empty nginx-extra.conf up front — nginx.conf `include`s it
+# unconditionally at server scope, so the cache-override branch's interim
+# `nginx -t` needs it to exist even before the user-extras branch fills
+# it (otherwise the interim check fails on a missing include and silently
+# reverts a perfectly valid cache override to defaults). The real content,
+# if any, gets written by the user-extras block further down.
+: >/tmp/nginx-extra.conf
+
 # Per-period default tiers for static assets and chart PNGs. Static assets
 # (libraries/fonts/weather icons) change only on a skin update -> flat 1h. Chart
 # PNGs expire relative to mtime, keyed to how often WeeWX regenerates each
@@ -58,7 +66,13 @@ printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-int
 # the two).
 gen_default_cache() {
   cat >/tmp/nginx-cache.conf <<'EOF'
-location = /forecast.html {
+location ~ ^/forecast\.html$ {
+    # Anchored regex rather than `location =` so a user's exact-match
+    # entry in /config/nginx-extra.conf (e.g. `location = /forecast.html
+    # { return 301 ...; }`) preempts this tier via nginx's location
+    # precedence (`= exact` beats regex). Otherwise duplicate exact-match
+    # `location =` blocks would fail `nginx -t` and revert the whole
+    # extras file to empty.
     expires modified +3570s;
     add_header Cache-Control "public" always;
 }
@@ -133,6 +147,33 @@ if [[ -f "$override" ]]; then
 else
   gen_default_cache
   echo "Cache tiers: generated per-period defaults (archive_interval=${archive_interval}s)"
+fi
+
+# --- server-scope user extras (redirects, custom location = /... blocks) ---
+#
+# A second, purpose-built override slot that lives at server scope alongside the
+# cache tiers. Unlike nginx-cache.conf (which the addon fills with sensible
+# defaults and users only override in edge cases), nginx-extra.conf is *empty*
+# by default — it exists so a user can drop in ``return``/``rewrite``/exact-
+# match ``location =`` blocks (the classic use case: 301-redirect old
+# report paths to a client-side router hash) without editing the image or piggy-backing on
+# nginx-cache.conf's advisory denylist. Absent file → empty include, so nginx
+# is happy. Present file → copied verbatim (no token substitution), then
+# ``nginx -t`` validates; a broken snippet reverts to empty and warns rather
+# than bricking the addon. Server scope means directives can define new
+# ``location`` blocks that preempt ``location /``'s ``try_files``, so a
+# ``location = /live.html { return 301 "/#/live"; }`` fires even if a stale
+# live.html file still exists on disk.
+extra=/config/nginx-extra.conf
+if [[ -f "$extra" ]]; then
+  cp "$extra" /tmp/nginx-extra.conf
+  echo "Extra directives: using ${extra}"
+  if ! nginx -t; then
+    echo "WARNING: ${extra} failed validation; ignoring it." >&2
+    : >/tmp/nginx-extra.conf
+  fi
+else
+  : >/tmp/nginx-extra.conf
 fi
 
 nginx -t

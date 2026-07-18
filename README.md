@@ -237,10 +237,11 @@ Start from the defaults below and adjust the windows you need:
 > ignore the warning.
 
 ```nginx
-location = /forecast.html {
-    expires modified +3570s;         # skin regenerates hourly (stale_age=3570)
-    add_header Cache-Control "public" always;
-}
+location ~ ^/forecast\.html$ {       # regex, not `location =`, so a user's
+    expires modified +3570s;         # exact-match `location = /forecast.html`
+    add_header Cache-Control "public" always;   # in /config/nginx-extra.conf
+}                                    # can preempt this tier for a redirect
+                                     # without a duplicate-block nginx -t error.
 location ^~ /icons/ {
     autoindex on;                    # consistent with / and /NOAA/
     autoindex_exact_size off;
@@ -275,6 +276,44 @@ location ~* \.png$ {
     add_header Cache-Control "public" always;
 }
 ```
+
+### Adding redirects and other server-scope directives
+
+For anything that isn't a per-tier cache rule — 301/302 redirects, an
+exact-match `location =` for a specific URL, a custom `rewrite`, etc. — drop it
+in `/config/nginx-extra.conf`. The addon includes this file at server scope on
+startup, alongside `nginx-cache.conf`. Empty by default; validated with
+`nginx -t` and reverted to empty (with a WARNING in the addon log) if a broken
+snippet would keep the addon from starting.
+
+Because `location =` (exact match) has the highest priority in nginx's request
+routing, a redirect defined here fires **before** `location /`'s `try_files`
+even if a file with the same name still exists on disk. That makes this the
+right home for retiring old report URLs to a client-side router hash — you don't
+have to delete the stale files first to prove the redirect.
+
+Example — redirect the classic report paths to a single-page-app hash. **Note
+the target is a bare relative path** (`index.html#/live`, no leading `/`). This
+matters when the addon is served through HA Supervisor ingress: an absolute path
+(`/#/live`) auto-expands to `http://<addon-host>:8099/#/live` using nginx's own
+listen port, which strips the `/api/hassio_ingress/<token>/` prefix and points
+browsers at a port they can't reach. A relative target resolves against the
+current URL's base path, so the ingress prefix is preserved on ingress
+deployments and the redirect still works on direct `8099` and behind reverse
+proxies.
+
+```nginx
+location = /live.html      { return 301 "index.html#/live"; }
+location = /forecast.html  { return 301 "index.html#/forecast"; }
+location = /almanac.html   { return 301 "index.html#/almanac"; }
+location = /history.html   { return 301 "index.html#/history"; }
+location = /station.html   { return 301 "index.html#/station"; }
+location = /links.html     { return 301 "index.html#/links"; }
+```
+
+No advisory denylist applies here — this file is explicitly for the directives
+that don't belong in a cache-tier snippet, so `return`, `rewrite`,
+`location = ...`, etc. are all first-class.
 
 ---
 

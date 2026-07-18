@@ -38,6 +38,7 @@ trap cleanup EXIT
 # www/ tree exercising every tier). Optional arg: an nginx-cache.conf override.
 make_config() {
   local override="${1:-}"
+  local extra="${2:-}"
   rm -rf "$WORK/config"
   mkdir -p "$WORK/config/www/NOAA" "$WORK/config/www/icons" "$WORK/config/www/font"
   cat >"$WORK/config/weewx.conf" <<'CONF'
@@ -68,6 +69,7 @@ CONF
   # 2020-era filename implies, the way a real WeeWX-on-disk archive would look.
   touch -d "2020-12-31 12:00:00 UTC" "$WORK/config/www/NOAA/NOAA-2020.txt"
   [[ -n "$override" ]] && cp "$override" "$WORK/config/nginx-cache.conf"
+  [[ -n "$extra" ]] && cp "$extra" "$WORK/config/nginx-extra.conf"
   return 0
 }
 
@@ -201,6 +203,83 @@ start_nginx || {
 range /yearbarometer.png 86340 86400  # default per-period tier restored
 range /forecast.html 3510 3570        # /forecast.html tier restored
 range /monthbarometer.png 10740 10800 # month tier restored
+
+# ---- helper: assert HTTP status + Location header on a redirect ----
+# We expect a RELATIVE Location target (e.g. `index.html#/live`) — nginx
+# passes bare relative paths through verbatim rather than absolutising them
+# via $server_port. Relative targets are also what preserves the HA
+# Supervisor ingress path prefix on ingress deployments; see the README
+# "Adding redirects and other server-scope directives" section.
+redirect() {
+  local path="$1" expected_code="$2" expected_location="$3"
+  local headers code loc
+  headers="$(curl -s -D - -o /dev/null "http://localhost:$PORT$path")"
+  code="$(head -1 <<<"$headers" | awk '{print $2}')"
+  loc="$(grep -i '^location:' <<<"$headers" | tr -d '\r' | sed 's/^[^:]*: *//')"
+  if [[ "$code" == "$expected_code" && "$loc" == "$expected_location" ]]; then
+    echo "PASS  $path -> $code Location: $loc"
+  else
+    echo "FAIL  $path -> [$code] [$loc], want [$expected_code] [$expected_location]"
+    fail=1
+  fi
+}
+
+echo "### Scenario 4: /config/nginx-extra.conf drops in server-scope directives"
+# Redirects for retired report paths. The exact-match location = ... blocks
+# take precedence over location /'s try_files even though the file
+# (forecast.html) still exists under www/, which is the whole point of the
+# mechanism — you can retire a URL without deleting the file first.
+cat >"$WORK/extra.conf" <<'EXTRA'
+location = /live.html      { return 301 "index.html#/live"; }
+location = /forecast.html  { return 301 "index.html#/forecast"; }
+EXTRA
+make_config "" "$WORK/extra.conf"
+start_nginx || exit 1
+redirect /live.html 301 "index.html#/live"
+redirect /forecast.html 301 "index.html#/forecast"
+# A path not in the extras still hits location / normally — index.html is a
+# fixture and gets the HTML tier (archive_interval, 90-120 given =120 above).
+range /index.html 90 120
+
+echo "### Scenario 5: cache override AND extras coexist (interaction check)"
+# This is the case the plain single-override scenarios don't cover — an
+# ordering bug where the extras file isn't seeded before the cache-override
+# branch's interim `nginx -t` would silently revert the cache override to
+# defaults, only surfacing when both are supplied at once.
+cat >"$WORK/override-both.conf" <<'OVR'
+location ~* \.png$ {
+    expires modified +__ARCHIVE__s;
+    add_header Cache-Control "public" always;
+}
+OVR
+cat >"$WORK/extra-both.conf" <<'EXTRA'
+location = /live.html { return 301 "index.html#/live"; }
+EXTRA
+make_config "$WORK/override-both.conf" "$WORK/extra-both.conf"
+start_nginx || exit 1
+# Cache override took (weekbarometer drops from the default 3600s tier to the
+# override's archive_interval=120 rule) — proves it wasn't reverted by the
+# interim `nginx -t` failing on a missing extras include.
+range /weekbarometer.png 90 120
+# And the extras still fire.
+redirect /live.html 301 "index.html#/live"
+
+echo "### Scenario 6: broken nginx-extra.conf -> reverts to empty, doesn't brick startup"
+printf 'location = /oops { this is not valid nginx\n' >"$WORK/extra-bad.conf"
+make_config "" "$WORK/extra-bad.conf"
+start_nginx || {
+  echo "FAIL: a broken extras file must fall back, not break startup"
+  exit 1
+}
+# nginx-extra.conf reverted to empty, so /live.html is served by the default
+# location / try_files (this fixture doesn't create live.html -> 404).
+code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/live.html")"
+if [[ "$code" == "404" ]]; then
+  echo "PASS  /live.html (extras reverted to empty) -> 404"
+else
+  echo "FAIL  /live.html -> $code (expected 404 after empty-extras fallback)"
+  fail=1
+fi
 
 echo
 if [[ "$fail" == 0 ]]; then
