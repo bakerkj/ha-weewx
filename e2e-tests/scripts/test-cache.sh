@@ -232,11 +232,23 @@ echo "### Scenario 4: /config/nginx-extra.conf drops in server-scope directives"
 cat >"$WORK/extra.conf" <<'EXTRA'
 location = /live.html      { return 301 "index.html#/live"; }
 location = /forecast.html  { return 301 "index.html#/forecast"; }
+location = /robots.txt     { return 302 "index.html#/robots"; }
+location = /gauge-data.txt { return 302 "index.html#/gauge-data"; }
 EXTRA
 make_config "" "$WORK/extra.conf"
 start_nginx || exit 1
 redirect /live.html 301 "index.html#/live"
 redirect /forecast.html 301 "index.html#/forecast"
+# /robots.txt and /gauge-data.txt became regex tiers (^/robots\.txt$ /
+# ^/gauge-data\.txt$) so an extras `location = ...` block preempts them
+# via nginx's `= exact` > regex precedence. Before the regex-ify, adding
+# either exact-match block to nginx-extra.conf would fail `nginx -t`
+# (duplicate exact-match location) and the extras revert-on-fail branch
+# of nginx-init.sh would drop the whole extras file to empty — asserting
+# both redirects fire proves both the mechanism works AND no other
+# tier of ours shadows it.
+redirect /robots.txt 302 "index.html#/robots"
+redirect /gauge-data.txt 302 "index.html#/gauge-data"
 # A path not in the extras still hits location / normally — index.html is a
 # fixture and gets the HTML tier (archive_interval, 90-120 given =120 above).
 range /index.html 90 120
