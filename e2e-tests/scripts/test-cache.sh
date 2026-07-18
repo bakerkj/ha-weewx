@@ -204,17 +204,25 @@ range /yearbarometer.png 86340 86400  # default per-period tier restored
 range /forecast.html 3510 3570        # /forecast.html tier restored
 range /monthbarometer.png 10740 10800 # month tier restored
 
-# ---- helper: assert HTTP status + Location header on a redirect ----
+# ---- helper: assert HTTP status + Location-header PATH on a redirect ----
+# nginx builds an absolute Location from its own listen port ($server_port =
+# 8099 inside the container), not from the docker-mapped host port. We only
+# care about the redirect target path portion; strip the http://host:port
+# prefix before comparing.
 redirect() {
-  local path="$1" expected_code="$2" expected_location="$3"
-  local headers code loc
+  local path="$1" expected_code="$2" expected_location_path="$3"
+  local headers code loc loc_path
   headers="$(curl -s -D - -o /dev/null "http://localhost:$PORT$path")"
   code="$(head -1 <<<"$headers" | awk '{print $2}')"
   loc="$(grep -i '^location:' <<<"$headers" | tr -d '\r' | sed 's/^[^:]*: *//')"
-  if [[ "$code" == "$expected_code" && "$loc" == "$expected_location" ]]; then
+  # keep only the path (everything from the first / after the host, or the
+  # whole value if there was no scheme).
+  loc_path="${loc#http://*/}"
+  [[ "$loc_path" == "$loc" ]] || loc_path="/$loc_path"
+  if [[ "$code" == "$expected_code" && "$loc_path" == "$expected_location_path" ]]; then
     echo "PASS  $path -> $code Location: $loc"
   else
-    echo "FAIL  $path -> [$code] [$loc], want [$expected_code] [$expected_location]"
+    echo "FAIL  $path -> [$code] [$loc] (path=[$loc_path]), want [$expected_code] [$expected_location_path]"
     fail=1
   fi
 }
@@ -230,8 +238,8 @@ location = /forecast.html  { return 301 "/#/forecast"; }
 EXTRA
 make_config "" "$WORK/extra.conf"
 start_nginx || exit 1
-redirect /live.html 301 "http://localhost:$PORT/#/live"
-redirect /forecast.html 301 "http://localhost:$PORT/#/forecast"
+redirect /live.html 301 "/#/live"
+redirect /forecast.html 301 "/#/forecast"
 # A path not in the extras still hits location / normally — index.html is a
 # fixture and gets the HTML tier (archive_interval, 90-120 given =120 above).
 range /index.html 90 120
@@ -257,7 +265,7 @@ start_nginx || exit 1
 # interim `nginx -t` failing on a missing extras include.
 range /weekbarometer.png 90 120
 # And the extras still fire.
-redirect /live.html 301 "http://localhost:$PORT/#/live"
+redirect /live.html 301 "/#/live"
 
 echo "### Scenario 6: broken nginx-extra.conf -> reverts to empty, doesn't brick startup"
 printf 'location = /oops { this is not valid nginx\n' >"$WORK/extra-bad.conf"
