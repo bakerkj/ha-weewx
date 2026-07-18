@@ -292,15 +292,23 @@ even if a file with the same name still exists on disk. That makes this the
 right home for retiring old report URLs to a client-side router hash — you don't
 have to delete the stale files first to prove the redirect.
 
-Example — redirect the classic report paths to a single-page-app hash:
+Example — redirect the classic report paths to a single-page-app hash. **Note
+the target is a bare relative path** (`index.html#/live`, no leading `/`). This
+matters when the addon is served through HA Supervisor ingress: an absolute path
+(`/#/live`) auto-expands to `http://<addon-host>:8099/#/live` using nginx's own
+listen port, which strips the `/api/hassio_ingress/<token>/` prefix and points
+browsers at a port they can't reach. A relative target resolves against the
+current URL's base path, so the ingress prefix is preserved on ingress
+deployments and the redirect still works on direct `8099` and behind reverse
+proxies.
 
 ```nginx
-location = /live.html      { return 301 "/#/live"; }
-location = /forecast.html  { return 301 "/#/forecast"; }
-location = /almanac.html   { return 301 "/#/almanac"; }
-location = /history.html   { return 301 "/#/history"; }
-location = /station.html   { return 301 "/#/station"; }
-location = /links.html     { return 301 "/#/links"; }
+location = /live.html      { return 301 "index.html#/live"; }
+location = /forecast.html  { return 301 "index.html#/forecast"; }
+location = /almanac.html   { return 301 "index.html#/almanac"; }
+location = /history.html   { return 301 "index.html#/history"; }
+location = /station.html   { return 301 "index.html#/station"; }
+location = /links.html     { return 301 "index.html#/links"; }
 ```
 
 No advisory denylist applies here — this file is explicitly for the directives
