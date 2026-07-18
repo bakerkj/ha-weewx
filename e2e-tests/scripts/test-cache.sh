@@ -230,8 +230,8 @@ location = /forecast.html  { return 301 "/#/forecast"; }
 EXTRA
 make_config "" "$WORK/extra.conf"
 start_nginx || exit 1
-redirect /live.html 301 "/#/live"
-redirect /forecast.html 301 "/#/forecast"
+redirect /live.html 301 "http://localhost:$PORT/#/live"
+redirect /forecast.html 301 "http://localhost:$PORT/#/forecast"
 # A path not in the extras still hits location / normally — index.html is a
 # fixture and gets the HTML tier (archive_interval, 90-120 given =120 above).
 range /index.html 90 120
@@ -257,7 +257,7 @@ start_nginx || exit 1
 # interim `nginx -t` failing on a missing extras include.
 range /weekbarometer.png 90 120
 # And the extras still fire.
-redirect /live.html 301 "/#/live"
+redirect /live.html 301 "http://localhost:$PORT/#/live"
 
 echo "### Scenario 6: broken nginx-extra.conf -> reverts to empty, doesn't brick startup"
 printf 'location = /oops { this is not valid nginx\n' >"$WORK/extra-bad.conf"

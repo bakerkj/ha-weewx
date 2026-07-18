@@ -66,7 +66,13 @@ printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-int
 # the two).
 gen_default_cache() {
   cat >/tmp/nginx-cache.conf <<'EOF'
-location = /forecast.html {
+location ~ ^/forecast\.html$ {
+    # Anchored regex rather than `location =` so a user's exact-match
+    # entry in /config/nginx-extra.conf (e.g. `location = /forecast.html
+    # { return 301 ...; }`) preempts this tier via nginx's location
+    # precedence (`= exact` beats regex). Otherwise duplicate exact-match
+    # `location =` blocks would fail `nginx -t` and revert the whole
+    # extras file to empty.
     expires modified +3570s;
     add_header Cache-Control "public" always;
 }

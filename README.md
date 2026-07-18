@@ -237,10 +237,11 @@ Start from the defaults below and adjust the windows you need:
 > ignore the warning.
 
 ```nginx
-location = /forecast.html {
-    expires modified +3570s;         # skin regenerates hourly (stale_age=3570)
-    add_header Cache-Control "public" always;
-}
+location ~ ^/forecast\.html$ {       # regex, not `location =`, so a user's
+    expires modified +3570s;         # exact-match `location = /forecast.html`
+    add_header Cache-Control "public" always;   # in /config/nginx-extra.conf
+}                                    # can preempt this tier for a redirect
+                                     # without a duplicate-block nginx -t error.
 location ^~ /icons/ {
     autoindex on;                    # consistent with / and /NOAA/
     autoindex_exact_size off;
