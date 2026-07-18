@@ -276,6 +276,36 @@ location ~* \.png$ {
 }
 ```
 
+### Adding redirects and other server-scope directives
+
+For anything that isn't a per-tier cache rule — 301/302 redirects, an
+exact-match `location =` for a specific URL, a custom `rewrite`, etc. — drop it
+in `/config/nginx-extra.conf`. The addon includes this file at server scope on
+startup, alongside `nginx-cache.conf`. Empty by default; validated with
+`nginx -t` and reverted to empty (with a WARNING in the addon log) if a broken
+snippet would keep the addon from starting.
+
+Because `location =` (exact match) has the highest priority in nginx's request
+routing, a redirect defined here fires **before** `location /`'s `try_files`
+even if a file with the same name still exists on disk. That makes this the
+right home for retiring old report URLs to a client-side router hash — you don't
+have to delete the stale files first to prove the redirect.
+
+Example — redirect the classic report paths to a single-page-app hash:
+
+```nginx
+location = /live.html      { return 301 "/#/live"; }
+location = /forecast.html  { return 301 "/#/forecast"; }
+location = /almanac.html   { return 301 "/#/almanac"; }
+location = /history.html   { return 301 "/#/history"; }
+location = /station.html   { return 301 "/#/station"; }
+location = /links.html     { return 301 "/#/links"; }
+```
+
+No advisory denylist applies here — this file is explicitly for the directives
+that don't belong in a cache-tier snippet, so `return`, `rewrite`,
+`location = ...`, etc. are all first-class.
+
 ---
 
 ## Bundled extensions
