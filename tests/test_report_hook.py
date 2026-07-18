@@ -2,15 +2,14 @@
 # All rights reserved.
 """Behavioural tests for extensions/report_hook.py.
 
-Drives ``run_hook`` directly with a fresh once-gate set and a per-test
-HA-options path; ``subprocess`` is real, but every command is an argv
-list touching only files under ``tmp_path``, so the tests never hit the
-network and never depend on WeeWX's report engine being importable.
+Drives ``run_hook`` directly with a fresh once-gate set; ``subprocess`` is
+real, but every command is an argv list touching only files under
+``tmp_path``, so the tests never hit the network and never depend on
+WeeWX's report engine being importable.
 """
 
 from __future__ import annotations
 
-import json
 import os
 
 import pytest
@@ -19,18 +18,11 @@ import report_hook as hook_module
 
 
 @pytest.fixture(autouse=True)
-def _isolated_state(tmp_path, monkeypatch):
+def _isolated_state(monkeypatch):
     """Give each test a fresh ``_fired`` set (once-per-boot state persists
-    across cycles in production, but MUST be empty between tests) and a
-    per-test HA options-file path so parallel test runs don't collide.
+    across cycles in production, but MUST be empty between tests).
     """
     monkeypatch.setattr(hook_module, "_fired", set())
-    monkeypatch.setattr(hook_module, "HA_OPTIONS_PATH", str(tmp_path / "options.json"))
-    return tmp_path
-
-
-def _write_ha_options(tmp_path, opts):
-    (tmp_path / "options.json").write_text(json.dumps(opts))
 
 
 # --------------------------------------------------------------------------
@@ -298,128 +290,6 @@ def test_once_gate_wins_over_verify_file(tmp_path):
     hook_module._fired.add("MySkin")
     # Once-gate now precedes the verify_file gate.
     assert hook_module.run_hook(cfg, "MySkin") == "skipped: once-per-boot already fired"
-
-
-# --------------------------------------------------------------------------
-# HA overrides (/data/options.json)
-# --------------------------------------------------------------------------
-
-
-def test_ha_overrides_absent_file_returns_empty():
-    # tmp_path/options.json doesn't exist yet — must NOT raise.
-    assert hook_module._load_ha_overrides() == {}
-
-
-def test_ha_overrides_bad_json_returns_empty(tmp_path):
-    (tmp_path / "options.json").write_text("this is not json {")
-    assert hook_module._load_ha_overrides() == {}
-
-
-def test_ha_overrides_non_dict_json_returns_empty(tmp_path):
-    (tmp_path / "options.json").write_text('["a", "list"]')
-    assert hook_module._load_ha_overrides() == {}
-
-
-def test_ha_overrides_extracts_report_hook_prefixed_only(tmp_path):
-    _write_ha_options(
-        tmp_path,
-        {
-            "watchdog_path": "/index.html",  # non-report_hook, ignored
-            "report_hook_command": ["curl", "-fsS"],
-            "report_hook_frequency": "once",
-            "report_hook_timeout": 42,
-            "report_hook_verify_file": "/config/www/index.html",
-        },
-    )
-    o = hook_module._load_ha_overrides()
-    assert o == {
-        "command": ["curl", "-fsS"],
-        "frequency": "once",
-        "timeout": 42,
-        "verify_file": "/config/www/index.html",
-    }
-
-
-def test_ha_overrides_drops_empty_values(tmp_path):
-    """A blank field in the HA UI must NOT clobber a real value in
-    the skin dict — otherwise the operator "unsetting" a value silently
-    reverts to disabled."""
-    _write_ha_options(
-        tmp_path,
-        {
-            "report_hook_command": [],
-            "report_hook_frequency": "",
-            "report_hook_timeout": None,
-            "report_hook_verify_file": "",
-            "report_hook_env": [],
-        },
-    )
-    assert hook_module._load_ha_overrides() == {}
-
-
-def test_ha_overrides_env_list_unrolled_to_env_prefix(tmp_path):
-    """The HA schema stores env vars as a list of ``{name, value}``.
-    Overrides must be reshaped into the same ``env_NAME`` keys the skin
-    dict already uses, so downstream code doesn't need two code paths."""
-    _write_ha_options(
-        tmp_path,
-        {
-            "report_hook_command": ["true"],
-            "report_hook_env": [
-                {"name": "TOKEN", "value": "abc"},
-                {"name": "OTHER", "value": "xyz"},
-                # malformed entries silently dropped
-                {"name": "", "value": "no-name"},
-                {"value": "only-value"},
-                "not-a-dict",
-            ],
-        },
-    )
-    o = hook_module._load_ha_overrides()
-    assert o == {"command": ["true"], "env_TOKEN": "abc", "env_OTHER": "xyz"}
-
-
-def test_ha_overrides_win_over_skin_dict(tmp_path):
-    """Full-stack integration through ReportHook.run — the skin dict
-    says one thing, HA options say another; HA wins."""
-    _write_ha_options(
-        tmp_path,
-        {"report_hook_command": ["true"], "report_hook_frequency": "once"},
-    )
-
-    class _StubGen(hook_module.ReportHook):
-        def __init__(self):  # noqa: D401
-            self.skin_dict = {
-                "REPORT_NAME": "SkinFromWeewxConf",
-                "ReportHook": {
-                    "command": ["false"],  # would fail
-                    "frequency": "every",
-                },
-            }
-
-    # If HA didn't win we'd get "failed:" (from `false`); we should get "ok".
-    _StubGen().run()
-    # SkinFromWeewxConf now in the once-gate set → confirms HA's
-    # frequency=once and command=["true"] took effect over the skin's
-    # frequency=every and command=["false"].
-    assert "SkinFromWeewxConf" in hook_module._fired
-
-
-def test_ha_env_var_merges_with_skin_env_and_wins(tmp_path):
-    """If both HA and skin dict set env_TOKEN, HA's value wins — same
-    override semantics as the other config keys."""
-    _write_ha_options(
-        tmp_path,
-        {
-            "report_hook_command": ["true"],
-            "report_hook_env": [{"name": "TOKEN", "value": "ha-side"}],
-        },
-    )
-    skin = {"command": ["true"], "env_TOKEN": "skin-side", "env_KEEP": "skin-only"}
-    ha = hook_module._load_ha_overrides()
-    merged = {**skin, **ha}
-    assert merged["env_TOKEN"] == "ha-side"
-    assert merged["env_KEEP"] == "skin-only"
 
 
 # --------------------------------------------------------------------------

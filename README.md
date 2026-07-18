@@ -98,27 +98,6 @@ Pick a `watchdog_path` whose source you trust to rewrite regularly:
 `/gauge-data.txt` (rewritten by `realtime-gauge-data` every LOOP packet once
 rtgd is enabled) is much sharper.
 
-### Post-report hook (`report_hook_*`)
-
-Fires an arbitrary subprocess when a report cycle finishes — useful for purging
-a downstream CDN, poking a webhook, kicking off a rsync, etc. Wired into weewx
-via the bundled `user.report_hook.ReportHook` (see
-[Bundled extensions](#bundled-extensions) below); these HA options overlay
-whatever lives in the skin's `[ReportHook]` block, so the addon UI can be the
-single source of truth.
-
-| Option                    | Default   | Meaning                                                                                                                                                                                    |
-| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `report_hook_command`     | `[]`      | argv list — first entry is the executable, rest are arguments. Empty = disabled. Each element passes through `expandvars` at runtime, so `$TOKEN` references entries in `report_hook_env`. |
-| `report_hook_frequency`   | `"every"` | `every` (each report cycle) or `once` (only the first successful cycle after addon start; state kept in-process, cleared on restart).                                                      |
-| `report_hook_timeout`     | `10`      | Kill the command after this many seconds.                                                                                                                                                  |
-| `report_hook_verify_file` | `""`      | Optional absolute path — command runs only when the file exists and is non-empty.                                                                                                          |
-| `report_hook_env`         | `[]`      | List of `{name, value}` pairs. `value` is masked in the UI. Referenced as `$name` from `report_hook_command`.                                                                              |
-
-The generator only fires for skins whose `[Generators] generator_list` includes
-`user.report_hook.ReportHook` in `weewx.conf`. See the extension section below
-for the full config reference and a standalone-WeeWX example.
-
 ---
 
 ## Database
@@ -372,14 +351,6 @@ the report cycle. `frequency = once` tracks "already fired" in a module-level
 set that persists across report cycles within a single `weewxd` process;
 container restart spawns a fresh interpreter and the set is empty again, so
 "once per boot" is the semantic.
-
-**Configuring via HA add-on options.** When running inside the `ha-weewx` addon,
-the extension also reads `/data/options.json` (written by HA Supervisor from the
-addon's Configuration tab). Any `report_hook_*` key set there overlays the
-corresponding `[ReportHook]` value — so the UI can be the single source of
-truth. See [Add-on options](#add-on-options) above for the full HA-side option
-table. In vanilla WeeWX (no `/data/options.json`), the module ignores this path
-entirely.
 
 ---
 

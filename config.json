@@ -35,30 +35,13 @@
     "watchdog_max_age_seconds": 600,
     "watchdog_consecutive_failures": 3,
     "watchdog_interval_seconds": 30,
-    "watchdog_startup_grace_seconds": 600,
-    "report_hook_command": [],
-    "report_hook_frequency": "every",
-    "report_hook_timeout": 10,
-    "report_hook_verify_file": "",
-    "report_hook_env": []
+    "watchdog_startup_grace_seconds": 600
   },
   "schema": {
     "watchdog_path": "str?",
     "watchdog_max_age_seconds": "int(1,)",
     "watchdog_consecutive_failures": "int(1,)",
     "watchdog_interval_seconds": "int(1,)",
-    "watchdog_startup_grace_seconds": "int(0,)",
-    "report_hook_command": [
-      "str"
-    ],
-    "report_hook_frequency": "list(once|every)?",
-    "report_hook_timeout": "int(1,)?",
-    "report_hook_verify_file": "str?",
-    "report_hook_env": [
-      {
-        "name": "str",
-        "value": "password"
-      }
-    ]
+    "watchdog_startup_grace_seconds": "int(0,)"
   }
 }
