@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.27](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.26...ha-weewx-v0.1.27) (2026-07-18)
+
+
+### Code Refactoring
+
+* **report_hook:** drop HA-options integration, weewx.conf-only config ([#226](https://github.com/bakerkj/ha-weewx/issues/226)) ([fe276e1](https://github.com/bakerkj/ha-weewx/commit/fe276e114f314f6b49eff611226cbfdf60847193))
+
 ## [0.1.26](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.25...ha-weewx-v0.1.26) (2026-07-18)
 
 
