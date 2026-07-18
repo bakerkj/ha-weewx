@@ -188,6 +188,7 @@ start_nginx || exit 1
 # 3600/86400 to the archive_interval (120) — proving both the override took and
 # __ARCHIVE__ expanded.
 range /weekbarometer.png 90 120
+range /monthbarometer.png 90 120
 range /yearbarometer.png 90 120
 
 echo "### Scenario 3: broken override -> fallback to generated defaults"
@@ -197,7 +198,9 @@ start_nginx || {
   echo "FAIL: a broken override must fall back, not break startup"
   exit 1
 }
-range /yearbarometer.png 86340 86400 # default per-period tier restored
+range /yearbarometer.png 86340 86400  # default per-period tier restored
+range /forecast.html 3510 3570        # /forecast.html tier restored
+range /monthbarometer.png 10740 10800 # month tier restored
 
 echo
 if [[ "$fail" == 0 ]]; then

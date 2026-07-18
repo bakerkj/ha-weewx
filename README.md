@@ -176,6 +176,7 @@ regenerates it, then revalidated. The default tiers:
 | ----------------------------------------- | -------------------------------------- |
 | `gauge-data.txt` (only with rtgd enabled) | `max-age=1` (rewritten every loop)     |
 | HTML pages + the directory index          | `archive_interval` (from `weewx.conf`) |
+| `forecast.html` (weewx-forecast skin)     | ~1 hour (`stale_age = 3570`)           |
 | `day*.png` and any other `*.png`          | `archive_interval`                     |
 | `week*.png`                               | 1 hour                                 |
 | `month*.png`                              | 3 hours                                |
@@ -243,6 +244,7 @@ location = /forecast.html {
 location ^~ /icons/ {
     autoindex on;                    # consistent with / and /NOAA/
     autoindex_exact_size off;
+    autoindex_localtime on;
     try_files $uri $uri/ =404;
     expires 1h;
     add_header Cache-Control "public" always;

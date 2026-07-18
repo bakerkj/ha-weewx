@@ -48,11 +48,12 @@ printf 'set $archive_interval %s;\n' "$archive_interval" >/tmp/nginx-archive-int
 # period: day plots every archive cycle, week hourly, month 3-hourly (matches
 # aggregate_interval=10800 in [[month_images]]), year daily; an unprefixed-PNG
 # fallback is treated like a day plot. /forecast.html has its own tier because
-# the skin regenerates it hourly (stale_age=3570) — the default location-/
-# window would revalidate every archive cycle for a file that never changed.
-# /icons/ enables autoindex for consistency with the other directory tiers
-# (location / and location /NOAA/ both already have it on), so a client can
-# enumerate available icons the same way it can enumerate reports. expires
+# the skin regenerates it only hourly (stale_age=3570) — the default location-/
+# window (archive_interval) would revalidate every archive cycle for a file
+# that only changes once an hour.
+# /icons/ enables autoindex — matching the listing UI (autoindex_exact_size,
+# autoindex_localtime) already on location / and location /NOAA/ — so the
+# directory can be browsed the same way as any other served tree. expires
 # emits only max-age, so a second add_header supplies "public" (caches merge
 # the two).
 gen_default_cache() {
@@ -64,6 +65,7 @@ location = /forecast.html {
 location ^~ /icons/ {
     autoindex on;
     autoindex_exact_size off;
+    autoindex_localtime on;
     try_files $uri $uri/ =404;
     expires 1h;
     add_header Cache-Control "public" always;
