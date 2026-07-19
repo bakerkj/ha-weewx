@@ -41,7 +41,7 @@ On first start the add-on copies a starter `weewx.conf` template into
 - **`[StdReport]`** — `Seasons` skin, output written to `/config/www/` so the HA
   ingress panel automatically serves your reports.
 - **No extensions wired up** — see [Bundled extensions](#bundled-extensions)
-  below for how to enable any of the 18 pre-installed ones.
+  below for how to enable any of the 19 pre-installed ones.
 
 To re-seed from the template, delete `/config/weewx.conf` and restart.
 
@@ -342,6 +342,7 @@ configuration section to `weewx.conf`.
 | refresh_stale_outputs | `user.refresh_stale_outputs.RefreshStaleOutputs` | `report_services`         | Force-refresh stale_age-gated outputs on weewxd startup — see below |
 | thingspeak            | `user.thingspeak.ThingSpeak`                     | `restful_services`        | matthewwall                                                         |
 | wcloud                | `user.wcloud.WeatherCloud`                       | `restful_services`        | matthewwall                                                         |
+| weatherflow-udp       | `user.weatherflowudp` _(station driver)_         | _(driver only)_           | WeatherFlow Tempest via UDP broadcast, captain-coredump             |
 | wetter                | `user.wetter.Wetter`                             | `restful_services`        | matthewwall                                                         |
 | windfinder            | `user.windfinder.WindFinder`                     | `restful_services`        | matthewwall                                                         |
 | windguru              | `user.windguru.WindGuru`                         | `restful_services`        | claudobahn                                                          |
