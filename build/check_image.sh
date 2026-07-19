@@ -32,7 +32,7 @@ S6=/etc/s6-overlay/s6-rc.d
 # binary + import health
 check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
-check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs'
+check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp'
 
 # MQTT publisher (by felddy) patches applied.
 #
@@ -124,6 +124,21 @@ done < <(grep -E '^# install: ' /work/build/extensions.txt | sed 's/^# install: 
 # uses distutils). Assert both pieces survived.
 check "ext: rtgd module present" test -f "$WEEWX_BIN/user/rtgd.py"
 check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeGauges
+
+# weatherflow-udp driver — the module is checked as importable above; also
+# assert that it exposes the module-level `loader()` factory + a Driver
+# class that inherits from weewx.drivers.AbstractDevice, so a config with
+# station_type = WeatherFlowUDP won't fail on driver load at first start.
+check "ext: weatherflowudp driver class exposes loader + AbstractDevice subclass" \
+  env PYTHONPATH=$WEEWX_BIN python3 -c "
+import inspect, weewx.drivers
+from user import weatherflowudp
+assert hasattr(weatherflowudp, 'loader'), 'weatherflowudp.loader() factory is missing'
+drv_cls = next((c for _, c in inspect.getmembers(weatherflowudp, inspect.isclass)
+                if issubclass(c, weewx.drivers.AbstractDevice) and c is not weewx.drivers.AbstractDevice),
+               None)
+assert drv_cls is not None, 'no AbstractDevice subclass in user.weatherflowudp'
+"
 
 # weedb core patch — not under patches/extensions/; keep the substring check.
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"

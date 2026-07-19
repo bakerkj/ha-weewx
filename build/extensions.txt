@@ -58,6 +58,15 @@ https://github.com/lheijst/weewx-rtldavis/archive/2f3b4b344fd70ab253aabfa837b0ff
 # install: bin/user/thingspeak.py
 https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip
 
+# WeatherFlow Tempest station driver — reads UDP broadcasts on port 50222
+# from a WeatherFlow Hub on the local network. Configured via
+# `station_type = WeatherFlowUDP` in [Station] and a [WeatherFlowUDP]
+# section that maps hub fields (air_temperature.<serial>.obs_st, etc.)
+# to weewx observation names. Standalone driver; no bundled skin or
+# xtype dependencies.
+# install: bin/user/weatherflowudp.py
+https://github.com/captain-coredump/weatherflow-udp/archive/eedfaf7b1ee1d0eb51513966b7a09e7622858791.zip
+
 # install: bin/user/wcloud.py
 https://github.com/matthewwall/weewx-wcloud/archive/83ee792.zip
 

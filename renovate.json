@@ -88,7 +88,8 @@
         "github\\.com/(?<depName>matthewwall/weewx-wetter)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>matthewwall/weewx-windfinder)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>claudobahn/weewx-windguru)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
-        "github\\.com/(?<depName>tkeffer/weewx-xaggs)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
+        "github\\.com/(?<depName>tkeffer/weewx-xaggs)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
+        "github\\.com/(?<depName>captain-coredump/weatherflow-udp)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
       ],
       "packageNameTemplate": "https://github.com/{{depName}}",
       "currentValueTemplate": "master",
