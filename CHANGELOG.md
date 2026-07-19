@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.29](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.28...ha-weewx-v0.1.29) (2026-07-19)
+
+
+### Features
+
+* **extensions:** bundle weatherflow-udp Tempest station driver ([#235](https://github.com/bakerkj/ha-weewx/issues/235)) ([b87ffa3](https://github.com/bakerkj/ha-weewx/commit/b87ffa3f805bd40b542da3ad7c6fc88e59be41aa))
+
+
+### Miscellaneous Chores
+
+* **deps:** update github-actions ([#233](https://github.com/bakerkj/ha-weewx/issues/233)) ([8eb522b](https://github.com/bakerkj/ha-weewx/commit/8eb522be4f0cd48e163781cb3b79561e60218418))
+
 ## [0.1.28](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.27...ha-weewx-v0.1.28) (2026-07-18)
 
 
