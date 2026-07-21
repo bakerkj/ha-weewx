@@ -1,8 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigestsToSemver"],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":semanticCommits",
+    ":dependencyDashboard"
+  ],
   "schedule": ["before 6pm on friday"],
   "timezone": "America/New_York",
+  "assignees": ["bakerkj"],
   "pre-commit": {
     "enabled": true
   },
@@ -16,6 +22,16 @@
         "runs-on:\\s*(?<depName>ubuntu|macos|windows)-(?<currentValue>[\\w.-]+)"
       ],
       "datasourceTemplate": "github-runners"
+    },
+    {
+      "customType": "regex",
+      "description": "npm packages pinned via pre-commit additional_dependencies (e.g. @commitlint/config-conventional@N in .pre-commit-config.yaml). The built-in pre-commit manager only bumps the `rev:` on each hook — it doesn't touch the additional_dependencies array, so without this regex those pins go stale forever.",
+      "managerFilePatterns": ["/^\\.pre-commit-config\\.yaml$/"],
+      "matchStrings": [
+        "\"(?<depName>@?[^\"@\\s]+(?:/[^\"@\\s]+)?)@(?<currentValue>[^\"\\s]+)\""
+      ],
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
     },
     {
       "customType": "regex",
@@ -170,6 +186,11 @@
       "description": "Constrain ghcr.io/home-assistant/base-debian bumps to the trixie-CalVer line. Regex versioning parses the prefixed tag directly (trixie-YYYY.MM.PATCH) and ignores bookworm-* tags or the rolling `:trixie`/`:latest`, which don't match. Default `docker` versioning can't parse the prefix.",
       "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
       "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
+    },
+    {
+      "description": "Force loose versioning for home-assistant/builder — its release tags are CalVer (YYYY.MM.PATCH), not SemVer. The `helpers:pinGitHubActionDigestsToSemver` preset re-applies semver at packageRule level (higher priority than the customManager's local versioningTemplate), which mis-orders CalVer patches and produces bogus bumps (see hass-apps PRs #246, #248). This override wins.",
+      "matchPackageNames": ["home-assistant/builder"],
+      "versioning": "loose"
     },
     {
       "description": "Group all apt-package updates into one PR. Also overrides the customManager's single registryUrlTemplate with the full list of three URLs — main trixie direct from deb.debian.org, plus trixie-updates + trixie-security via our github-apt-helper.keneli.org proxy (Debian publishes those two only as .xz, unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865). Renovate merges lookups across the three registries.",
