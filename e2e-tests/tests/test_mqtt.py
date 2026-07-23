@@ -7,11 +7,13 @@ e2e-tests/configs/mqtt/weewx.conf, mosquitto sidecar).
 
 All tests share one session-scoped MQTT subscriber that subscribes to
 `homeassistant/#` + `weather/#` and accumulates messages over the session.
-The subscriber publishes the HA birth message once, then waits up to ~20 s
-for the archive-only signal (`weather/windrun`) to arrive — which means
-every assertion lives off the same accumulated dict instead of paying its
-own settle-wait. Replaces the prior per-test `_collect(settle=N)` pattern
-that summed to ~30 s of waiting across 6 tests.
+The subscriber gates the HA birth publish on retained `weather/status`,
+retries it every 2 s until at least one discovery config lands, then
+waits up to ARCHIVE_DEADLINE for the archive-only signal
+(`weather/windrun`) — which means every assertion lives off the same
+accumulated dict instead of paying its own settle-wait. Replaces the
+prior per-test `_collect(settle=N)` pattern that summed to ~30 s of
+waiting across 6 tests.
 """
 
 import json
