@@ -75,7 +75,12 @@ def mqtt_messages() -> dict[str, str]:
     have_configs = False
     have_archive = False
     while time.monotonic() < deadline:
-        have_configs = any(t.endswith("/config") for t in seen)
+        # Snapshot keys before iterating: on_message runs on the paho
+        # network thread and mutates `seen` via setdefault. Iterating a
+        # dict while another thread grows it raises RuntimeError, and
+        # right after birth is exactly when felddy bursts out dozens of
+        # discovery configs.
+        have_configs = any(t.endswith("/config") for t in list(seen))
         have_archive = "weather/windrun" in seen
         if have_configs and have_archive:
             break
