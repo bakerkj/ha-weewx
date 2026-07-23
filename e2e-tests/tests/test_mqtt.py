@@ -7,11 +7,13 @@ e2e-tests/configs/mqtt/weewx.conf, mosquitto sidecar).
 
 All tests share one session-scoped MQTT subscriber that subscribes to
 `homeassistant/#` + `weather/#` and accumulates messages over the session.
-The subscriber publishes the HA birth message once, then waits up to ~20 s
-for the archive-only signal (`weather/windrun`) to arrive — which means
-every assertion lives off the same accumulated dict instead of paying its
-own settle-wait. Replaces the prior per-test `_collect(settle=N)` pattern
-that summed to ~30 s of waiting across 6 tests.
+The subscriber gates the HA birth publish on retained `weather/status`,
+retries it every 2 s until at least one discovery config lands, then
+waits up to ARCHIVE_DEADLINE for the archive-only signal
+(`weather/windrun`) — which means every assertion lives off the same
+accumulated dict instead of paying its own settle-wait. Replaces the
+prior per-test `_collect(settle=N)` pattern that summed to ~30 s of
+waiting across 6 tests.
 """
 
 import json
@@ -36,12 +38,22 @@ ARCHIVE_DEADLINE = 40.0
 def mqtt_messages() -> dict[str, str]:
     """One-shot subscriber over the whole session.
 
-    Subscribes to ``homeassistant/#`` and ``weather/#``, publishes the HA
-    birth message (which makes the MQTT publisher republish all
-    non-retained discovery configs), then blocks until either
-    ``weather/windrun`` arrives (the archive-only signal that everything
-    has had its chance) or the deadline lapses. Returns the accumulated
-    {topic: payload} dict.
+    Subscribes to ``homeassistant/#`` and ``weather/#``, republishes the
+    HA birth message on a 2 s cadence until at least one discovery config
+    lands, then blocks until ``weather/windrun`` (the archive-only signal
+    that everything has had its chance) also arrives or the deadline
+    lapses. Returns the accumulated {topic: payload} dict.
+
+    Two races the retry+prereq loop closes:
+
+    * The felddy publisher publishes its initial discovery configs
+      non-retained, before we subscribe — so those first copies are lost.
+      Our birth publish makes the publisher republish them, but only if
+      the publisher has already subscribed to ``homeassistant/status``.
+      A single fire-and-forget birth loses that race on a slow runner.
+    * Retained ``weather/status=online`` is the only signal that the
+      publisher has connected to the broker at all; without gating birth
+      on it we'd start retrying into a broker with no subscriber.
     """
     seen: dict[str, str] = {}
 
@@ -59,34 +71,44 @@ def mqtt_messages() -> dict[str, str]:
     client.on_message = on_message
     client.connect(MQTT_HOST, MQTT_PORT, 30)
     client.loop_start()
-    # Let on_connect run + subscriptions settle before we publish birth.
-    time.sleep(1.0)
-    # The MQTT publisher (by felddy) publishes discovery configs
-    # non-retained, so without the birth message we'd miss them
-    # entirely. The status broadcast also triggers the publisher to
-    # (re)publish availability.
-    client.publish("homeassistant/status", "online")
+
     deadline = time.monotonic() + ARCHIVE_DEADLINE
-    settled = False
+    next_birth = 0.0
+    have_configs = False
+    have_archive = False
     while time.monotonic() < deadline:
-        if "weather/windrun" in seen:
-            settled = True
+        # Snapshot keys before iterating: on_message runs on the paho
+        # network thread and mutates `seen` via setdefault. Iterating a
+        # dict while another thread grows it raises RuntimeError, and
+        # right after birth is exactly when felddy bursts out dozens of
+        # discovery configs.
+        have_configs = any(t.endswith("/config") for t in list(seen))
+        have_archive = "weather/windrun" in seen
+        if have_configs and have_archive:
             break
+        publisher_ready = seen.get("weather/status") == "online"
+        now = time.monotonic()
+        if publisher_ready and not have_configs and now >= next_birth:
+            client.publish("homeassistant/status", "online")
+            next_birth = now + 2.0
         time.sleep(0.5)
+
     client.loop_stop()
     client.disconnect()
-    if not settled:
-        # The settle signal didn't arrive in time. Returning a partial
-        # dict would let every test except `test_archive_only_windrun_*`
-        # pass, hiding the real problem (weewxd slow, archive cycle not
-        # firing, MQTT misrouted) behind one misleading failure. Fail
-        # the whole session here instead.
+
+    if not (have_configs and have_archive):
+        # Returning a partial dict would let unrelated tests pass and
+        # hide the real cause (weewxd slow, publisher never connected,
+        # birth-loop lost) behind one misleading failure. Fail loudly.
+        cfg_count = sum(1 for t in seen if t.endswith("/config"))
         pytest.fail(
-            f"setup: weather/windrun never arrived within {ARCHIVE_DEADLINE}s "
-            f"({len(seen)} topics seen); most likely cause is slow weewxd "
-            f"startup pushing the first archive cycle past the deadline — "
-            f"check archive_interval + archive_delay in e2e-tests/configs/mqtt/weewx.conf "
-            f"and weewxd boot time before suspecting MQTT/weewx_ha."
+            f"setup: MQTT session did not settle within {ARCHIVE_DEADLINE}s. "
+            f"weather/status={seen.get('weather/status')!r}, "
+            f"discovery configs={cfg_count}, "
+            f"weather/windrun={'yes' if have_archive else 'no'} "
+            f"({len(seen)} topics total). Check weewxd boot time and that "
+            f"the felddy publisher is connecting to mosquitto before "
+            f"suspecting MQTT/weewx_ha."
         )
     return seen
 
