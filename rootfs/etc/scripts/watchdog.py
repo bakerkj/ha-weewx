@@ -33,7 +33,6 @@ import signal
 import sys
 import time
 
-
 OPTIONS_PATH = "/data/options.json"
 
 
@@ -43,7 +42,7 @@ def load_options() -> dict:
             return json.load(f)
     except FileNotFoundError:
         return {}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # options.json is user-supplied JSON; log any parse error and boot with defaults
         print(f"watchdog: cannot parse {OPTIONS_PATH}: {exc}", file=sys.stderr)
         return {}
 
@@ -54,12 +53,14 @@ def probe(path: str, max_age: int) -> tuple[bool, str]:
     try:
         conn.request("HEAD", path)
         resp = conn.getresponse()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # any nginx/http.client failure means "unreachable"; caller wants a reason string
         return False, f"nginx unreachable: {exc!r}"
     finally:
+        # Best-effort cleanup: the request itself already reported
+        # success/failure above; a close error here is not actionable.
         try:
             conn.close()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     if resp.status >= 400:
         return False, f"HTTP {resp.status} {resp.reason}"
@@ -76,7 +77,7 @@ def probe(path: str, max_age: int) -> tuple[bool, str]:
         )
     try:
         lm_ts = email.utils.parsedate_to_datetime(lm).timestamp()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # any parse failure of the server-sent header is a "malformed response" reason string
         return False, f"unparsable Last-Modified={lm!r}: {exc!r}"
     age = time.time() - lm_ts
     if age > max_age:
@@ -96,7 +97,7 @@ def halt(reason: str) -> None:
     )
     try:
         os.kill(1, signal.SIGTERM)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # if we can't signal PID 1 for any reason, print and continue to the SIGKILL escalation
         print(f"watchdog: kill -TERM 1 failed: {exc!r}", file=sys.stderr, flush=True)
 
     # Give s6-overlay 30s to tear the supervision tree down cleanly, then
@@ -114,7 +115,7 @@ def halt(reason: str) -> None:
     )
     try:
         os.kill(1, signal.SIGKILL)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  # last resort — even SIGKILL failure just gets logged; nothing else we can do
         print(f"watchdog: kill -KILL 1 failed: {exc!r}", file=sys.stderr, flush=True)
 
 

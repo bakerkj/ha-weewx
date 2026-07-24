@@ -138,9 +138,7 @@ def test_non_measurement_keys_omit_state_class(mqtt_messages):
     for t, p in mqtt_messages.items():
         if not t.endswith("/config"):
             continue
-        if t.endswith("BatteryStatus/config") or t.endswith(
-            ("/usUnits/config", "/dateTime/config")
-        ):
+        if t.endswith(("BatteryStatus/config", "/usUnits/config", "/dateTime/config")):
             cfg = json.loads(p)
             if "state_class" in cfg:
                 bad.append((t, cfg.get("state_class")))

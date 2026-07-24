@@ -18,9 +18,7 @@ from pathlib import Path
 
 import configobj
 import pytest
-
 import refresh_stale_outputs as mod
-
 
 # --------------------------------------------------------------------------
 # _cheetah_stale_outputs — template with stale_age → output path
@@ -523,7 +521,7 @@ def test_age_out_all_skips_report_with_missing_skin_conf(tmp_path):
     on disk (e.g. user renamed a bundled skin without updating the ref),
     the walk logs debug and moves on — no exception, no other report
     affected."""
-    weewx_root, html_root = _fixture_skin(tmp_path)
+    weewx_root, _html_root = _fixture_skin(tmp_path)
     # Point a second report at a nonexistent skin dir.
     svc = _FakeService(
         {
@@ -717,7 +715,7 @@ def test_on_startup_sweep_failure_doesnt_propagate(monkeypatch):
     svc = _FakeService({"WEEWX_ROOT": ".", "StdReport": {}})
     try:
         svc._on_startup(None)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # asserting the SUT swallows everything — narrowing would defeat the test
         pytest.fail(f"_on_startup must not propagate sweep failure: {e!r}")
 
 
@@ -733,5 +731,5 @@ def test_on_startup_never_raises(monkeypatch):
     svc = _FakeService({"WEEWX_ROOT": ".", "StdReport": {}})
     try:
         svc._on_startup(None)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # asserting the SUT swallows everything — narrowing would defeat the test
         pytest.fail(f"_on_startup must not propagate: {e!r}")

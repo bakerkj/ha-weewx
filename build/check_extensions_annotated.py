@@ -23,7 +23,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 DEFAULT_PATH = Path(__file__).resolve().parent / "extensions.txt"
 
 

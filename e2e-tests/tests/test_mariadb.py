@@ -17,13 +17,13 @@ import pymysql
 import pytest
 import requests
 
-MARIADB = dict(
-    host=os.environ.get("MARIADB_HOST", "mariadb"),
-    port=int(os.environ.get("MARIADB_PORT", "3306")),
-    user=os.environ.get("MARIADB_USER", "weewx"),
-    password=os.environ.get("MARIADB_PASSWORD", "weewxpass"),
-    database=os.environ.get("MARIADB_DB", "weewx"),
-)
+MARIADB = {
+    "host": os.environ.get("MARIADB_HOST", "mariadb"),
+    "port": int(os.environ.get("MARIADB_PORT", "3306")),
+    "user": os.environ.get("MARIADB_USER", "weewx"),
+    "password": os.environ.get("MARIADB_PASSWORD", "weewxpass"),
+    "database": os.environ.get("MARIADB_DB", "weewx"),
+}
 WEEWX_URL = os.environ.get("WEEWX_URL", "http://weewx:8099").rstrip("/")
 
 

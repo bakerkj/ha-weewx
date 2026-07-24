@@ -13,7 +13,6 @@ from types import SimpleNamespace
 
 import pytest
 import weewx
-
 from log_to_file import LogToFile, LogToFileThread
 
 
@@ -115,7 +114,7 @@ def test_tuple_type_mapping_compass_label(thread_factory, archive_us, tmp_path):
     t = thread_factory(path=path)
     t.process_record(_us_record(windDir=180.0), archive_us)
     line = _read_lines(path)[0]
-    tok = [p for p in line.split(",") if p.startswith("windDir:")][0]
+    tok = next(p for p in line.split(",") if p.startswith("windDir:"))
     assert tok.endswith(":degree")
 
 
@@ -124,7 +123,7 @@ def test_tuple_type_mapping_radiation_label(thread_factory, archive_us, tmp_path
     t = thread_factory(path=path)
     t.process_record(_us_record(radiation=420.0), archive_us)
     line = _read_lines(path)[0]
-    tok = [p for p in line.split(",") if p.startswith("radiation:")][0]
+    tok = next(p for p in line.split(",") if p.startswith("radiation:"))
     assert tok.endswith(":watts/m^2")
 
 
@@ -173,7 +172,7 @@ def test_metricwx_record_converted_to_archive_us_before_processing(
     rec = {"dateTime": 1_700_000_000, "usUnits": weewx.METRICWX, "outTemp": 20.0}
     t.process_record(rec, archive)
     line = _read_lines(path)[0]
-    tok = [p for p in line.split(",") if p.startswith("outTemp:")][0]
+    tok = next(p for p in line.split(",") if p.startswith("outTemp:"))
     # whatever the precise rounding, label is the US label
     assert tok.endswith(":F")
 

@@ -26,9 +26,8 @@ import subprocess
 import sys
 import textwrap
 import traceback
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import Mock, patch
-
 
 WEEWX_BIN = pathlib.Path("/opt/weewx-data/bin")
 
@@ -90,7 +89,9 @@ def check_0002_rtgd_verbose_thread_traceback() -> None:
     rtgd.weeutil.logger.log_traceback = fake_log_traceback
     try:
         exec_globals = dict(vars(rtgd))
-        exec(
+        # exec: patch verifier deliberately runs an extracted snippet in
+        # a controlled globals dict — this is not user input.
+        exec(  # noqa: S102
             "weeutil.logger.log_traceback(log.critical, 'rtgdthread: **** ')",
             exec_globals,
         )
@@ -166,6 +167,7 @@ def check_0005_previmeteo_qualify_get_site_dict() -> None:
 # ---------------------------------------------------------------------------
 def check_0006_emoncms_skip_upload_abortedpost() -> None:
     import queue as stdlib_queue
+
     import weewx.restx
 
     emoncms = _import("emoncms")
@@ -240,6 +242,7 @@ def check_0009_rtldavis_python313_rstrings() -> None:
         ["/opt/weewx/bin/python3", "-W", "error::SyntaxWarning", "-c", code],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, (
         "rtldavis.py must compile cleanly under -W error::SyntaxWarning; "
@@ -321,7 +324,7 @@ def check_0011_rtgd_history_max_none_guard() -> None:
     ts = 1_700_000_000
     g = dict(vars(rtgd))
     g.update({"self": self_mock, "data": data, "ts": ts})
-    exec(body, g)
+    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
     assert data["wgust"] == "0.0", (
         "patched wgust branch must fall back to 0.0 when history_max returns "
         "None; unpatched code raises AttributeError on .value and kills the "
@@ -340,7 +343,7 @@ def check_0011_rtgd_history_max_none_guard() -> None:
     data = {}
     g = dict(vars(rtgd))
     g.update({"self": self_mock, "data": data, "ts": ts})
-    exec(body, g)
+    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
     assert data["wgust"] == "0.0"
 
 
@@ -399,7 +402,7 @@ def _run_fieldmap(rtgd, body, rtgd_config_dict):
     self_mock.units_dict = _UnitsDict()
     g = dict(vars(rtgd))
     g.update({"self": self_mock, "rtgd_config_dict": rtgd_config_dict})
-    exec(body, g)
+    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
     return self_mock.field_map
 
 
@@ -487,7 +490,7 @@ def check_0015_rtgd_skip_empty_source() -> None:
 
     data: dict = {}
     g = {"self": self_mock, "data": data, "packet": {}}
-    exec(loop_body, g)
+    exec(loop_body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
 
     assert "temp" in data and "press" in data, (
         "fields with a populated source must still be emitted to gauge-data.txt"
@@ -542,7 +545,7 @@ def check_0015_rtgd_skip_empty_source() -> None:
     }
     g = dict(vars(rtgd))
     g.update({"self": self2, "rtgd_config_dict": cfg})
-    exec(body, g)  # must NOT raise
+    exec(body, g)  # must NOT raise  # noqa: S102 -- patch verifier
     assert "inhum" in self2.field_map, (
         "empty-source override should still land in self.field_map so the "
         "calculate() emit-loop skips it (rather than processing it and "
@@ -787,7 +790,7 @@ def main() -> int:
     for name, fn in CHECKS:
         try:
             fn()
-        except BaseException as e:
+        except BaseException as e:  # noqa: BLE001  # test-runner catch: convert any check failure (incl. AssertionError, SystemExit) to a FAIL row instead of aborting the harness
             fail = 1
             # Single-line failure reason; collapse multi-line tracebacks.
             reason = "".join(traceback.format_exception_only(type(e), e)).strip()

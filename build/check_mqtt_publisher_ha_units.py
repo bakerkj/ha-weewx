@@ -28,7 +28,6 @@ import sys
 # obs_group_dict entries. Each such import must happen BEFORE any
 # get_unit_metadata call for a key the extension contributes a unit for.
 import user.rain24h  # noqa: F401  -- registers 'rain24h' -> 'group_rain'
-
 from weewx_ha.utils import KEY_CONFIG, UnitSystem, get_unit_metadata
 
 # KEY_CONFIG TEMPLATE-base entries: the MQTT publisher (by felddy) keeps

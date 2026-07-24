@@ -25,10 +25,9 @@ import tempfile
 import textwrap
 
 import configobj
-
+import user.forecast as forecast_mod
 import weewx.engine
 import weewx.manager
-import user.forecast as forecast_mod
 
 
 def main() -> int:
