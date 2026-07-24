@@ -237,7 +237,10 @@ class LogToFileThread(weewx.restx.RESTThread):
         self._last_tokens = tokens
         line = ",".join([weeutil.weeutil.timestamp_to_string(ts), *tokens])
         if self._fh is None:
-            self._fh = open(self.path, "a", buffering=1)
+            # Long-lived append handle: opened once per thread, closed
+            # via _close() at shutdown. A `with` block here would close
+            # on every record and defeat the buffering=1 line mode.
+            self._fh = open(self.path, "a", buffering=1)  # noqa: SIM115
         self._fh.write(line + "\n")
 
 
