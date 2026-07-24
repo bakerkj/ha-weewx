@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.30](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.29...ha-weewx-v0.1.30) (2026-07-24)
+
+
+### Bug Fixes
+
+* **e2e:** close birth-race in mqtt discovery fixture ([#245](https://github.com/bakerkj/ha-weewx/issues/245)) ([d729d40](https://github.com/bakerkj/ha-weewx/commit/d729d40ff9ca1abe6798d3f6df5de9a1ec8355a5))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.181 ([#250](https://github.com/bakerkj/ha-weewx/issues/250)) ([524d960](https://github.com/bakerkj/ha-weewx/commit/524d960270507eee7427cc09f0a8fbf9ba1727cf))
+* **deps:** update astral-sh/setup-uv action to v9 ([#243](https://github.com/bakerkj/ha-weewx/issues/243)) ([ff90399](https://github.com/bakerkj/ha-weewx/commit/ff90399a841a29ff0bc81d419996cdc69fda706e))
+* **deps:** update dependency @commitlint/config-conventional to v21 ([#240](https://github.com/bakerkj/ha-weewx/issues/240)) ([ebadd0b](https://github.com/bakerkj/ha-weewx/commit/ebadd0b42ede9485a9f8a776c6fc48c727980ce3))
+* **deps:** update dependency chaunceygardiner/weewx-forecast to v5.0.1 ([#249](https://github.com/bakerkj/ha-weewx/issues/249)) ([94564b9](https://github.com/bakerkj/ha-weewx/commit/94564b9fb5a8760877c1857890dbade14d5fa3b2))
+* **deps:** update dependency renovate to v43.280.0 ([#251](https://github.com/bakerkj/ha-weewx/issues/251)) ([356b616](https://github.com/bakerkj/ha-weewx/commit/356b616fb3cadaccd919cf2cac02070c57fd4f7b))
+* **deps:** update github-actions ([#238](https://github.com/bakerkj/ha-weewx/issues/238)) ([a2afee0](https://github.com/bakerkj/ha-weewx/commit/a2afee01889c3595c1ca485f2374ace2f5e905ee))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.0 ([#246](https://github.com/bakerkj/ha-weewx/issues/246)) ([07fdae3](https://github.com/bakerkj/ha-weewx/commit/07fdae3033929163a87ad038ebe53b356d08a48f))
+* **deps:** update pre-commit hook rbubley/mirrors-prettier to v3.9.6 ([#242](https://github.com/bakerkj/ha-weewx/issues/242)) ([be83be8](https://github.com/bakerkj/ha-weewx/commit/be83be8d2f804fde9486dc80686f2d40b1b2ac65))
+* **deps:** update uv tool to v0.11.30 ([#236](https://github.com/bakerkj/ha-weewx/issues/236)) ([2c94a85](https://github.com/bakerkj/ha-weewx/commit/2c94a85d9e67cc220e4a66eb0a244f30302502ae))
+* **deps:** update uv tool to v0.11.31 ([#244](https://github.com/bakerkj/ha-weewx/issues/244)) ([c08b5e7](https://github.com/bakerkj/ha-weewx/commit/c08b5e750c21cbad4997c4c8909ff8ea962dde2a))
+* **deps:** update uv tool to v0.11.32 ([#248](https://github.com/bakerkj/ha-weewx/issues/248)) ([5ab2302](https://github.com/bakerkj/ha-weewx/commit/5ab2302ac15a139a9e6e7027034188602180eb7a))
+* **renovate:** close config gaps found across sibling repos ([#239](https://github.com/bakerkj/ha-weewx/issues/239)) ([044ee14](https://github.com/bakerkj/ha-weewx/commit/044ee1438bedb63db09a33f81dd6cfe7f3a86ec7))
+* **renovate:** drop redundant alternation in npm-in-pre-commit regex ([#241](https://github.com/bakerkj/ha-weewx/issues/241)) ([ea1fd7c](https://github.com/bakerkj/ha-weewx/commit/ea1fd7c21f95cb581b2964dfacba9549e32e4eab))
+
 ## [0.1.29](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.28...ha-weewx-v0.1.29) (2026-07-19)
 
 
