@@ -13,7 +13,6 @@ from __future__ import annotations
 import os
 
 import pytest
-
 import report_hook as hook_module
 
 
@@ -312,7 +311,7 @@ def test_generator_run_never_raises(monkeypatch):
         # Skip ReportGenerator.__init__ (would need a full weewx config
         # and a DBBinder); we're only testing that run() handles a bad
         # run_hook gracefully.
-        def __init__(self):  # noqa: D401
+        def __init__(self):
             self.skin_dict = {
                 "REPORT_NAME": "MySkin",
                 "ReportHook": {"command": ["true"]},
@@ -320,14 +319,14 @@ def test_generator_run_never_raises(monkeypatch):
 
     try:
         _FakeGen().run()
-    except Exception as e:  # pragma: no cover — the assertion is the point
+    except Exception as e:  # noqa: BLE001  # pragma: no cover — asserting the SUT swallows everything
         pytest.fail(f"ReportHook.run() must not propagate: {e!r}")
 
 
 class _StubGen(hook_module.ReportHook):
     """Bypass ReportGenerator.__init__ (which requires a real DBBinder)."""
 
-    def __init__(self, report_name="MySkin"):  # noqa: D401
+    def __init__(self, report_name="MySkin"):
         self.skin_dict = {
             "REPORT_NAME": report_name,
             "ReportHook": {"command": ["true"]},

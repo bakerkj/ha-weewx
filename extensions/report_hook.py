@@ -254,7 +254,7 @@ class ReportHook(ReportGenerator):
         # such logs from this hook".
         try:
             outcome = run_hook(hook_cfg, report_name)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  # belt-and-suspenders: never let a hook take down a report thread
             log.warning("ReportHook[%s]: unexpected error: %s", report_name, e)
             return
 

@@ -37,7 +37,7 @@ class FakeConn:
     def __init__(self, resp: FakeResp) -> None:
         self._resp = resp
 
-    def request(self, method, path) -> None:  # noqa: ARG002 - signature parity
+    def request(self, method, path) -> None:
         pass
 
     def getresponse(self) -> FakeResp:

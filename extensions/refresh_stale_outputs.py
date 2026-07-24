@@ -49,10 +49,11 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import configobj
-import weeutil.config  # noqa: F401 — merge_config used below
+import weeutil.config
 import weeutil.weeutil
 import weewx
 from weewx.engine import StdService
@@ -72,8 +73,7 @@ class RefreshStaleOutputs(StdService):
     def _on_startup(self, _event) -> None:
         try:
             aged, html_roots = self._age_out_all()
-        except Exception as e:
-            # Never break weewxd startup over a config quirk. Log and move on.
+        except Exception as e:  # noqa: BLE001  # never break weewxd startup over a config quirk
             log.warning("RefreshStaleOutputs: unexpected error: %s", e)
             return
         if aged:
@@ -83,7 +83,7 @@ class RefreshStaleOutputs(StdService):
         # HTML_ROOT the walk resolved — sweep tmp fragments in each.
         try:
             swept = self._sweep_tmp_all(html_roots)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001  # sweep independence: aging pass already succeeded, don't rethrow
             log.warning("RefreshStaleOutputs: tmp-sweep failed: %s", e)
             return
         if swept:
@@ -118,7 +118,7 @@ class RefreshStaleOutputs(StdService):
             try:
                 if not weeutil.weeutil.to_bool(report_cfg.get("enable", "true")):
                     continue
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # skip malformed report; don't halt walk
                 log.debug(
                     "RefreshStaleOutputs: invalid enable= for %s: %s",
                     report_name,
@@ -140,7 +140,7 @@ class RefreshStaleOutputs(StdService):
 
                 try:
                     skin_dict: dict[str, Any] = configobj.ConfigObj(skin_conf_path)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001  # skip unloadable skin; don't halt walk
                     log.debug(
                         "RefreshStaleOutputs: could not load %s: %s",
                         skin_conf_path,
@@ -157,7 +157,7 @@ class RefreshStaleOutputs(StdService):
                 # weewx precedence, not from this merge.
                 try:
                     weeutil.config.merge_config(skin_dict, report_cfg)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001  # proceed with unmerged skin_dict rather than halt
                     log.debug(
                         "RefreshStaleOutputs: merge failed for %s: %s",
                         report_name,
@@ -173,7 +173,7 @@ class RefreshStaleOutputs(StdService):
                     out = os.path.join(html_root, rel_out)
                     if _age_out(out):
                         aged += 1
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # per-report isolation: one bad skin must not abort the walk
                 log.debug(
                     "RefreshStaleOutputs: skipping report %s after unexpected error: %s",
                     report_name,
@@ -217,7 +217,7 @@ class RefreshStaleOutputs(StdService):
                                 path,
                                 e,
                             )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001  # per-root isolation: one bad html_root must not abort sweep
                 log.debug(
                     "RefreshStaleOutputs: sweep of %s failed: %s",
                     html_root,
@@ -332,7 +332,7 @@ def _cheetah_stale_outputs(
     need aging."""
     if now is None:
         now = time.time()
-    for _key, section in cfg.items():
+    for section in cfg.values():
         if not isinstance(section, dict):
             continue
         stale_here = inherit_stale or "stale_age" in section

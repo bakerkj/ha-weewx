@@ -20,10 +20,11 @@
 import json
 import subprocess
 import sys
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 
 
-def iter_deps(obj: Any) -> Generator[dict, None, None]:
+def iter_deps(obj: Any) -> Generator[dict]:
     """Yield every dep dict reachable from obj by walking the config tree."""
     if isinstance(obj, dict):
         if isinstance(obj.get("deps"), list):
@@ -78,6 +79,7 @@ def main() -> int:
             cmp_result = subprocess.run(
                 ["dpkg", "--compare-versions", new, "ge", cur],
                 capture_output=True,
+                check=False,
             )
             if cmp_result.returncode != 0:
                 failures.append(
@@ -94,6 +96,7 @@ def main() -> int:
                 ["apt-cache", "madison", name],
                 capture_output=True,
                 text=True,
+                check=False,
             )
             versions = {
                 parts[1].strip()
