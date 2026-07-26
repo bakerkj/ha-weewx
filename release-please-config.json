@@ -24,7 +24,13 @@
           "type": "json",
           "path": "config.json",
           "jsonpath": "$.version"
-        }
+        },
+        {
+          "type": "toml",
+          "path": "uv.lock",
+          "jsonpath": "$.package[?(@.name.value=='ha-weewx')].version"
+        },
+        "pyproject.toml"
       ]
     }
   }
