@@ -168,7 +168,7 @@
       "groupName": "python dependencies"
     },
     {
-      "description": "Group both uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version) so a uv bump lands in one PR. `minimumGroupSize: 2` holds the branch until both members are eligible in the same cycle — otherwise an asymmetric `minimumReleaseAge` elsewhere (e.g. the 3-day cooldown on pypi uv) age-gates one row out and Renovate opens a partial PR touching only the other file (see renovatebot/renovate#9739).",
+      "description": "Group the two uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version). They must bump atomically — a mismatch makes `uv sync --frozen` refuse to run. Automerge policy is set below, after the docker-datasource denial.",
       "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
       "groupName": "uv tool",
       "minimumGroupSize": 2
@@ -263,11 +263,9 @@
       "matchDepTypes": ["dependency-groups", "tool.uv.dev-dependencies"]
     },
     {
-      "description": "The uv required-version pin in [tool.uv], which comes from the custom regex manager rather than the native pep621 manager and so is not covered by the rule above. Scoped by depName so it does not sweep in the other custom.regex managers.",
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["uv"],
+      "description": "Automerge uv patches. Must be after the docker-datasource denial above so `automerge: true` wins for the ghcr side. No `minimumReleaseAge` — an asymmetric one across the two uv pins is what produced #269.",
+      "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "3 days",
       "automerge": true
     },
     {
