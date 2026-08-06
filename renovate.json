@@ -168,9 +168,10 @@
       "groupName": "python dependencies"
     },
     {
-      "description": "Group both uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version) so a uv bump lands in one PR.",
+      "description": "Group both uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version) so a uv bump lands in one PR. `minimumGroupSize: 2` holds the branch until both members are eligible in the same cycle — otherwise an asymmetric `minimumReleaseAge` elsewhere (e.g. the 3-day cooldown on pypi uv) age-gates one row out and Renovate opens a partial PR touching only the other file (see renovatebot/renovate#9739).",
       "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
-      "groupName": "uv tool"
+      "groupName": "uv tool",
+      "minimumGroupSize": 2
     },
     {
       "matchPackageNames": ["ghcr.io/home-assistant/base-debian"],
