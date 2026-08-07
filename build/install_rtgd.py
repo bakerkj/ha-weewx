@@ -19,18 +19,43 @@ fails the build if no expected files were copied.
 import io
 import os
 import sys
+import time
+import urllib.error
 import urllib.request
 import zipfile
 
 URL = "https://github.com/hoetzgit/weewx-realtime_gauge-data/archive/v0.6.0.zip"
 DEST_ROOT = "/opt/weewx-data"
 
+# urllib has no built-in retry. GitHub 5xx hiccups on the archive URL surface
+# as fatal errors and burn CI builds on unrelated PRs. Retry with exponential
+# backoff — same shape as build/install_extensions.sh.
+MAX_ATTEMPTS = 4
+INITIAL_SLEEP = 2
+
+
+def _fetch_with_retry(url: str) -> bytes:
+    sleep_s = INITIAL_SLEEP
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(url) as r:
+                return r.read()
+        except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+            if attempt >= MAX_ATTEMPTS:
+                raise
+            print(
+                f"  attempt {attempt} failed ({exc}); retrying in {sleep_s}s...",
+                file=sys.stderr,
+            )
+            time.sleep(sleep_s)
+            sleep_s *= 2
+    raise RuntimeError("unreachable")  # for type-checkers
+
 
 def main() -> None:
     print(f"Manually installing realtime-gauge-data from {URL}")
 
-    with urllib.request.urlopen(URL) as r:
-        data = r.read()
+    data = _fetch_with_retry(URL)
 
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         names = z.namelist()
