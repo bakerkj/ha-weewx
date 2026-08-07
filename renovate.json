@@ -209,6 +209,12 @@
       "groupName": "weewx extensions"
     },
     {
+      "description": "Group the two weewx pins (pyproject.toml runtime dep + Dockerfile xstats.py source URL) so a weewx bump lands in one PR. They must move atomically — the venv's installed weewx version and the fetched xstats.py must agree. Placed after both `python dependencies` and `weewx extensions` so this groupName wins for both members.",
+      "matchDepNames": ["weewx", "weewx/weewx"],
+      "groupName": "weewx",
+      "minimumGroupSize": 2
+    },
+    {
       "description": "Pin Python to the 3.13 series — it must match python3 in the Debian trixie base image. Bumping to 3.14 makes uv build a standalone 3.14 venv that mismatches the base's apt python3 (broke the build). Lift this when the base moves to a Debian release with 3.14.",
       "matchPackageNames": ["python"],
       "allowedVersions": "<3.14"
