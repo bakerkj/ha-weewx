@@ -215,6 +215,12 @@
       "minimumGroupSize": 2
     },
     {
+      "description": "Group the frenck/action-addon-linter pins: the `uses:` in .github/workflows/addon-lint.yaml plus the two schema URLs in .pre-commit-config.yaml (fetched via raw.githubusercontent.com by check-jsonschema). Same upstream release ships both the action binary and the JSON schemas, so they must bump atomically. Placed after both `github-actions` and `weewx extensions` so this groupName wins for all three members.",
+      "matchDepNames": ["frenck/action-addon-linter"],
+      "groupName": "action-addon-linter",
+      "minimumGroupSize": 2
+    },
+    {
       "description": "Pin Python to the 3.13 series — it must match python3 in the Debian trixie base image. Bumping to 3.14 makes uv build a standalone 3.14 venv that mismatches the base's apt python3 (broke the build). Lift this when the base moves to a Debian release with 3.14.",
       "matchPackageNames": ["python"],
       "allowedVersions": "<3.14"
