@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.1.31](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.30...ha-weewx-v0.1.31) (2026-08-07)
+
+
+### Features
+
+* **ci:** add weewx-diff reviewer for Renovate PRs ([#276](https://github.com/bakerkj/ha-weewx/issues/276)) ([b35c786](https://github.com/bakerkj/ha-weewx/commit/b35c7862810b0a6a04e09c22369032ad11bd8eda))
+
+
+### Bug Fixes
+
+* **build:** retry install_rtgd.py + xstats.py fetches on transient failures ([#281](https://github.com/bakerkj/ha-weewx/issues/281)) ([63a82e1](https://github.com/bakerkj/ha-weewx/commit/63a82e1742fb5dfe81ffeba50e2f963b352dd5fc))
+* **build:** retry weectl extension install on transient failures ([#278](https://github.com/bakerkj/ha-weewx/issues/278)) ([79a2852](https://github.com/bakerkj/ha-weewx/commit/79a2852c91303c3dd79227e1454bc0f4951cd0e5))
+* **deps:** update weewx to v5.5.0 ([#273](https://github.com/bakerkj/ha-weewx/issues/273)) ([284eb57](https://github.com/bakerkj/ha-weewx/commit/284eb57d393a79b8a525214b62e001afbf71d190))
+* **pre-commit:** set default_stages so hooks skip commit-msg by default ([#271](https://github.com/bakerkj/ha-weewx/issues/271)) ([5f7abdc](https://github.com/bakerkj/ha-weewx/commit/5f7abdc6bf67156f3624ef3d07ecfc134331aa6b))
+* **renovate:** add minimumGroupSize:2 to uv tool group ([#268](https://github.com/bakerkj/ha-weewx/issues/268)) ([c083e04](https://github.com/bakerkj/ha-weewx/commit/c083e042e1c9444b6d1fa5639ed8e65d114c7c0e))
+* **renovate:** group both weewx pins so they bump atomically ([#272](https://github.com/bakerkj/ha-weewx/issues/272)) ([61cb11e](https://github.com/bakerkj/ha-weewx/commit/61cb11e00b2a74b49ea3c9dda4cb548f71d33e67))
+* **renovate:** group frenck/action-addon-linter pins atomically ([#274](https://github.com/bakerkj/ha-weewx/issues/274)) ([1b49456](https://github.com/bakerkj/ha-weewx/commit/1b494564c604a128835a4b4c61303a25ee1a42ac))
+* **renovate:** make uv tool group symmetric + atomic ([#270](https://github.com/bakerkj/ha-weewx/issues/270)) ([4ae3c81](https://github.com/bakerkj/ha-weewx/commit/4ae3c81ebf8312a95e30188ac8accd2f8aa3e930))
+* scope dev-tooling auto-merge by depType ([#264](https://github.com/bakerkj/ha-weewx/issues/264)) ([5300a23](https://github.com/bakerkj/ha-weewx/commit/5300a23dbae027a3e4133d1a4c2edc5586160972))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.182 ([#252](https://github.com/bakerkj/ha-weewx/issues/252)) ([92749e5](https://github.com/bakerkj/ha-weewx/commit/92749e50d3aab69c5638988bc83f5353724a6243))
+* **deps:** update anthropics/claude-code-action action to v1.0.183 ([#260](https://github.com/bakerkj/ha-weewx/issues/260)) ([32bc6d5](https://github.com/bakerkj/ha-weewx/commit/32bc6d53e301d3eb65e46d1e7527ef0b4f9e53da))
+* **deps:** update anthropics/claude-code-action action to v1.0.184 ([#275](https://github.com/bakerkj/ha-weewx/issues/275)) ([59ee5e8](https://github.com/bakerkj/ha-weewx/commit/59ee5e8161fe878199fa2bcf42493716ee134365))
+* **deps:** update anthropics/claude-code-action action to v1.0.186 ([#279](https://github.com/bakerkj/ha-weewx/issues/279)) ([ebcb98f](https://github.com/bakerkj/ha-weewx/commit/ebcb98feb51709c6c180ebce89e50988726c909b))
+* **deps:** update dependency chaunceygardiner/weewx-forecast to v5.1 ([#277](https://github.com/bakerkj/ha-weewx/issues/277)) ([13316b6](https://github.com/bakerkj/ha-weewx/commit/13316b6b7c0ed739087e8bb6dcf27727f03010d4))
+* **deps:** update dependency renovate to v43.280.3 ([#253](https://github.com/bakerkj/ha-weewx/issues/253)) ([6316f62](https://github.com/bakerkj/ha-weewx/commit/6316f62c36ffbf7ab447a01a5122a3e365ba94cb))
+* **deps:** update dependency renovate to v44 ([#257](https://github.com/bakerkj/ha-weewx/issues/257)) ([a9941ae](https://github.com/bakerkj/ha-weewx/commit/a9941aea212ddd4b64c9a3d78ba62a543c31b84b))
+* **deps:** update dependency renovate to v44.10.0 ([#280](https://github.com/bakerkj/ha-weewx/issues/280)) ([80d663c](https://github.com/bakerkj/ha-weewx/commit/80d663cc712235ca7fb7918043effc26f2d23060))
+* **deps:** update dependency renovate to v44.5.2 ([#261](https://github.com/bakerkj/ha-weewx/issues/261)) ([9d44263](https://github.com/bakerkj/ha-weewx/commit/9d442639c79d8e130e557bc7e760053dc19ba87f))
+* **deps:** update dependency renovate to v44.7.2 ([#266](https://github.com/bakerkj/ha-weewx/issues/266)) ([33d7b75](https://github.com/bakerkj/ha-weewx/commit/33d7b75f2d4b4ba21de7d363729ca7cc3fa385e2))
+* **deps:** update j178/prek-action action to v3 ([#259](https://github.com/bakerkj/ha-weewx/issues/259)) ([6f134cf](https://github.com/bakerkj/ha-weewx/commit/6f134cf21c3e357dd5813a3ba44ad94eb6660ff4))
+* **deps:** update pre-commit hook aleksac/hadolint-py to v2.15.1 ([#265](https://github.com/bakerkj/ha-weewx/issues/265)) ([5054e84](https://github.com/bakerkj/ha-weewx/commit/5054e84bcfafeea1a9156790249739bd8395bf08))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.1 ([#258](https://github.com/bakerkj/ha-weewx/issues/258)) ([5a371d3](https://github.com/bakerkj/ha-weewx/commit/5a371d3f4b322772fdd8aa3560cee61897a93e72))
+* **deps:** update uv tool to v0.12.0 ([#256](https://github.com/bakerkj/ha-weewx/issues/256)) ([0e2c2e8](https://github.com/bakerkj/ha-weewx/commit/0e2c2e868ea61314737271c1018f76b051f51f6d))
+* **deps:** update uv tool to v0.12.1 ([#262](https://github.com/bakerkj/ha-weewx/issues/262)) ([2cb697b](https://github.com/bakerkj/ha-weewx/commit/2cb697b9af685f5979e7b46eee69160396e1f1ed))
+* **deps:** update uv tool to v0.12.2 ([#269](https://github.com/bakerkj/ha-weewx/issues/269)) ([5e405b9](https://github.com/bakerkj/ha-weewx/commit/5e405b92a9a6f0283e1bdff6a1e32b599762691d))
+* manage pyproject and uv.lock version via release-please ([#255](https://github.com/bakerkj/ha-weewx/issues/255)) ([426a4fc](https://github.com/bakerkj/ha-weewx/commit/426a4fc56ca59502ca08766299664a4e54d70c22))
+
+
+### Continuous Integration
+
+* enable renovate auto-merge for CI-only updates ([#263](https://github.com/bakerkj/ha-weewx/issues/263)) ([e74bfe8](https://github.com/bakerkj/ha-weewx/commit/e74bfe844fcbf037407b6d5e9c650043d44d4bad))
+
 ## [0.1.30](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.29...ha-weewx-v0.1.30) (2026-07-24)
 
 
