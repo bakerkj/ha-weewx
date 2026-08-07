@@ -218,7 +218,7 @@ RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py
 # custom.regex manager (see renovate.json) still tracks version bumps.
 # ---------------------------------------------------------------------------
 RUN curl --fail --silent --show-error --location \
-    --retry 4 --retry-all-errors --retry-delay 2 \
+    --retry 4 --retry-all-errors \
     --output /opt/weewx-data/bin/user/xstats.py \
     https://raw.githubusercontent.com/weewx/weewx/v5.5.0/src/weewx_data/examples/xstats/bin/user/xstats.py
 
