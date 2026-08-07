@@ -210,9 +210,17 @@ RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py
 # xstats: extended-statistics search-list extension shipped with WeeWX as an
 # example. Some skins reference user.xstats but it is not installed by
 # default. Pull it from the upstream tag.
+#
+# Uses `curl --retry` instead of `ADD <url>` because BuildKit's ADD-from-URL
+# does not retry on transient github.com 5xx — that failure has burned builds
+# on unrelated PRs. curl has native exponential-backoff retry for 5xx via
+# `--retry-all-errors`. URL is still pinned inline so Renovate's raw-URL
+# custom.regex manager (see renovate.json) still tracks version bumps.
 # ---------------------------------------------------------------------------
-ADD https://raw.githubusercontent.com/weewx/weewx/v5.5.0/src/weewx_data/examples/xstats/bin/user/xstats.py \
-    /opt/weewx-data/bin/user/xstats.py
+RUN curl --fail --silent --show-error --location \
+    --retry 4 --retry-all-errors --retry-delay 2 \
+    --output /opt/weewx-data/bin/user/xstats.py \
+    https://raw.githubusercontent.com/weewx/weewx/v5.5.0/src/weewx_data/examples/xstats/bin/user/xstats.py
 
 # ---------------------------------------------------------------------------
 # Apply patches. Each .patch is a unified diff applied with `patch -p1` in
