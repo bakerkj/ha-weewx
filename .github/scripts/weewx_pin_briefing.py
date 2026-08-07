@@ -536,6 +536,13 @@ def stage_upstream(out_dir, r, token, our_patches, ext_manifest, src_file_diff):
                     if status in STRUCTURAL_STATUSES:
                         continue
                     ctx_lines.append(f"- `{ip}` <=> `{f}` ({status})")
+        elif r.get("note"):
+            # The upstream fetch failed (see the resolver's note). Do NOT
+            # print a mechanically-verified negative -- nothing was verified.
+            ctx_lines += [
+                "",
+                f"Could not verify install-path changes: {r['note']}",
+            ]
         else:
             ctx_lines += [
                 "",

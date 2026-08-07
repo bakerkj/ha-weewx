@@ -67,6 +67,13 @@ jobs:
     timeout-minutes: 10
     outputs:
       has_diff: ${{ steps.diff.outputs.has_diff }}
+    # Least-privilege: this job only reads (diffs, docker imagetools, gh api
+    # compare/contents via urllib) and uploads artifacts. It never writes to
+    # the PR. Override the workflow-level `pull-requests: write` (needed by
+    # the review job's track_progress) so this job cannot mutate the PR even
+    # if a future edit accidentally tries to.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -82,10 +89,9 @@ jobs:
       # extensions.txt / install_rtgd.py are still READ (those are the inputs
       # we are here to analyse); only the CODE is pinned to base.
       #
-      # We also pin patches/ and build/extensions.txt to the base branch when
-      # the briefing reads them, since those are treated as trusted inputs to
-      # the intersection logic -- see the "read patches from base" comment in
-      # the prefetch step below.
+      # `patches/` and `build/extensions.txt` are DELIBERATELY read from the
+      # PR HEAD -- see the "read patches from head" comment in the prefetch
+      # step below for why.
       - name: Run scripts from the base branch, never the PR head
         run: |
           set -euo pipefail

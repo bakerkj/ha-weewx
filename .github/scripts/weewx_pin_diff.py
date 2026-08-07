@@ -527,6 +527,17 @@ def resolve(kind, key, old, new, token):
         r["commit_count"] = count
         r["subjects"] = subjects
         r["files"] = files
+        # gh_compare returns (None, [], {}) on failure. Left unmarked, that is
+        # indistinguishable downstream from a genuinely empty range, and the
+        # briefing's install-manifest section would print a false "mechanically
+        # verified: no change" claim for an extension bump whose fetch never
+        # actually ran. Mark the failure explicitly so the briefing can see it.
+        if count is None:
+            r["note"] = (
+                "GitHub compare API call failed -- commit/file list "
+                "unavailable (see workflow log). This is NOT evidence of "
+                'an empty range; do not treat it as "no upstream changes".'
+            )
     return r
 
 
