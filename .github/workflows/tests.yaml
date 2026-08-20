@@ -43,7 +43,7 @@ jobs:
       HA_VERSION: "2026.1.3"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # uv on the host runner — the MQTT-publisher unit validation host
       # script uses it to build a transient venv with homeassistant +
       # weewx. setup-uv caches the wheels keyed on HA_VERSION so a bump
@@ -105,7 +105,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Cache the sidecar (mariadb:12) + the e2e-tests image as tarballs
       # so we skip the ~5-10 s registry pull + ~5 s pip-install on every
       # run. Key includes the compose file (sidecar tag) and the entire
@@ -166,7 +166,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Same caching pattern as the mariadb job, but for the mosquitto
       # sidecar. mosquitto:2 is only ~10 MB so the pull is cheap; the
       # bigger win here is the cached e2e-tests image (pip install).
@@ -226,7 +226,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Read the shared gha layer cache (the build-checks/integration jobs
       # populate it); build + load the add-on image, then assert the nginx
       # Cache-Control tiers, brotli/gzip, the NOAA njs filter, and the override.
@@ -249,7 +249,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Read the shared gha layer cache; build + load the add-on image, then run
       # it with an empty /config and assert the default new-user path: the
       # template seeds, weewxd runs on Simulator + SQLite, writes an archive
@@ -275,7 +275,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Read the shared gha layer cache; build + load the add-on image, then
       # verify: killing weewxd exits the container, killing nginx exits the
       # container, and the HTTP-poll watchdog triggers an exit when its
@@ -301,7 +301,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       # Read the shared gha layer cache; build + load the add-on image, then
       # boot it with the shipped template + Simulator + archive_interval=5s,
       # wait for the first archive record (so rtgd.setup() reads a populated
