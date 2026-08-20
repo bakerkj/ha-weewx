@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie-2026.06.1@sha256:3256be70f2e53c1b259e45fdc938ef4ca709623eadbf9cbabd5ed99ef644188b
+ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie-2026.08.0@sha256:01e153da2c2579f2cf5010901da7bc31b1dd035921ea46ccaff22e521efa74a7
 
 # ---------------------------------------------------------------------------
 # rtldavis Go binary — RTL-SDR demodulator for Davis ISS. The Python
