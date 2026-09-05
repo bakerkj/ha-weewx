@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.33](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.32...ha-weewx-v0.1.33) (2026-09-05)
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.211 ([#318](https://github.com/bakerkj/ha-weewx/issues/318)) ([4817d7e](https://github.com/bakerkj/ha-weewx/commit/4817d7e7349648cb9e5eae34c281cd73812ba761))
+* **deps:** update anthropics/claude-code-action action to v1.0.212 ([#322](https://github.com/bakerkj/ha-weewx/issues/322)) ([2a05c7a](https://github.com/bakerkj/ha-weewx/commit/2a05c7a84f46721a19d046ede7de2aa239cf29b4))
+* **deps:** update dependency renovate to v44.53.0 ([#319](https://github.com/bakerkj/ha-weewx/issues/319)) ([29da0b5](https://github.com/bakerkj/ha-weewx/commit/29da0b5065c88e8e70a22238ae5078ba90fa15b7))
+* **deps:** update dependency renovate to v44.54.0 ([#320](https://github.com/bakerkj/ha-weewx/issues/320)) ([d4a1729](https://github.com/bakerkj/ha-weewx/commit/d4a1729d371896f33a8eebd8bb6a90285bb13536))
+* **deps:** update dependency renovate to v44.56.0 ([#321](https://github.com/bakerkj/ha-weewx/issues/321)) ([5780531](https://github.com/bakerkj/ha-weewx/commit/5780531ac3ae33364dd83f69e2198a763a4936c3))
+* **deps:** update dependency renovate to v44.56.1 ([#323](https://github.com/bakerkj/ha-weewx/issues/323)) ([892ca1a](https://github.com/bakerkj/ha-weewx/commit/892ca1af0f86973044dc175dbacf1cdff3f09b1f))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.6 ([#317](https://github.com/bakerkj/ha-weewx/issues/317)) ([ffc0220](https://github.com/bakerkj/ha-weewx/commit/ffc02206cf9a5567582cf77bec887a1fb5a3bb72))
+* **deps:** update uv tool to v0.12.10 ([#324](https://github.com/bakerkj/ha-weewx/issues/324)) ([a228342](https://github.com/bakerkj/ha-weewx/commit/a2283429d1076185d602d0d6ad9609510ef3b969))
+* **deps:** update uv tool to v0.12.9 ([#315](https://github.com/bakerkj/ha-weewx/issues/315)) ([accf914](https://github.com/bakerkj/ha-weewx/commit/accf914ca6dc31a230e0d950f636d700f4e39382))
+
 ## [0.1.32](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.31...ha-weewx-v0.1.32) (2026-09-01)
 
 
