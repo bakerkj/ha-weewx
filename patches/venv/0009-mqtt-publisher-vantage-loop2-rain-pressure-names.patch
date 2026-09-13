@@ -1,0 +1,60 @@
+# Two more LOOP2-only weewx fields the Davis Vantage driver emits when
+# [Vantage] loop_request = 2 or 3, both missing from felddy
+# (felddy/weewx-home-assistant v1.0.0) KEY_CONFIG:
+#
+#   rain15        -- 15-minute rainfall total
+#   pressure_raw  -- uncorrected station pressure (before altimeter /
+#                    barometric reduction)
+#
+# Same failure shape as the three LOOP2 winds handled by 0008: the
+# get_key_config() fallback strips numeric suffixes or splits on
+# underscores/camelCase and appends the suffix to the display name, so
+# HA renders "Rainfall 15" / "Pressure Raw" instead of the moving-window
+# / uncorrected quantities they actually are. It also skips the
+# unit_of_measurement resolution for these device_classed sensors,
+# leaving HA with `unit_of_measurement: None` and the
+# "not a valid unit for the device class" warning.
+#
+# Add explicit entries so felddy emits proper names and takes the
+# normal unit-group lookup path (group_pressure -> inHg for pressure_raw,
+# group_rain -> inch for rain15).
+#
+# Names mirror felddy's existing conventions:
+#   rain24 -> "24-Hour Rainfall"       => rain15       -> "15-Minute Rainfall"
+#   pressure -> "Atmospheric Pressure" => pressure_raw -> "Raw Atmospheric Pressure"
+#
+# Unique IDs (weewx_rain15, weewx_pressure_raw) are derived from the
+# weewx key, not the display name, so HA entity_ids stay stable.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -732,6 +732,13 @@
+             "name": "Atmospheric Pressure",
+         },
+     },
++    "pressure_raw": {
++        "metadata": {
++            "device_class": "atmospheric_pressure",
++            "icon": "mdi:gauge",
++            "name": "Raw Atmospheric Pressure",
++        },
++    },
+     "pressureRate": {
+         "metadata": {
+             "icon": "mdi:gauge",
+@@ -752,6 +759,13 @@
+             "name": "Rainfall",
+         },
+     },
++    "rain15": {
++        "metadata": {
++            "device_class": "precipitation",
++            "icon": "mdi:cup-water",
++            "name": "15-Minute Rainfall",
++        },
++    },
+     "rain24": {
+         "metadata": {
+             "device_class": "precipitation",
