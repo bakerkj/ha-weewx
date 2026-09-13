@@ -1,0 +1,52 @@
+# Add unit-lookup aliases in felddy (felddy/weewx-home-assistant v1.0.0)
+# for the Davis Vantage LOOP2 fields whose base key is mapped in weewx
+# core's obs_group_dict but whose LOOP2-suffixed key is not.
+#
+# felddy's get_unit_metadata() calls weewx's getStandardUnitType() which
+# reads obs_group_dict. Weewx core (as of v5.5.0) maps windSpeed10 (as a
+# single exception) but not windSpeed2, windGust10, windGustDir10, rain15
+# or pressure_raw. For every unmapped key felddy gets (None, None) and
+# emits the MQTT discovery config with unit_of_measurement=None; HA then
+# rejects the unit and logs "not a valid unit for the device class"
+# warnings for those entities.
+#
+# 0008 and 0009 gave these keys explicit KEY_CONFIG entries so the
+# discovery NAME reads correctly ("2-Minute Wind Speed" etc.), but
+# get_unit_metadata() runs on a separate code path and was still
+# returning no unit. This patch adds five explicit elif branches to
+# get_unit_metadata() that delegate to the base key's unit lookup,
+# matching the same pattern felddy already uses for
+# sunrise/sunset/stormStart -> dateTime and *ET -> ET.
+#
+# Explicit aliases (not a general suffix-strip fallback) so there is no
+# risk of a wrong-unit mismap for some future digit-suffixed weewx field
+# whose base key is in obs_group_dict but has a different unit group.
+# Each new alias here is one line reviewable in isolation.
+#
+# Verified in-container by running get_unit_metadata(key, UnitSystem.US)
+# for each of the five keys and confirming the returned
+# unit_of_measurement matches the base key's unit (windSpeed2 -> "mph",
+# rain15 -> "in", pressure_raw -> "inHg", etc.) with baselines unchanged.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -90,6 +90,17 @@
+             (target_unit, _) = getStandardUnitType(int(unit_system), "ET")
+         elif measurement_name in {"sunrise", "sunset", "stormStart"}:
+             (target_unit, _) = getStandardUnitType(int(unit_system), "dateTime")
++        # Davis Vantage LOOP2 fields that share a weewx unit group with a
++        # base key that IS mapped in obs_group_dict, but that weewx core
++        # does not map explicitly. Fall back on the base key's unit lookup.
++        elif measurement_name in {"windSpeed2", "windGust10"}:
++            (target_unit, _) = getStandardUnitType(int(unit_system), "windSpeed")
++        elif measurement_name == "windGustDir10":
++            (target_unit, _) = getStandardUnitType(int(unit_system), "windGustDir")
++        elif measurement_name == "rain15":
++            (target_unit, _) = getStandardUnitType(int(unit_system), "rain")
++        elif measurement_name == "pressure_raw":
++            (target_unit, _) = getStandardUnitType(int(unit_system), "pressure")
+         elif _key_has_no_unit(measurement_name):
+             pass  # binary_sensor / enum -- no unit by design, skip warning
+         else:
