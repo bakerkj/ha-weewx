@@ -1,0 +1,64 @@
+# felddy (felddy/weewx-home-assistant v1.0.0) has explicit KEY_CONFIG
+# entries for the LOOP1 wind fields (windSpeed, windGust, windGustDir) and
+# for windSpeed10, but not for the other three LOOP2-only fields --
+# windSpeed2, windGust10, windGustDir10 -- which the Davis Vantage driver
+# emits when [Vantage] loop_request = 2 or 3.
+#
+# Without explicit entries, get_key_config() in utils.py falls through to
+# the regex fallback `(.*?)(\d+)$`: it strips the trailing digits, copies
+# the base key's config (windSpeed, windGust, windGustDir), and appends
+# the stripped suffix to the display name. That produces MQTT-discovery
+# names like "Wind Speed 2", "Wind Gust Speed 10", "Wind Gust Direction 10"
+# -- correct fields, but the display name reads as a duplicate rather than
+# as the LOOP2 moving-average shape it actually is.
+#
+# Add explicit entries so the discovery message names describe the
+# quantity directly, matching felddy's existing "10-Minute Wind Speed"
+# for windSpeed10. Unique IDs (weewx_windSpeed2, ...) are derived from
+# the WeeWX key, not the name, so entity_ids stay stable and no recorded
+# history is lost.
+#
+# felddy is a pip package in the venv, so this patch is applied to the
+# weewx_ha package dir (see venv/ in patches/README.md).
+--- a/utils.py
++++ b/utils.py
+@@ -961,12 +961,25 @@
+             "name": "Wind Gust Speed",
+         },
+     },
++    "windGust10": {
++        "metadata": {
++            "device_class": "wind_speed",
++            "icon": "mdi:windsock",
++            "name": "10-Minute Wind Gust",
++        },
++    },
+     "windGustDir": {
+         "metadata": {
+             "icon": "mdi:compass-rose",
+             "name": "Wind Gust Direction",
+         },
+     },
++    "windGustDir10": {
++        "metadata": {
++            "icon": "mdi:compass-rose",
++            "name": "10-Minute Wind Gust Direction",
++        },
++    },
+     "windSpeed": {
+         "metadata": {
+             "device_class": "wind_speed",
+@@ -974,6 +987,13 @@
+             "name": "Wind Speed",
+         },
+     },
++    "windSpeed2": {
++        "metadata": {
++            "device_class": "wind_speed",
++            "icon": "mdi:windsock",
++            "name": "2-Minute Wind Speed",
++        },
++    },
+     "windSpeed10": {
+         "metadata": {
+             "device_class": "wind_speed",
