@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.34](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.33...ha-weewx-v0.1.34) (2026-09-14)
+
+
+### Bug Fixes
+
+* **patches:** name Vantage LOOP2 rain15 + pressure_raw explicitly in felddy ([#333](https://github.com/bakerkj/ha-weewx/issues/333)) ([c67ce2f](https://github.com/bakerkj/ha-weewx/commit/c67ce2f26e5763a3fe89281640a2507decea6ab0))
+* **patches:** resolve unit_of_measurement for LOOP2 fields in felddy ([#337](https://github.com/bakerkj/ha-weewx/issues/337)) ([5c4f27f](https://github.com/bakerkj/ha-weewx/commit/5c4f27feda73f2b65731647345dcfcfa96ef9e1f))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.223 ([#336](https://github.com/bakerkj/ha-weewx/issues/336)) ([6d248f5](https://github.com/bakerkj/ha-weewx/commit/6d248f53429c09dd710ddd71a19f98ec1c520e04))
+* **deps:** update dependency renovate to v44.83.0 ([#335](https://github.com/bakerkj/ha-weewx/issues/335)) ([91fbf42](https://github.com/bakerkj/ha-weewx/commit/91fbf423f288ddfc35f641276b8521078bd4232b))
+
 ## [0.1.33](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.32...ha-weewx-v0.1.33) (2026-09-13)
 
 
