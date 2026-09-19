@@ -26,7 +26,7 @@ permissions:
 jobs:
   discover:
     name: Discover arches
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       mode: ${{ steps.matrix.outputs.mode }}

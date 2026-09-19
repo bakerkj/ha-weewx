@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release-please:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       # RELEASE_PLEASE_TOKEN is a PAT so the release PR/tag it creates can
       # trigger the addon-build publish workflow (a GITHUB_TOKEN-created tag
