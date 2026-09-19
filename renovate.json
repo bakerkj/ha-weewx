@@ -53,6 +53,17 @@
     },
     {
       "customType": "regex",
+      "description": "Pinned python3 apt package in the renovate-validate workflow. The install runs inside a debian:trixie container that runs check-renovate-apt.py against Renovate's dry-run trace; pin the interpreter so a Debian archive rebuild does not silently shift what the validator runs against.",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/renovate-validate\\.ya?ml$/"
+      ],
+      "matchStrings": ["PYTHON3_APT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "python3",
+      "datasourceTemplate": "deb",
+      "versioningTemplate": "deb"
+    },
+    {
+      "customType": "regex",
       "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd URL in build/install_rtgd.py. The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
       "managerFilePatterns": [
         "/Dockerfile$/",

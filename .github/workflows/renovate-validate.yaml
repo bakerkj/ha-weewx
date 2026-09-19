@@ -15,6 +15,12 @@ jobs:
     name: Validate Renovate config
     runs-on: ubuntu-26.04
     timeout-minutes: 5
+    env:
+      # Exact apt version pin (Debian 13 trixie/main). The install runs
+      # inside a debian:trixie container in the cross-check step, so the
+      # pin resolves against Debian's own archive, not the runner's. Renovate
+      # tracks this via the `deb` datasource (see renovate.json).
+      PYTHON3_APT_VERSION: "3.13.5-1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -83,7 +89,7 @@ jobs:
           # The script reads Renovate's dry-run trace log from the previous
           # step. apt is the authoritative source of truth here; Repology is
           # not.
-          docker run --rm -v "$PWD:/work" -w /work debian:trixie bash -c '
+          docker run --rm -e PYTHON3_APT_VERSION -v "$PWD:/work" -w /work debian:trixie bash -c '
             set -euo pipefail
             # Append -updates and -security suites to apt sources. The classic
             # one-line `deb http://...` syntax inherits the base image keyring
@@ -94,6 +100,6 @@ jobs:
           SRC
             apt-get update -qq
             # debian:trixie minimal image does not ship python3.
-            apt-get install -y --no-install-recommends python3 >/dev/null
+            apt-get install -y --no-install-recommends python3="$PYTHON3_APT_VERSION" >/dev/null
             python3 /work/.github/scripts/check-renovate-apt.py renovate-dry-run.jsonl
           '
