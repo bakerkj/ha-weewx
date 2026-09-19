@@ -110,8 +110,8 @@ repos:
         stages: [commit-msg]
         additional_dependencies: ["@commitlint/config-conventional@21"]
 
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.12
+  - repo: https://github.com/kjanat/actionlint
+    rev: v1.17.0
     hooks:
       - id: actionlint
 
