@@ -30,5 +30,9 @@ mkdir -p /dev/shm/weewx
 # Create marine_data's three tables (coops_realtime, tide_table,
 # ndbc_data) if marine is enabled. The shim owns the DDL itself
 # (portable across MariaDB + SQLite). Idempotent; no-op when the
-# tables already exist or marine isn't enabled.
-WEEWX_CONF="$WEEWX_CONF" python3 /etc/scripts/init_marine_schema.py
+# tables already exist or marine isn't enabled. Soft-fail: a shim
+# error must not block weewxd from starting under set -euo pipefail.
+# If tables never get created, the marine service will surface it at
+# first write; other reports/services keep running.
+WEEWX_CONF="$WEEWX_CONF" python3 /etc/scripts/init_marine_schema.py ||
+  echo "WARNING: init_marine_schema.py failed; marine tables may not exist" >&2

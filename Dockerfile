@@ -211,10 +211,10 @@ RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py
 # interactive setup during `weectl extension install` (asks for CO-OPS
 # tide-station IDs, NDBC buoy IDs), which --yes cannot dismiss. The
 # script drops bin/user/marine_data.py + marine_data_fields.yaml directly
-# and preserves install.py as /opt/weewx-data/scripts/marine_data_installer.py
-# so rootfs/etc/scripts/init_marine_schema.py can invoke its private
-# _create_marine_tables_weewx_compliant at addon start to create the
-# three marine tables from the YAML field definitions.
+# and preserves install.py as scripts/marine_data_installer.py purely
+# for its SHA pin (its hardcoded tide operational fields are mirrored
+# into the addon shim; drift there needs a re-audit). The shim owns the
+# marine DDL directly and does not import the installer at runtime.
 # ---------------------------------------------------------------------------
 RUN --mount=type=bind,source=build/install_marine_data.py,target=/build/install_marine_data.py \
     python3 /build/install_marine_data.py

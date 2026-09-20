@@ -95,8 +95,8 @@ done
 [[ -n "$css" ]] && ok "Seasons report generated + served by nginx (seasons.css 200)" || bad "seasons.css not served within ${CYCLE_TIMEOUT}s"
 
 # --- Phase 3: enable loopdata + skyfield + celestial + marine on SQLite ---
-# Marine's DDL is patched to portable SQL (patches/extensions/0017) so it
-# runs on both MariaDB and SQLite; this phase confirms the SQLite path.
+# The init_marine_schema.py shim emits portable DDL that runs on both
+# MariaDB and SQLite; this phase confirms the SQLite path.
 echo "### Phase 3: enable loopdata/skyfield/celestial/marine and re-cycle"
 docker exec -i "$CTR" /opt/weewx/bin/python3 - <<'PYEOF' || bad "extension enable via configobj failed"
 import configobj
