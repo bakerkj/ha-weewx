@@ -57,6 +57,26 @@ WEEWX_ROOT = /opt/weewx-data
         skin   = Seasons
         enable = True
 
+    # LoopData JSON snapshot on every LOOP packet. Feeds weewx-celestial's
+    # live planetarium page (and any other consumer that fetches the
+    # /loop-data.txt endpoint). Disabled by default — set enable = True
+    # here AND add user.loopdata.LoopData to [Engine] [[Services]]
+    # report_services below.
+    [[LoopDataReport]]
+        skin   = LoopData
+        enable = False
+
+    # Live planetarium page powered by weewx-loopdata + weewx-skyfield.
+    # Enable both LoopDataReport (above) and this report to activate.
+    # loop_data_file is the URL nginx serves the tmpfs file from — the
+    # extension's installer cannot derive it because our loop_data_dir
+    # points outside HTML_ROOT.
+    [[CelestialReport]]
+        skin   = Celestial
+        enable = False
+        [[[Extras]]]
+            loop_data_file = /loop-data.txt
+
 
 ##############################################################################
 #   Unit conversion / calibration / quality control / archiving
@@ -83,6 +103,26 @@ WEEWX_ROOT = /opt/weewx-data
     archive_delay    = 15
     no_catchup       = False
     data_binding     = wx_binding
+
+
+##############################################################################
+#   LoopData — writes loop-data.txt on every LOOP packet for consumers like
+#   weewx-celestial. Routed to /dev/shm/weewx/ so writes hit tmpfs (not the
+#   /config volume); nginx aliases /loop-data.txt to the tmpfs file with a
+#   1s max-age Cache-Control header — see nginx.conf's location block.
+#   Activated by enabling [[LoopDataReport]] and [[CelestialReport]] under
+#   [StdReport], and by adding user.loopdata.LoopData to report_services.
+##############################################################################
+
+[LoopData]
+    [[FileSpec]]
+        loop_data_dir = /dev/shm/weewx
+        filename      = loop-data.txt
+
+    [[LoopFrequency]]
+        # Match your driver's loop cadence in seconds. 2.0 is the Davis
+        # Vantage default; other drivers may differ.
+        seconds = 2.0
 
 
 ##############################################################################

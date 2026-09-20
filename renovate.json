@@ -64,15 +64,16 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd URL in build/install_rtgd.py. The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd + marine URLs in build/install_*.py. The version regex accepts an optional alphanumeric suffix so beta/RC/dev tags like `v1.0.1b`, `v2.0.0rc1`, or `v3.0.dev5` are tracked too (loose versioning handles the compare). The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/pyproject\\.toml$/",
         "/build/extensions\\.txt$/",
-        "/build/install_rtgd\\.py$/"
+        "/build/install_rtgd\\.py$/",
+        "/build/install_marine_data\\.py$/"
       ],
       "matchStrings": [
-        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
+        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+[a-z0-9]*)\\.zip"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose"
@@ -114,9 +115,14 @@
     {
       "customType": "regex",
       "description": "SHA-pinned WeeWX deps on default branch 'main'. See the 'master' companion rule above for the rationale.",
-      "managerFilePatterns": ["/Dockerfile$/", "/build/extensions\\.txt$/"],
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/build/extensions\\.txt$/",
+        "/build/install_marine_data\\.py$/"
+      ],
       "matchStrings": [
-        "github\\.com/(?<depName>chaunceygardiner/weewx-rain24h)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
+        "github\\.com/(?<depName>chaunceygardiner/weewx-rain24h)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
+        "github\\.com/(?<depName>inguy24/weewx-noaa_marine_API)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
       ],
       "packageNameTemplate": "https://github.com/{{depName}}",
       "currentValueTemplate": "main",

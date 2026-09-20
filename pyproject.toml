@@ -15,6 +15,16 @@ dependencies = [
     "six>=1.16",
     # HTTP client used by user.purpleair (and most other "uploader" extensions).
     "requests>=2.32",
+    # Skyfield + numpy: required by user.wxskyfield (chaunceygardiner's
+    # weewx-skyfield). Numpy is Skyfield's own hard dep; pandas is not
+    # pulled in because weewx-skyfield's Hipparcos loader is numpy-only
+    # (see the "pandas is deliberately not a dependency" comment in
+    # weewx-skyfield's wxskyfield.py).
+    "skyfield>=1.47",
+    "numpy",
+    # PyYAML: user.marine_data (inguy24/weewx-noaa_marine_API) imports yaml
+    # at module scope to read its bundled marine_data_fields.yaml.
+    "PyYAML>=6.0",
 ]
 
 [tool.uv]

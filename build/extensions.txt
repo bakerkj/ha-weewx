@@ -34,6 +34,38 @@ https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip
 # install: bin/user/MQTTSubscribe.py
 https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip
 
+# LoopData writes a JSON snapshot on every LOOP packet (~2s cadence).
+# Required by weewx-celestial's live planetarium page. Routed to
+# /dev/shm/weewx/ via weewx.conf.template's [LoopData] [[FileSpec]]
+# loop_data_dir so writes hit tmpfs, not the /config volume.
+# install: bin/user/loopdata.py
+# install: skins/LoopData
+# install: skins/ScriptData
+https://github.com/chaunceygardiner/weewx-loopdata/archive/v7.4.1.zip
+
+# Modern Skyfield-based almanac. 118,218-star Hipparcos catalog + DE421
+# ephemeris ship in the zip (no runtime download at first start).
+# Satellite orbital elements refresh from CelesTrak every ~3h, comets
+# from MPC every ~2d at runtime — the extension's config lets us disable
+# either if fully-offline is required.
+# install: bin/user/wxskyfield.py
+# install: bin/user/wxskyfield_sky.py
+# install: bin/user/wxskyfield_stars.dat.gz
+# install: bin/user/wxskyfield_lines.dat
+# install: bin/user/wxskyfield_de421.bsp
+# install: skins/Skyfield
+https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.6.2.zip
+
+# Live planetarium page. Requires weewx-loopdata 7.0+ and
+# weewx-skyfield 2.6+ (installer refuses older). Reads loop-data.txt from
+# the URL set in [StdReport] [[CelestialReport]] [[[Extras]]]
+# loop_data_file — served by nginx from /dev/shm/weewx/loop-data.txt.
+# install: bin/user/celestial.py
+# install: bin/user/celestial_page.py
+# install: bin/user/celestial_sky.py
+# install: skins/Celestial
+https://github.com/chaunceygardiner/weewx-celestial/archive/v9.5.1.zip
+
 # install: bin/user/opensensemap.py
 https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip
 

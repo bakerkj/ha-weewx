@@ -21,3 +21,15 @@ if [[ ! -f "$WEEWX_CONF" ]]; then
 else
   echo "Using existing $WEEWX_CONF (edit directly to change WeeWX configuration)"
 fi
+
+# LoopData and weewx-celestial write /dev/shm/weewx/loop-data.txt every
+# LOOP packet. Ensure the directory exists on tmpfs before weewxd boots
+# (weewx-loopdata refuses to start if its output dir is missing).
+mkdir -p /dev/shm/weewx
+
+# Create marine_data's three tables (coops_realtime, tide_table,
+# ndbc_data) if marine_data is registered as a data_service. See
+# init_marine_schema.py for why we invoke the extension's private
+# schema-init method rather than owning the SQL ourselves. Idempotent;
+# no-op when the tables already exist or marine_data isn't enabled.
+WEEWX_CONF="$WEEWX_CONF" python3 /etc/scripts/init_marine_schema.py
