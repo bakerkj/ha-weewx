@@ -10,7 +10,7 @@
 # install behaviour changes; the in-image assertion then tracks the new
 # layout without a separate edit to check_image.sh.
 #
-# Paths are relative to /opt/weewx-data/ — typically:
+# Paths are relative to /opt/weewx-data/ - typically:
 #   bin/user/<module>.py    a python module under user/
 #   skins/<name>            a skin directory
 #
@@ -46,7 +46,7 @@ https://github.com/chaunceygardiner/weewx-loopdata/archive/v7.4.1.zip
 # Modern Skyfield-based almanac. 118,218-star Hipparcos catalog + DE421
 # ephemeris ship in the zip (no runtime download at first start).
 # Satellite orbital elements refresh from CelesTrak every ~3h, comets
-# from MPC every ~2d at runtime — the extension's config lets us disable
+# from MPC every ~2d at runtime - the extension's config lets us disable
 # either if fully-offline is required.
 # install: bin/user/wxskyfield.py
 # install: bin/user/wxskyfield_sky.py
@@ -59,7 +59,7 @@ https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.6.2.zip
 # Live planetarium page. Requires weewx-loopdata 7.0+ and
 # weewx-skyfield 2.6+ (installer refuses older). Reads loop-data.txt from
 # the URL set in [StdReport] [[CelestialReport]] [[[Extras]]]
-# loop_data_file — served by nginx from /dev/shm/weewx/loop-data.txt.
+# loop_data_file - served by nginx from /dev/shm/weewx/loop-data.txt.
 # install: bin/user/celestial.py
 # install: bin/user/celestial_page.py
 # install: bin/user/celestial_sky.py
@@ -90,7 +90,7 @@ https://github.com/lheijst/weewx-rtldavis/archive/2f3b4b344fd70ab253aabfa837b0ff
 # install: bin/user/thingspeak.py
 https://github.com/matthewwall/weewx-thingspeak/archive/a1ffa8e.zip
 
-# WeatherFlow Tempest station driver — reads UDP broadcasts on port 50222
+# WeatherFlow Tempest station driver - reads UDP broadcasts on port 50222
 # from a WeatherFlow Hub on the local network. Configured via
 # `station_type = WeatherFlowUDP` in [Station] and a [WeatherFlowUDP]
 # section that maps hub fields (air_temperature.<serial>.obs_st, etc.)

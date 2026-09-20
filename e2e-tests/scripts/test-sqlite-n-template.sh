@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# SQLite + Template e2e — the default new-user path (the maria+mqtt e2e instead
+# SQLite + Template e2e - the default new-user path (the maria+mqtt e2e instead
 # mounts test/weewx.conf + MariaDB). Boots the image with an empty /config.
 #
-#   Phase 1 — start with an EMPTY /config so weewx-init seeds the *shipped*
+#   Phase 1 - start with an EMPTY /config so weewx-init seeds the *shipped*
 #             template, and assert the seeding + the SQLite schema init.
-#   Phase 2 — drop archive_interval to 5s (the template ships 300s, which would
+#   Phase 2 - drop archive_interval to 5s (the template ships 300s, which would
 #             make the first archive record take up to ~5 min) and restart, then
 #             assert the full loop -> archive -> report -> nginx cycle, which is
 #             the same code path regardless of the interval.
@@ -47,7 +47,7 @@ except Exception: print("noschema")' 2>/dev/null
 }
 
 # --- Phase 1: first boot from an empty /config (seeds the shipped template) ---
-echo "### Phase 1: first boot — seed shipped template + init SQLite"
+echo "### Phase 1: first boot - seed shipped template + init SQLite"
 docker run -d --name "$CTR" -e S6_KEEP_ENV=1 -p "$PORT:8099" "$IMAGE" >/dev/null
 start=$(date +%s)
 seeded="" schema=""
@@ -94,14 +94,85 @@ done
 [[ -n "$rec" ]] && ok "archive record written to SQLite (count>=1)" || bad "no archive record within ${CYCLE_TIMEOUT}s"
 [[ -n "$css" ]] && ok "Seasons report generated + served by nginx (seasons.css 200)" || bad "seasons.css not served within ${CYCLE_TIMEOUT}s"
 
+# --- Phase 3: enable loopdata + skyfield + celestial + marine on SQLite ---
+# Marine's DDL is patched to portable SQL (patches/extensions/0017) so it
+# runs on both MariaDB and SQLite; this phase confirms the SQLite path.
+echo "### Phase 3: enable loopdata/skyfield/celestial/marine and re-cycle"
+docker exec -i "$CTR" /opt/weewx/bin/python3 - <<'PYEOF' || bad "extension enable via configobj failed"
+import configobj
+# encoding=utf-8 on read AND write: the shipped template's comments
+# contain non-ASCII characters that configobj.write() would reject
+# with its default ASCII encoding.
+c = configobj.ConfigObj("/config/weewx.conf", encoding="utf-8")
+c["StdReport"]["LoopDataReport"]["enable"] = "True"
+c["StdReport"]["CelestialReport"]["enable"] = "True"
+# Marine's runtime service (user.marine_data.MarineDataService) needs
+# NOAA station selection + field mappings from the interactive installer
+# to pass its own validate() step; without them it self-disables with 5
+# ERROR lines. We're only testing that init_marine_schema.py creates
+# the tables, so enable the schema-init signal only, not the service.
+c.setdefault("MarineDataService", {})["enable"] = "true"
+svc = c["Engine"]["Services"]
+# services fields are comma-lists in weewx.conf; assign a Python list
+# so configobj writes them unquoted comma-separated. A string concat
+# ("a" + ", b") gets quoted as a SINGLE value and weewxd then tries to
+# import the whole thing as one module name.
+def _as_list(v):
+    if isinstance(v, list): return list(v)
+    return [x.strip() for x in v.split(",") if x.strip()] if v else []
+svc["data_services"] = _as_list(svc.get("data_services", "")) + ["user.wxskyfield.WxSkyfield"]
+svc["report_services"] = _as_list(svc.get("report_services", "")) + ["user.loopdata.LoopData"]
+c.write()
+PYEOF
+docker restart "$CTR" >/dev/null
+start=$(date +%s)
+loop_json="" celestial_html="" skyfield_boot=""
+while [[ $(($(date +%s) - start)) -lt "$CYCLE_TIMEOUT" ]]; do
+  ljs="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/loop-data.txt" 2>/dev/null)"
+  chs="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/celestial/" 2>/dev/null)"
+  sky="no"
+  # Check the shipped [Logging] rotate handler's file inside the container
+  # rather than `docker logs`; the docker-daemon log stream is racy across
+  # a Phase 3 restart in a way we haven't fully explained. grep returns
+  # non-zero on missing file, so no `test -f` guard needed.
+  dexec grep -qE "user\.wxskyfield INFO Skyfield almanac registered" /config/log/weewx.log 2>/dev/null && sky="yes"
+  echo "  [$(($(date +%s) - start))s] loop-data=${ljs}  celestial=${chs}  skyfield=${sky}"
+  [[ "$ljs" == 200 ]] && loop_json=1
+  [[ "$chs" == 200 ]] && celestial_html=1
+  [[ "$sky" == yes ]] && skyfield_boot=1
+  [[ -n "$loop_json" && -n "$celestial_html" && -n "$skyfield_boot" ]] && break
+  sleep 5
+done
+[[ -n "$loop_json" ]] && ok "loopdata /loop-data.txt served on SQLite" || bad "loopdata never served /loop-data.txt on SQLite"
+[[ -n "$celestial_html" ]] && ok "celestial /celestial/ served on SQLite" || bad "celestial never served on SQLite"
+[[ -n "$skyfield_boot" ]] && ok "weewx-skyfield boot line in log" || bad "weewx-skyfield never logged its startup"
+
+# Let one more report cycle land so ERROR/CRITICAL guards see it.
+sleep 8
+
+# Marine tables (patched to portable DDL) must be present in the SQLite DB.
+marine_tables="$(dexec /opt/weewx/bin/python3 -c 'import sqlite3
+c = sqlite3.connect("/config/db/weewx.sdb")
+rows = c.execute("SELECT name FROM sqlite_master WHERE type=\"table\" AND name IN (\"coops_realtime\",\"tide_table\",\"ndbc_data\")").fetchall()
+print(",".join(sorted(r[0] for r in rows)))' 2>/dev/null)"
+if [[ "$marine_tables" == "coops_realtime,ndbc_data,tide_table" ]]; then
+  ok "marine tables created on SQLite (coops_realtime, ndbc_data, tide_table)"
+else
+  bad "marine tables missing on SQLite (found: '${marine_tables}')"
+fi
+
 # weewxd must log no ERROR/CRITICAL across first boot. Match the space-delimited
 # level field so an INFO line that merely mentions "error" (e.g. "Clock error
-# is ...") is not a false positive.
-if docker logs "$CTR" 2>&1 | grep -qE ' (ERROR|CRITICAL) '; then
+# is ...") is not a false positive. Known-issue lines from upstream celestial
+# needing add-satellite/add-comet configuration are filtered out here.
+unexpected_errors="$(docker logs "$CTR" 2>&1 |
+  grep -E ' (ERROR|CRITICAL) ' |
+  grep -vE 'user\.celestial_page ERROR .*(names|leaves) the .* panel')"
+if [[ -n "$unexpected_errors" ]]; then
   bad "weewxd logged ERROR/CRITICAL on first boot:"
-  docker logs "$CTR" 2>&1 | grep -E ' (ERROR|CRITICAL) ' | head
+  echo "$unexpected_errors" | head
 else
-  ok "no ERROR/CRITICAL in the weewxd log"
+  ok "no unexpected ERROR/CRITICAL in the weewxd log"
 fi
 
 # Syslog-spam guard: the "Logging error" / "/dev/log" Python-logging

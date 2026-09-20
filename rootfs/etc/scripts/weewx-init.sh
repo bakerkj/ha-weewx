@@ -12,7 +12,7 @@ WEEWX_CONF="/config/weewx.conf"
 mkdir -p /config /config/db /config/log
 
 # Seed weewx.conf from the bundled template on first start. Subsequent starts
-# leave the file alone — edit it directly to change WeeWX configuration.
+# leave the file alone - edit it directly to change WeeWX configuration.
 # Delete the file to force a re-seed.
 if [[ ! -f "$WEEWX_CONF" ]]; then
   echo "First start: copying template to $WEEWX_CONF"
@@ -28,8 +28,7 @@ fi
 mkdir -p /dev/shm/weewx
 
 # Create marine_data's three tables (coops_realtime, tide_table,
-# ndbc_data) if marine_data is registered as a data_service. See
-# init_marine_schema.py for why we invoke the extension's private
-# schema-init method rather than owning the SQL ourselves. Idempotent;
-# no-op when the tables already exist or marine_data isn't enabled.
+# ndbc_data) if marine is enabled. The shim owns the DDL itself
+# (portable across MariaDB + SQLite). Idempotent; no-op when the
+# tables already exist or marine isn't enabled.
 WEEWX_CONF="$WEEWX_CONF" python3 /etc/scripts/init_marine_schema.py
