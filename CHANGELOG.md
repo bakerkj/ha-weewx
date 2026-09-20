@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.1.35](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.34...ha-weewx-v0.1.35) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ci:** pin python3 apt version in renovate-validate and let renovate track it ([#361](https://github.com/bakerkj/ha-weewx/issues/361)) ([e02b3b0](https://github.com/bakerkj/ha-weewx/commit/e02b3b0d9049fec4668c0df2a32b682f4535ec4e))
+* **ci:** read e2e sidecar image tags from the compose files at run time ([#358](https://github.com/bakerkj/ha-weewx/issues/358)) ([7261793](https://github.com/bakerkj/ha-weewx/commit/7261793b1b267192523dacd4c96650c526e8c9ae))
+* **deps:** update weewx to v5.5.1 ([#363](https://github.com/bakerkj/ha-weewx/issues/363)) ([e1b7fff](https://github.com/bakerkj/ha-weewx/commit/e1b7fff4fbb4b7a01c64bee2bf1e3853b815f09e))
+* **renovate:** delete broken home-assistant/builder customManager ([#352](https://github.com/bakerkj/ha-weewx/issues/352)) ([f98b569](https://github.com/bakerkj/ha-weewx/commit/f98b569c05f5863c67dd533734a121ca625b62e9))
+* **renovate:** don't duplicate runs-on detection with the built-in manager ([#351](https://github.com/bakerkj/ha-weewx/issues/351)) ([00d5d07](https://github.com/bakerkj/ha-weewx/commit/00d5d0769d660349f14ec1451f4a78584cf8b9a2))
+* **renovate:** group shell-runner detections with built-in github-actions ([#357](https://github.com/bakerkj/ha-weewx/issues/357)) ([0cdf948](https://github.com/bakerkj/ha-weewx/commit/0cdf9488659f878d910a2d06f00da93ee62b31e7))
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.225 ([#342](https://github.com/bakerkj/ha-weewx/issues/342)) ([f6f255a](https://github.com/bakerkj/ha-weewx/commit/f6f255addb63538512f8222603338ae6ba0de08d))
+* **deps:** update anthropics/claude-code-action action to v1.0.231 ([#360](https://github.com/bakerkj/ha-weewx/issues/360)) ([bfa2ca9](https://github.com/bakerkj/ha-weewx/commit/bfa2ca95b0fd1098e8011dc694e5fb2e427e6e8e))
+* **deps:** update debian docker tag to v13.7 ([#356](https://github.com/bakerkj/ha-weewx/issues/356)) ([03b148d](https://github.com/bakerkj/ha-weewx/commit/03b148df8221d3604bb145afd070e42ee1450ea6))
+* **deps:** update dependency nginx-light to v1.26.3-3+deb13u9 ([#343](https://github.com/bakerkj/ha-weewx/issues/343)) ([2719a4d](https://github.com/bakerkj/ha-weewx/commit/2719a4d40dcd6230cd3b476eaaa17b3d91dd2144))
+* **deps:** update dependency pymysql to v1.2.3 ([#344](https://github.com/bakerkj/ha-weewx/issues/344)) ([be68ba9](https://github.com/bakerkj/ha-weewx/commit/be68ba9e312cf4b0b628882a336298436ab4e67a))
+* **deps:** update dependency renovate to v44.103.2 ([#362](https://github.com/bakerkj/ha-weewx/issues/362)) ([3ea6b17](https://github.com/bakerkj/ha-weewx/commit/3ea6b1791e23c2da66fa5e5ac2224cb557e1aa0f))
+* **deps:** update dependency renovate to v44.103.6 ([#364](https://github.com/bakerkj/ha-weewx/issues/364)) ([84d4b07](https://github.com/bakerkj/ha-weewx/commit/84d4b074126030c9fb5c158658327c9074b28ee9))
+* **deps:** update dependency renovate to v44.94.0 ([#359](https://github.com/bakerkj/ha-weewx/issues/359)) ([91bd26f](https://github.com/bakerkj/ha-weewx/commit/91bd26f10388728b70d5842b9cf6019d31088cd8))
+* **deps:** update dependency ubuntu to v26 ([#350](https://github.com/bakerkj/ha-weewx/issues/350)) ([10ae83e](https://github.com/bakerkj/ha-weewx/commit/10ae83e3a5fc75a1e6ce2cc281cc4413c20a9306))
+* **deps:** update dependency ubuntu to v26 ([#355](https://github.com/bakerkj/ha-weewx/issues/355)) ([eece4ea](https://github.com/bakerkj/ha-weewx/commit/eece4eac7ba083452fd2e61b93da4c421ac20254))
+* **deps:** update github-actions ([#347](https://github.com/bakerkj/ha-weewx/issues/347)) ([eb699e4](https://github.com/bakerkj/ha-weewx/commit/eb699e4547006929d2a6abeecf9439e9308ccf3c))
+* **deps:** update github-actions ([#349](https://github.com/bakerkj/ha-weewx/issues/349)) ([48e6472](https://github.com/bakerkj/ha-weewx/commit/48e6472c8b92e0b53c9cf4aad00754dcb65e0595))
+* **deps:** update home-assistant/builder action to v2026.09.0 ([#353](https://github.com/bakerkj/ha-weewx/issues/353)) ([a152da9](https://github.com/bakerkj/ha-weewx/commit/a152da9e8a75be611158116f99f9fc7386f38b6f))
+* **deps:** update mariadb docker tag to v13 ([#341](https://github.com/bakerkj/ha-weewx/issues/341)) ([b849649](https://github.com/bakerkj/ha-weewx/commit/b8496497b1379f0da5b26a93c4132b22e43b891b))
+* **deps:** update pre-commit hook rbubley/mirrors-prettier to v3.9.8 ([#346](https://github.com/bakerkj/ha-weewx/issues/346)) ([3a22e31](https://github.com/bakerkj/ha-weewx/commit/3a22e31929a5be1eee037b936ea9520012de79e3))
+* **deps:** update pre-commit hooks ([#338](https://github.com/bakerkj/ha-weewx/issues/338)) ([24dac43](https://github.com/bakerkj/ha-weewx/commit/24dac43596ce8f74cdbd07da9463789aaa501f2c))
+* **deps:** update uv tool to v0.12.15 ([#340](https://github.com/bakerkj/ha-weewx/issues/340)) ([c103454](https://github.com/bakerkj/ha-weewx/commit/c1034546151c58d3cf9ea589a0d4e5003d4d6d7e))
+* **deps:** update uv tool to v0.12.16 ([#345](https://github.com/bakerkj/ha-weewx/issues/345)) ([f72cc6d](https://github.com/bakerkj/ha-weewx/commit/f72cc6dfafe9acc537197c88c92d4f5927629a34))
+* **deps:** update uv tool to v0.12.17 ([#348](https://github.com/bakerkj/ha-weewx/issues/348)) ([63eaa12](https://github.com/bakerkj/ha-weewx/commit/63eaa124cd5d121a0f3085d3f8701c8cb7c4663f))
+* switch actionlint pre-commit hook from rhysd (stale) to kjanat fork ([#354](https://github.com/bakerkj/ha-weewx/issues/354)) ([9842be1](https://github.com/bakerkj/ha-weewx/commit/9842be1b4d30bd2413c7a0085b88b33a61fb0ed6))
+
 ## [0.1.34](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.33...ha-weewx-v0.1.34) (2026-09-14)
 
 
