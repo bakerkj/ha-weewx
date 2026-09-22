@@ -163,16 +163,13 @@ fi
 
 # weewxd must log no ERROR/CRITICAL across first boot. Match the space-delimited
 # level field so an INFO line that merely mentions "error" (e.g. "Clock error
-# is ...") is not a false positive. Known-issue lines from upstream celestial
-# needing add-satellite/add-comet configuration are filtered out here.
-unexpected_errors="$(docker logs "$CTR" 2>&1 |
-  grep -E ' (ERROR|CRITICAL) ' |
-  grep -vE 'user\.celestial_page ERROR .*(names|leaves) the .* panel')"
+# is ...") is not a false positive.
+unexpected_errors="$(docker logs "$CTR" 2>&1 | grep -E ' (ERROR|CRITICAL) ')"
 if [[ -n "$unexpected_errors" ]]; then
   bad "weewxd logged ERROR/CRITICAL on first boot:"
   echo "$unexpected_errors" | head
 else
-  ok "no unexpected ERROR/CRITICAL in the weewxd log"
+  ok "no ERROR/CRITICAL in the weewxd log"
 fi
 
 # Syslog-spam guard: the "Logging error" / "/dev/log" Python-logging

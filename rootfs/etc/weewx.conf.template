@@ -77,6 +77,19 @@ WEEWX_ROOT = /opt/weewx-data
         enable    = False
         [[[Extras]]]
             loop_data_file = /loop-data.txt
+        # Declare empty satellites/comets field groups so the extension's
+        # page-time check sees the config as synced. Pair with the empty
+        # [Skyfield] [[Satellites]] / [[Comets]] sections below; without
+        # both, celestial's checker considers the four embedded panels
+        # (countdown/geocentric/dome/pass) "out of date" and injects an
+        # error line into every panel on the rendered page. To enable
+        # a specific satellite or comet, add it under [Skyfield] and
+        # re-run `weectl extension install celestial-installer` inside
+        # the addon container.
+        [[[LoopData]]]
+            [[[[fields]]]]
+                satellites =
+                comets =
 
 
 ##############################################################################
@@ -124,6 +137,20 @@ WEEWX_ROOT = /opt/weewx-data
         # Match your driver's loop cadence in seconds. 2.0 is the Davis
         # Vantage default; other drivers may differ.
         seconds = 2.0
+
+
+##############################################################################
+#   Skyfield - the [[Satellites]] and [[Comets]] sections are the source of
+#   truth for what CelestialReport declares as page fields. Empty sections
+#   opt out of the celestial installer's defaults (iss/tiangong/halley/
+#   hale_bopp) so its page-time check treats CelestialReport as synced. To
+#   enable a specific body, add a subsection here (e.g. [[[iss]]]) and
+#   re-run `weectl extension install celestial-installer` inside the addon.
+##############################################################################
+
+[Skyfield]
+    [[Satellites]]
+    [[Comets]]
 
 
 ##############################################################################
