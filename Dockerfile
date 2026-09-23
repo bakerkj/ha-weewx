@@ -233,7 +233,7 @@ RUN --mount=type=bind,source=build/install_marine_data.py,target=/build/install_
 RUN curl --fail --silent --show-error --location \
     --retry 4 --retry-all-errors \
     --output /opt/weewx-data/bin/user/xstats.py \
-    https://raw.githubusercontent.com/weewx/weewx/v5.5.1/src/weewx_data/examples/xstats/bin/user/xstats.py
+    https://raw.githubusercontent.com/weewx/weewx/v5.5.2/src/weewx_data/examples/xstats/bin/user/xstats.py
 
 # ---------------------------------------------------------------------------
 # Apply patches. Each .patch is a unified diff applied with `patch -p1` in
