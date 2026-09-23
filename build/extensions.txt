@@ -41,7 +41,7 @@ https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip
 # install: bin/user/loopdata.py
 # install: skins/LoopData
 # install: skins/ScriptData
-https://github.com/chaunceygardiner/weewx-loopdata/archive/v7.4.1.zip
+https://github.com/chaunceygardiner/weewx-loopdata/archive/v7.5.1.zip
 
 # Modern Skyfield-based almanac. 118,218-star Hipparcos catalog + DE421
 # ephemeris ship in the zip (no runtime download at first start).
