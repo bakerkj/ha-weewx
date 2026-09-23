@@ -24,7 +24,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   Driver — replace [Simulator] with the section for your station driver.
+#   Driver - replace [Simulator] with the section for your station driver.
 #   See https://weewx.com/docs/5.3/usersguide/hardware/ for supported drivers.
 ##############################################################################
 
@@ -44,7 +44,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   Reports — generated HTML lands under /config/www so the HA ingress panel
+#   Reports - generated HTML lands under /config/www so the HA ingress panel
 #   can serve it. Override HTML_ROOT if you want it elsewhere.
 ##############################################################################
 
@@ -56,6 +56,40 @@ WEEWX_ROOT = /opt/weewx-data
     [[SeasonsReport]]
         skin   = Seasons
         enable = True
+
+    # LoopData JSON snapshot on every LOOP packet. Feeds weewx-celestial's
+    # live planetarium page (and any other consumer that fetches the
+    # /loop-data.txt endpoint). Disabled by default - set enable = True
+    # here AND add user.loopdata.LoopData to [Engine] [[Services]]
+    # report_services below.
+    [[LoopDataReport]]
+        skin   = LoopData
+        enable = False
+
+    # Live planetarium page powered by weewx-loopdata + weewx-skyfield.
+    # Enable both LoopDataReport (above) and this report to activate.
+    # loop_data_file is the URL nginx serves the tmpfs file from - the
+    # extension's installer cannot derive it because our loop_data_dir
+    # points outside HTML_ROOT.
+    [[CelestialReport]]
+        skin      = Celestial
+        HTML_ROOT = /config/www/celestial
+        enable    = False
+        [[[Extras]]]
+            loop_data_file = /loop-data.txt
+        # Declare empty satellites/comets field groups so the extension's
+        # page-time check sees the config as synced. Pair with the empty
+        # [Skyfield] [[Satellites]] / [[Comets]] sections below; without
+        # both, celestial's checker considers the four embedded panels
+        # (countdown/geocentric/dome/pass) "out of date" and injects an
+        # error line into every panel on the rendered page. To enable
+        # a specific satellite or comet, add it under [Skyfield] and
+        # re-run `weectl extension install celestial-installer` inside
+        # the addon container.
+        [[[LoopData]]]
+            [[[[fields]]]]
+                satellites =
+                comets =
 
 
 ##############################################################################
@@ -86,7 +120,41 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   Databases — default is SQLite under /config so it persists across image
+#   LoopData - writes loop-data.txt on every LOOP packet for consumers like
+#   weewx-celestial. Routed to /dev/shm/weewx/ so writes hit tmpfs (not the
+#   /config volume); nginx aliases /loop-data.txt to the tmpfs file with a
+#   1s max-age Cache-Control header - see nginx.conf's location block.
+#   Activated by enabling [[LoopDataReport]] and [[CelestialReport]] under
+#   [StdReport], and by adding user.loopdata.LoopData to report_services.
+##############################################################################
+
+[LoopData]
+    [[FileSpec]]
+        loop_data_dir = /dev/shm/weewx
+        filename      = loop-data.txt
+
+    [[LoopFrequency]]
+        # Match your driver's loop cadence in seconds. 2.0 is the Davis
+        # Vantage default; other drivers may differ.
+        seconds = 2.0
+
+
+##############################################################################
+#   Skyfield - the [[Satellites]] and [[Comets]] sections are the source of
+#   truth for what CelestialReport declares as page fields. Empty sections
+#   opt out of the celestial installer's defaults (iss/tiangong/halley/
+#   hale_bopp) so its page-time check treats CelestialReport as synced. To
+#   enable a specific body, add a subsection here (e.g. [[[iss]]]) and
+#   re-run `weectl extension install celestial-installer` inside the addon.
+##############################################################################
+
+[Skyfield]
+    [[Satellites]]
+    [[Comets]]
+
+
+##############################################################################
+#   Databases - default is SQLite under /config so it persists across image
 #   upgrades. Switch to MariaDB by changing wx_binding's database to
 #   archive_mysql and filling in [[archive_mysql]] credentials.
 ##############################################################################
@@ -113,7 +181,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   StdRESTful — HA Station Registry, Weather Underground, etc.
+#   StdRESTful - HA Station Registry, Weather Underground, etc.
 #   Add the matching service entries to [Engine][[Services]] restful_services
 #   below to activate.
 ##############################################################################
@@ -124,7 +192,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   Engine services — base set only. To enable a bundled extension, add its
+#   Engine services - base set only. To enable a bundled extension, add its
 #   service to the appropriate list AND configure its section above. See the
 #   add-on README for the list of bundled extensions and their service paths.
 ##############################################################################
@@ -141,7 +209,7 @@ WEEWX_ROOT = /opt/weewx-data
 
 
 ##############################################################################
-#   Logging — write to stdout so logs appear in the HA add-on log viewer.
+#   Logging - write to stdout so logs appear in the HA add-on log viewer.
 ##############################################################################
 
 [Logging]
@@ -149,7 +217,7 @@ WEEWX_ROOT = /opt/weewx-data
     disable_existing_loggers = False
 
     # WeeWX's built-in default points the root logger at syslog (/dev/log),
-    # which does not exist in this container — that spams a "Logging error"
+    # which does not exist in this container - that spams a "Logging error"
     # traceback on every record. Override the root logger to log to stdout (the
     # HA add-on log viewer) AND to a rotating file at /config/log/weewx.log,
     # which survives restarts and is reachable on the host at

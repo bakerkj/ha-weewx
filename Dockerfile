@@ -1,7 +1,7 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie-2026.08.0@sha256:01e153da2c2579f2cf5010901da7bc31b1dd035921ea46ccaff22e521efa74a7
 
 # ---------------------------------------------------------------------------
-# rtldavis Go binary — RTL-SDR demodulator for Davis ISS. The Python
+# rtldavis Go binary - RTL-SDR demodulator for Davis ISS. The Python
 # rtldavis driver popen()s it when station_type = Rtldavis is selected.
 # Built as a separate stage so the Go toolchain never ships in the
 # final image. Pinned to upstream master since the project has no
@@ -30,13 +30,13 @@ RUN git checkout "$RTLDAVIS_REF" && git submodule update --init --recursive \
  && go build -trimpath -ldflags="-s -w" -o /out/rtldavis .
 
 # ---------------------------------------------------------------------------
-# xtide + libtcd + harmonics-dwf — Debian dropped the `xtide` package after
+# xtide + libtcd + harmonics-dwf - Debian dropped the `xtide` package after
 # bullseye (11), so trixie has no `apt install xtide`. weewx-forecast's
 # [Forecast] XTide source popen()s the `tide` binary and reads tide
 # constants from a `.tcd` harmonics file; both must ship in the image.
 #
 # The three upstream tarballs live on flaterco.com and have no supported
-# Renovate datasource — bump ARG versions AND the paired sha256 manually
+# Renovate datasource - bump ARG versions AND the paired sha256 manually
 # when flaterco publishes a new release. Confirm sha256 against a fresh
 # `curl -sL https://flaterco.com/files/xtide/<file> | sha256sum`.
 #
@@ -101,9 +101,9 @@ RUN wget -q -O /build/harmonics.tar.xz \
 # ---------------------------------------------------------------------------
 # Single-stage runtime image. apt provides only OS-level bits (python3,
 # libusb, librtlsdr0, and the mariadb/nginx/ssh/rsync runtime tools); every
-# Python library — weewx, the MQTT publisher (by felddy), and their
+# Python library - weewx, the MQTT publisher (by felddy), and their
 # dependencies (Pillow, Cheetah, pyephem, pyserial, pyusb, PyMySQL, paho,
-# pydantic) — is installed by uv as wheels. Nothing compiles in this stage,
+# pydantic) - is installed by uv as wheels. Nothing compiles in this stage,
 # so there are no gcc/-dev headers; uv is bind-mounted for the build only
 # and is never shipped in the image.
 # ---------------------------------------------------------------------------
@@ -124,13 +124,13 @@ LABEL \
 
 # Only OS-level bits come from apt: python3 (the interpreter uv builds the venv
 # on), libusb (the C library pyusb binds at runtime for USB drivers), and the
-# runtime tools — nginx (ingress) plus its brotli filter module (better-than-
+# runtime tools - nginx (ingress) plus its brotli filter module (better-than-
 # gzip compression of the report text payload; zstd is not packaged for nginx
 # in trixie) and njs (libnginx-mod-http-js, used for the per-request NOAA
 # Cache-Control filter), openssh-client / rsync (report uploads), patch
 # (build-time extension patching). MariaDB access at runtime goes through
 # PyMySQL (Python lib, installed by uv below), so no mariadb CLI is needed.
-# Every Python library is installed by uv below, as wheels — nothing compiles.
+# Every Python library is installed by uv below, as wheels - nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b10 \
     curl=8.14.1-2+deb13u5 \
@@ -148,7 +148,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # Replace the distro nginx config with our ingress-port server. The user
-# never edits this — they put files in /config/www/ and nginx serves them.
+# never edits this - they put files in /config/www/ and nginx serves them.
 COPY nginx.conf /etc/nginx/nginx.conf
 
 ENV PATH="/opt/weewx/bin:$PATH" \
@@ -158,7 +158,7 @@ ENV PATH="/opt/weewx/bin:$PATH" \
 # final image). `uv sync --frozen` builds the venv at /opt/weewx on the system
 # python3 and installs the locked deps from uv.lock (weewx + the MQTT
 # publisher (by felddy) + Pillow/pydantic/Cheetah/pyephem/pyserial/pyusb/
-# PyMySQL/paho) as wheels — nothing compiles. pyproject.toml/uv.lock are
+# PyMySQL/paho) as wheels - nothing compiles. pyproject.toml/uv.lock are
 # bind-mounted, so they add no image layer.
 RUN --mount=from=ghcr.io/astral-sh/uv:0.12.17,source=/uv,target=/usr/local/bin/uv \
     --mount=type=bind,source=pyproject.toml,target=/build/pyproject.toml \
@@ -181,7 +181,7 @@ RUN --mount=type=bind,source=build/seed_skins.py,target=/build/seed_skins.py \
     python3 /build/seed_skins.py
 
 # Build-time stub weewx.conf so weectl extension install knows where to drop
-# user modules and skins. Removed at the end of the build — runtime uses
+# user modules and skins. Removed at the end of the build - runtime uses
 # /config/weewx.conf only. See build/seed_build_conf.py for the rationale
 # (why a [Logging] block is needed and why root logger is WARNING).
 RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_conf.py \
@@ -190,7 +190,7 @@ RUN --mount=type=bind,source=build/seed_build_conf.py,target=/build/seed_build_c
 # ---------------------------------------------------------------------------
 # Install extensions listed in build/extensions.txt (pinned versions).
 # build/install_extensions.sh iterates the list under `set -euo pipefail`,
-# so the first `weectl extension install` that fails aborts the build —
+# so the first `weectl extension install` that fails aborts the build -
 # silent skips would let a broken or missing extension ship in the image
 # (the in-image self-checks only assert presence of a subset).
 # ---------------------------------------------------------------------------
@@ -199,7 +199,7 @@ RUN --mount=type=bind,source=build/extensions.txt,target=/build/extensions.txt \
     bash /build/install_extensions.sh
 
 # ---------------------------------------------------------------------------
-# realtime-gauge-data: manual install — install.py uses distutils (removed
+# realtime-gauge-data: manual install - install.py uses distutils (removed
 # in Python 3.12) and old WeeWX 3/4 ExtensionInstaller API. The script
 # unpacks bin/user/rtgd.py + skins/RealtimeGauges/ directly from the zip.
 # ---------------------------------------------------------------------------
@@ -207,12 +207,25 @@ RUN --mount=type=bind,source=build/install_rtgd.py,target=/build/install_rtgd.py
     python3 /build/install_rtgd.py
 
 # ---------------------------------------------------------------------------
+# weewx-noaa_marine_API: manual install - install.py runs a curses-based
+# interactive setup during `weectl extension install` (asks for CO-OPS
+# tide-station IDs, NDBC buoy IDs), which --yes cannot dismiss. The
+# script drops bin/user/marine_data.py + marine_data_fields.yaml directly
+# and preserves install.py as scripts/marine_data_installer.py purely
+# for its SHA pin (its hardcoded tide operational fields are mirrored
+# into the addon shim; drift there needs a re-audit). The shim owns the
+# marine DDL directly and does not import the installer at runtime.
+# ---------------------------------------------------------------------------
+RUN --mount=type=bind,source=build/install_marine_data.py,target=/build/install_marine_data.py \
+    python3 /build/install_marine_data.py
+
+# ---------------------------------------------------------------------------
 # xstats: extended-statistics search-list extension shipped with WeeWX as an
 # example. Some skins reference user.xstats but it is not installed by
 # default. Pull it from the upstream tag.
 #
 # Uses `curl --retry` instead of `ADD <url>` because BuildKit's ADD-from-URL
-# does not retry on transient github.com 5xx — that failure has burned builds
+# does not retry on transient github.com 5xx - that failure has burned builds
 # on unrelated PRs. curl has native exponential-backoff retry for 5xx via
 # `--retry-all-errors`. URL is still pinned inline so Renovate's raw-URL
 # custom.regex manager (see renovate.json) still tracks version bumps.
@@ -256,7 +269,7 @@ RUN --mount=type=bind,source=patches,target=/build/patches \
         patch --batch -d "$WEEWX_HA_DIR" -p1 < "$p"; \
     done
 
-# Drop the build-time stub conf — runtime uses /config/weewx.conf (the
+# Drop the build-time stub conf - runtime uses /config/weewx.conf (the
 # addon_config mount). /config itself is not created at build time.
 RUN rm -f /opt/weewx-data/weewx.conf
 
@@ -280,16 +293,16 @@ COPY --from=xtide-builder /out/etc/xtide.conf /etc/xtide.conf
 
 # ---------------------------------------------------------------------------
 # Bundled extra extensions:
-#   log_to_file             — per-record CSV file writer (bakerkj).
-#   report_hook             — post-report shell-command hook (bakerkj); wire
+#   log_to_file             - per-record CSV file writer (bakerkj).
+#   report_hook             - post-report shell-command hook (bakerkj); wire
 #                             into a skin's [Generators] generator_list to fire
 #                             an arbitrary command when that skin's report
 #                             cycle finishes.
-#   refresh_stale_outputs   — StdService that ages-out stale_age-gated Cheetah
+#   refresh_stale_outputs   - StdService that ages-out stale_age-gated Cheetah
 #                             and ImageGenerator outputs on weewx.STARTUP so
 #                             the first report cycle after each weewxd start
 #                             re-renders them regardless of the age gate.
-# Custom skins are NOT baked in — they are user customizations supplied at
+# Custom skins are NOT baked in - they are user customizations supplied at
 # runtime (e.g. under /config), not part of the generic add-on.
 # ---------------------------------------------------------------------------
 COPY extensions/log_to_file.py             /opt/weewx-data/bin/user/log_to_file.py

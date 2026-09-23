@@ -15,7 +15,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Shell-style `runner=\"ubuntu-24.04\"` inside workflow steps. The `runs-on:` form is intentionally NOT matched here — the built-in github-actions manager already tracks it and having both fire produces duplicate dashboard entries (#3).",
+      "description": "Shell-style `runner=\"ubuntu-24.04\"` inside workflow steps. The `runs-on:` form is intentionally NOT matched here - the built-in github-actions manager already tracks it and having both fire produces duplicate dashboard entries (#3).",
       "managerFilePatterns": ["/.github/workflows/.+\\.ya?ml$/"],
       "matchStrings": [
         "runner=\"(?<depName>ubuntu|macos|windows)-(?<currentValue>[\\w.-]+)\""
@@ -24,7 +24,7 @@
     },
     {
       "customType": "regex",
-      "description": "npm packages pinned via pre-commit additional_dependencies (e.g. @commitlint/config-conventional@N in .pre-commit-config.yaml). The built-in pre-commit manager only bumps the `rev:` on each hook — it doesn't touch the additional_dependencies array, so without this regex those pins go stale forever.",
+      "description": "npm packages pinned via pre-commit additional_dependencies (e.g. @commitlint/config-conventional@N in .pre-commit-config.yaml). The built-in pre-commit manager only bumps the `rev:` on each hook - it doesn't touch the additional_dependencies array, so without this regex those pins go stale forever.",
       "managerFilePatterns": ["/^\\.pre-commit-config\\.yaml$/"],
       "matchStrings": [
         "\"(?<depName>@?[^\"@\\s]+)@(?<currentValue>[^\"\\s]+)\""
@@ -42,7 +42,7 @@
     },
     {
       "customType": "regex",
-      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'. Uses the built-in `deb` datasource pointing at deb.debian.org for the main trixie suite; the trixie-updates and trixie-security suites Debian publishes only as .xz (unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865) so we route those two through our github-apt-helper.keneli.org proxy (see additionalRegistryUrls in the packageRule below). Bearer-token auth for the proxy is injected out-of-band: Mend's Renovate uses an org-level Host Rule (bakerkj org Credentials → Host Rules); the renovate-validate CI dry-run uses a RENOVATE_HOST_RULES env-var overlay (see .github/workflows/renovate-validate.yaml).",
+      "description": "APT packages pinned in Debian 13 (trixie) Dockerfiles. depName excludes '_' to avoid matching Python kwargs like 'exist_ok=True'. Uses the built-in `deb` datasource pointing at deb.debian.org for the main trixie suite; the trixie-updates and trixie-security suites Debian publishes only as .xz (unsupported by the built-in deb datasource - upstream renovatebot/renovate#35865) so we route those two through our github-apt-helper.keneli.org proxy (see additionalRegistryUrls in the packageRule below). Bearer-token auth for the proxy is injected out-of-band: Mend's Renovate uses an org-level Host Rule (bakerkj org Credentials → Host Rules); the renovate-validate CI dry-run uses a RENOVATE_HOST_RULES env-var overlay (see .github/workflows/renovate-validate.yaml).",
       "managerFilePatterns": ["/Dockerfile$/"],
       "matchStrings": [
         "\\s+(?<depName>[a-z][a-z0-9+.-]*)=(?<currentValue>[\\w][\\w.:+~-]*)"
@@ -64,22 +64,23 @@
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned WeeWX deps from GitHub archive zips — bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd URL in build/install_rtgd.py. The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
+      "description": "Tag-pinned WeeWX deps from GitHub archive zips - bundled extensions in build/extensions.txt, `weewx_ha` (the MQTT publisher by felddy) in pyproject.toml, and the rtgd + marine URLs in build/install_*.py. The version regex accepts an optional alphanumeric suffix so beta/RC/dev tags like `v1.0.1b`, `v2.0.0rc1`, or `v3.0.dev5` are tracked too (loose versioning handles the compare). The xstats ADD in the Dockerfile uses raw.githubusercontent.com instead of /archive/<tag>.zip, so it's tracked by the companion 'raw.githubusercontent.com' manager below.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/pyproject\\.toml$/",
         "/build/extensions\\.txt$/",
-        "/build/install_rtgd\\.py$/"
+        "/build/install_rtgd\\.py$/",
+        "/build/install_marine_data\\.py$/"
       ],
       "matchStrings": [
-        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+)\\.zip"
+        "github\\.com/(?<depName>[\\w.-]+/[\\w.-]+)/archive/(?<currentValue>[vV]?\\d+(?:\\.\\d+)+[a-z0-9]*)\\.zip"
       ],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose"
     },
     {
       "customType": "regex",
-      "description": "Tag-pinned files fetched via raw.githubusercontent.com — the xstats ADD in the Dockerfile (single source file pulled from a tag rather than a /archive/<tag>.zip), and the addon-linter schema URLs in .pre-commit-config.yaml's check-jsonschema hook. Tracked against github-tags so a new upstream release bumps the pin.",
+      "description": "Tag-pinned files fetched via raw.githubusercontent.com - the xstats ADD in the Dockerfile (single source file pulled from a tag rather than a /archive/<tag>.zip), and the addon-linter schema URLs in .pre-commit-config.yaml's check-jsonschema hook. Tracked against github-tags so a new upstream release bumps the pin.",
       "managerFilePatterns": [
         "/Dockerfile$/",
         "/\\.pre-commit-config\\.yaml$/"
@@ -114,9 +115,14 @@
     {
       "customType": "regex",
       "description": "SHA-pinned WeeWX deps on default branch 'main'. See the 'master' companion rule above for the rationale.",
-      "managerFilePatterns": ["/Dockerfile$/", "/build/extensions\\.txt$/"],
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/build/extensions\\.txt$/",
+        "/build/install_marine_data\\.py$/"
+      ],
       "matchStrings": [
-        "github\\.com/(?<depName>chaunceygardiner/weewx-rain24h)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
+        "github\\.com/(?<depName>chaunceygardiner/weewx-rain24h)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
+        "github\\.com/(?<depName>inguy24/weewx-noaa_marine_API)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
       ],
       "packageNameTemplate": "https://github.com/{{depName}}",
       "currentValueTemplate": "main",
@@ -145,7 +151,7 @@
     },
     {
       "customType": "regex",
-      "description": "uv tool required-version pin in pyproject.toml [tool.uv] (companion to the Dockerfile bind-mount pin above — keeps setup-uv on the same uv major.minor in CI).",
+      "description": "uv tool required-version pin in pyproject.toml [tool.uv] (companion to the Dockerfile bind-mount pin above - keeps setup-uv on the same uv major.minor in CI).",
       "managerFilePatterns": ["/(^|/)pyproject\\.toml$/"],
       "matchStrings": ["required-version\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
       "depNameTemplate": "uv",
@@ -173,7 +179,7 @@
       "groupName": "python dependencies"
     },
     {
-      "description": "Group the two uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version). They must bump atomically — a mismatch makes `uv sync --frozen` refuse to run. Automerge policy is set below, after the docker-datasource denial.",
+      "description": "Group the two uv pins (Dockerfile bind-mount + pyproject.toml [tool.uv] required-version). They must bump atomically - a mismatch makes `uv sync --frozen` refuse to run. Automerge policy is set below, after the docker-datasource denial.",
       "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
       "groupName": "uv tool",
       "minimumGroupSize": 2
@@ -183,7 +189,7 @@
       "groupName": "home-assistant base images"
     },
     {
-      "description": "Silent-refresh policy for the plain `debian` image (rtldavis-builder stage): accept minor and major tag bumps (13.6 → 13.7, 13.x → 14.0) but drop digest-only PRs. Docker Hub rebuilds `13.x` in place for CVE refreshes, which shows up as digest updates that don't communicate what changed. Point releases already bundle the accumulated rebuilds, so nothing is lost — the interstitial rebuilds get swept up on the next tag bump.",
+      "description": "Silent-refresh policy for the plain `debian` image (rtldavis-builder stage): accept minor and major tag bumps (13.6 → 13.7, 13.x → 14.0) but drop digest-only PRs. Docker Hub rebuilds `13.x` in place for CVE refreshes, which shows up as digest updates that don't communicate what changed. Point releases already bundle the accumulated rebuilds, so nothing is lost - the interstitial rebuilds get swept up on the next tag bump.",
       "matchPackageNames": ["debian"],
       "matchUpdateTypes": ["digest"],
       "enabled": false
@@ -194,12 +200,12 @@
       "versioning": "regex:^trixie-(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d+)$"
     },
     {
-      "description": "Force loose versioning for home-assistant/builder — its release tags are CalVer (YYYY.MM.PATCH), not SemVer. The `helpers:pinGitHubActionDigestsToSemver` preset re-applies semver at packageRule level (higher priority than the customManager's local versioningTemplate), which mis-orders CalVer patches and produces bogus bumps (see hass-apps PRs #246, #248). This override wins.",
+      "description": "Force loose versioning for home-assistant/builder - its release tags are CalVer (YYYY.MM.PATCH), not SemVer. The `helpers:pinGitHubActionDigestsToSemver` preset re-applies semver at packageRule level (higher priority than the customManager's local versioningTemplate), which mis-orders CalVer patches and produces bogus bumps (see hass-apps PRs #246, #248). This override wins.",
       "matchPackageNames": ["home-assistant/builder"],
       "versioning": "loose"
     },
     {
-      "description": "Group all apt-package updates into one PR. Also overrides the customManager's single registryUrlTemplate with the full list of three URLs — main trixie direct from deb.debian.org, plus trixie-updates + trixie-security via our github-apt-helper.keneli.org proxy (Debian publishes those two only as .xz, unsupported by the built-in deb datasource — upstream renovatebot/renovate#35865). Renovate merges lookups across the three registries.",
+      "description": "Group all apt-package updates into one PR. Also overrides the customManager's single registryUrlTemplate with the full list of three URLs - main trixie direct from deb.debian.org, plus trixie-updates + trixie-security via our github-apt-helper.keneli.org proxy (Debian publishes those two only as .xz, unsupported by the built-in deb datasource - upstream renovatebot/renovate#35865). Renovate merges lookups across the three registries.",
       "matchDatasources": ["deb"],
       "groupName": "apt packages",
       "registryUrls": [
@@ -214,7 +220,7 @@
       "groupName": "weewx extensions"
     },
     {
-      "description": "Group the two weewx pins (pyproject.toml runtime dep + Dockerfile xstats.py source URL) so a weewx bump lands in one PR. They must move atomically — the venv's installed weewx version and the fetched xstats.py must agree. Placed after both `python dependencies` and `weewx extensions` so this groupName wins for both members.",
+      "description": "Group the two weewx pins (pyproject.toml runtime dep + Dockerfile xstats.py source URL) so a weewx bump lands in one PR. They must move atomically - the venv's installed weewx version and the fetched xstats.py must agree. Placed after both `python dependencies` and `weewx extensions` so this groupName wins for both members.",
       "matchDepNames": ["weewx", "weewx/weewx"],
       "groupName": "weewx",
       "minimumGroupSize": 2
@@ -226,7 +232,7 @@
       "minimumGroupSize": 2
     },
     {
-      "description": "Pin Python to the 3.13 series — it must match python3 in the Debian trixie base image. Bumping to 3.14 makes uv build a standalone 3.14 venv that mismatches the base's apt python3 (broke the build). Lift this when the base moves to a Debian release with 3.14.",
+      "description": "Pin Python to the 3.13 series - it must match python3 in the Debian trixie base image. Bumping to 3.14 makes uv build a standalone 3.14 venv that mismatches the base's apt python3 (broke the build). Lift this when the base moves to a Debian release with 3.14.",
       "matchPackageNames": ["python"],
       "allowedVersions": "<3.14"
     },
@@ -280,7 +286,7 @@
       "matchDepTypes": ["dependency-groups", "tool.uv.dev-dependencies"]
     },
     {
-      "description": "Automerge uv patches. Must be after the docker-datasource denial above so `automerge: true` wins for the ghcr side. No `minimumReleaseAge` — an asymmetric one across the two uv pins is what produced #269.",
+      "description": "Automerge uv patches. Must be after the docker-datasource denial above so `automerge: true` wins for the ghcr side. No `minimumReleaseAge` - an asymmetric one across the two uv pins is what produced #269.",
       "matchPackageNames": ["uv", "ghcr.io/astral-sh/uv"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true

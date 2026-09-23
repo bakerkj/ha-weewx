@@ -32,7 +32,7 @@ S6=/etc/s6-overlay/s6-rc.d
 # binary + import health
 check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
-check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp'
+check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp, user.loopdata, user.wxskyfield, user.wxskyfield_sky, user.celestial, user.celestial_page, user.celestial_sky, user.marine_data'
 
 # MQTT publisher (by felddy) patches applied.
 #
@@ -41,7 +41,7 @@ check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import u
 # substring greps: importing the patched module / AST-parsing the patched
 # source proves the patch is structurally in place, not just that the
 # token appears somewhere in the file. The remaining six still use the
-# `has` substring check — they're lower-impact constants/keys where a
+# `has` substring check - they're lower-impact constants/keys where a
 # token-match catches the realistic regression (an accidentally dropped
 # entry) without needing the heavier scaffolding.
 check "patch: MQTT publisher (by felddy): state_class injected in publish_discovery" \
@@ -98,10 +98,10 @@ sys.exit(0 if ok else 1)
 check "patch: MQTT publisher (by felddy): on_weewx_archive" has 'def on_weewx_archive(self, event):' "$WEEWX_HA/controller.py"
 check "patch: MQTT publisher (by felddy): uv_index round(1)" python3 -c "from weewx_ha.utils import UNIT_METADATA; import sys; sys.exit(0 if UNIT_METADATA['uv_index']['value_template'] == '{{ value | round(1) }}' else 1)"
 
-# Bundled extensions installed — assertions derived from `# install: <path>`
+# Bundled extensions installed - assertions derived from `# install: <path>`
 # annotations alongside each URL in build/extensions.txt. Adding or removing
 # a URL only requires editing extensions.txt, not this script. The
-# annotations still have to be kept correct by hand — they're documented
+# annotations still have to be kept correct by hand - they're documented
 # next to the URL but nothing automatically discovers them from upstream.
 while IFS= read -r install_path; do
   case "$install_path" in
@@ -120,12 +120,12 @@ while IFS= read -r install_path; do
   esac
 done < <(grep -E '^# install: ' /work/build/extensions.txt | sed 's/^# install: //')
 
-# rtgd is installed by build/install_rtgd.py (not weectl — its install.py
+# rtgd is installed by build/install_rtgd.py (not weectl - its install.py
 # uses distutils). Assert both pieces survived.
 check "ext: rtgd module present" test -f "$WEEWX_BIN/user/rtgd.py"
 check "ext: RealtimeGauges skin present" test -d /opt/weewx-data/skins/RealtimeGauges
 
-# weatherflow-udp driver — the module is checked as importable above; also
+# weatherflow-udp driver - the module is checked as importable above; also
 # assert that it exposes the module-level `loader()` factory + a Driver
 # class that inherits from weewx.drivers.AbstractDevice, so a config with
 # station_type = WeatherFlowUDP won't fail on driver load at first start.
@@ -140,7 +140,7 @@ drv_cls = next((c for _, c in inspect.getmembers(weatherflowudp, inspect.isclass
 assert drv_cls is not None, 'no AbstractDevice subclass in user.weatherflowudp'
 "
 
-# weedb core patch — not under patches/extensions/; keep the substring check.
+# weedb core patch - not under patches/extensions/; keep the substring check.
 check "patch: weedb mysql reserved kw" has 're.sub(r"(?<!`)\b(interval|desc|offset)\b(?!`)"' "$WEEDB/mysql.py"
 
 # weewx core patch: weeutil.deep_copy_path atomic copy (tmp + os.replace).
@@ -160,7 +160,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
     payload = b'x' * (4 * 1024 * 1024)
 
     # deep_copy_path is called by CopyGenerator with a RELATIVE source
-    # path (via Path().glob() in reportengine.py) — the joined
+    # path (via Path().glob() in reportengine.py) - the joined
     # os.path.join(dest_dir, path) only makes sense when path is
     # relative. Mirror that: cd into src_root so 'assets/data.bin' is
     # relative, and dest ends up at <dst_dir>/assets/data.bin.
@@ -187,7 +187,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
         # patch, shutil.copy opens dst with 'wb' (truncate-in-place),
         # so the observer occasionally samples 0 or a partial size.
         # With the patch, os.replace flips dst between two complete
-        # inodes (old and new) — reader only ever sees len(payload).
+        # inodes (old and new) - reader only ever sees len(payload).
         while not stop.is_set():
             try:
                 observed_sizes.append(os.path.getsize(dst_abs))
@@ -224,7 +224,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
 # Bundled-extension patches: behavioural assertions against the shipped
 # user/* code. Each patch under patches/extensions/0001..0014 has a
 # dedicated check_<name>() in build/check_patches.py that imports the
-# patched module and exercises the changed code path — same import path
+# patched module and exercises the changed code path - same import path
 # (user.<mod>) the running addon uses. The script emits one
 # PASS/FAIL line per patch in the same format as the `check` helper
 # above, so the trailing fail-summary block catches any of them.
@@ -253,13 +253,27 @@ check "xtide: conf points to harmonics dir" has "/usr/share/xtide" /etc/xtide.co
 # a scratch weewx.conf + SQLite database, invokes the same do_forecast
 # entry point NEW_ARCHIVE_RECORD dispatches to, and reads the resulting
 # archive_forecast table back to prove ≥1 XTide row was persisted via
-# weewx.manager.addRecord. No shortcuts — every layer that runs in
+# weewx.manager.addRecord. No shortcuts - every layer that runs in
 # production runs here. See build/check_xtide_forecast.py.
 # If 'Palo Alto Yacht Harbor' is renamed or removed from the free
 # harmonics set in a future release, pick another covered station in
 # that script.
 check "xtide: weewx-forecast persists XTide rows via do_forecast" \
   env PYTHONPATH=$WEEWX_BIN python3 /work/build/check_xtide_forecast.py
+
+# Marine schema-init shim: exercises the shim end-to-end (happy path
+# creates the three marine tables) plus its four guardrails via a
+# MARINE_FIELDS_YAML env override - reserved-prefix, standard-column
+# redeclare, tide-overlap, and to_bool-hostile enable fallthrough. Fails
+# if any of them regresses.
+check "marine: init_marine_schema shim + guards" \
+  env PYTHONPATH=$WEEWX_BIN python3 /work/build/check_marine_schema.py
+
+# Structural check: install_marine_data.py must write via a tmp path +
+# os.replace rather than directly to dest. A regression to plain
+# open(dest, "wb") would reintroduce the mid-loop-corruption class of bug.
+check "marine: install_marine_data uses atomic writes" \
+  sh -c 'grep -qF "os.replace(tmp, dest)" /work/build/install_marine_data.py'
 
 # stock skin + accidentally-installed extension
 check "skin: Seasons present" test -d /opt/weewx-data/skins/Seasons
@@ -284,7 +298,7 @@ check "watchdog: selfcheck passes" /opt/weewx/bin/python3 /etc/scripts/watchdog_
 
 if [ "$fail" -ne 0 ]; then
   echo
-  echo "=== one or more in-image self-checks FAILED — see FAIL lines above ==="
+  echo "=== one or more in-image self-checks FAILED - see FAIL lines above ==="
   exit 1
 fi
 echo

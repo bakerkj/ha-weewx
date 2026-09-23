@@ -1,0 +1,92 @@
+Open the CO-OPS + NDBC background threads' db_manager INSIDE each thread's
+run() rather than reusing the main thread's manager. Python's sqlite3
+driver forbids cross-thread reuse of connections, and every call the
+threads make to `self.db_manager.connection.execute(...)` was raising
+"SQLite objects created in a thread can only be used in that same
+thread". No rows ever landed in coops_realtime, tide_table or
+ndbc_data. The extension already uses this pattern at lines 669 and 815
+of the same file; the fix propagates it to the two background threads.
+
+Upstream (inguy24/weewx-noaa_marine_API) has been quiet for months;
+this patch keeps our build working until they respond.
+
+--- a/bin/user/marine_data.py
++++ b/bin/user/marine_data.py
+@@ -296,7 +296,8 @@
+                 coops_fields, 
+                 self.coops_client,
+                 self.db_manager,
+-                self.service_config
++                self.service_config,
++                self.config_dict
+             )
+             self.coops_thread.daemon = True
+             self.coops_thread.start()
+@@ -311,7 +312,8 @@
+                 ndbc_fields,
+                 self.ndbc_client,
+                 self.db_manager,
+-                self.service_config
++                self.service_config,
++                self.config_dict
+             )
+             self.ndbc_thread.daemon = True
+             self.ndbc_thread.start()
+@@ -826,13 +828,14 @@
+     FUNCTIONAL: CO-OPS background thread with real data collection
+     """
+     
+-    def __init__(self, stations, fields, api_client, db_manager, config):
++    def __init__(self, stations, fields, api_client, db_manager, config, config_dict=None):
+         super().__init__(daemon=True, name='COOPSBackgroundThread')
+         self.stations = stations
+         self.fields = fields
+         self.api_client = api_client
+         self.db_manager = db_manager
+         self.config = config
++        self.config_dict = config_dict
+         self.running = True
+         self.last_successful_collection = time.time()  # ITEM 10: Track for health monitoring
+         
+@@ -843,6 +846,12 @@
+     def run(self):
+         """FUNCTIONAL: Real data collection loop"""
+         log.info("CO-OPS background thread started")
++        # Open db_manager INSIDE this thread so all SQLite writes are
++        # same-thread. Python's sqlite3 forbids cross-thread reuse of
++        # connections opened elsewhere.
++        if self.config_dict is not None:
++            self.db_manager = weewx.manager.open_manager_with_config(
++                self.config_dict, 'wx_binding')
+         
+         last_water_level = 0
+         last_predictions = 0
+@@ -1067,13 +1076,14 @@
+     FUNCTIONAL: NDBC background thread with real data collection
+     """
+     
+-    def __init__(self, stations, fields, api_client, db_manager, config):
++    def __init__(self, stations, fields, api_client, db_manager, config, config_dict=None):
+         super().__init__(daemon=True, name='NDBCBackgroundThread')
+         self.stations = stations
+         self.fields = fields
+         self.api_client = api_client
+         self.db_manager = db_manager
+         self.config = config
++        self.config_dict = config_dict
+         self.running = True
+         self.last_successful_collection = time.time()  # ITEM 10: Track for health monitoring
+         
+@@ -1083,6 +1093,12 @@
+     def run(self):
+         """FUNCTIONAL: Real NDBC data collection loop"""
+         log.info("NDBC background thread started")
++        # Open db_manager INSIDE this thread so all SQLite writes are
++        # same-thread. Python's sqlite3 forbids cross-thread reuse of
++        # connections opened elsewhere.
++        if self.config_dict is not None:
++            self.db_manager = weewx.manager.open_manager_with_config(
++                self.config_dict, 'wx_binding')
+         
+         last_collection = 0
+         
