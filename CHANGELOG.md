@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.36](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.35...ha-weewx-v0.1.36) (2026-09-23)
+
+
+### Features
+
+* bundle loopdata + skyfield + celestial + marine data extensions ([#365](https://github.com/bakerkj/ha-weewx/issues/365)) ([51764cf](https://github.com/bakerkj/ha-weewx/commit/51764cfbcf72a9078a90b94d76b08b292e5b2648))
+
+
+### Miscellaneous Chores
+
+* **deps:** update astral-sh/setup-uv action to v10.2.0 ([#368](https://github.com/bakerkj/ha-weewx/issues/368)) ([66e4282](https://github.com/bakerkj/ha-weewx/commit/66e4282b1abd02668f393044964916f2a5b500b8))
+* **deps:** update dependency renovate to v44.108.2 ([#372](https://github.com/bakerkj/ha-weewx/issues/372)) ([c7307f1](https://github.com/bakerkj/ha-weewx/commit/c7307f1f368726b61757980f84425dd0505f7953))
+* **deps:** update pre-commit hook alessandrojcm/commitlint-pre-commit-hook to v9.27.0 ([#366](https://github.com/bakerkj/ha-weewx/issues/366)) ([863254b](https://github.com/bakerkj/ha-weewx/commit/863254b7204c6139271e554eb46deb51caab3292))
+* **deps:** update pre-commit hook python-jsonschema/check-jsonschema to v0.38.1 ([#369](https://github.com/bakerkj/ha-weewx/issues/369)) ([b707f1c](https://github.com/bakerkj/ha-weewx/commit/b707f1c39a5fc8145e1a80e37aba6b4211d48192))
+* **deps:** update uv tool to v0.12.18 ([#371](https://github.com/bakerkj/ha-weewx/issues/371)) ([9dfa539](https://github.com/bakerkj/ha-weewx/commit/9dfa539d337e2589f7d49cde547db10572f82905))
+* **deps:** update weewx extensions ([#370](https://github.com/bakerkj/ha-weewx/issues/370)) ([0897ce3](https://github.com/bakerkj/ha-weewx/commit/0897ce33b9ab735573d6efcfa6d521bf540db2a4))
+
 ## [0.1.35](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.34...ha-weewx-v0.1.35) (2026-09-20)
 
 
