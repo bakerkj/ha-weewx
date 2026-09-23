@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.37](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.36...ha-weewx-v0.1.37) (2026-09-23)
+
+
+### Bug Fixes
+
+* **deps:** update weewx to v5.5.2 ([#376](https://github.com/bakerkj/ha-weewx/issues/376)) ([adcdacd](https://github.com/bakerkj/ha-weewx/commit/adcdacdd25428978549911c31fb6856e6c06ca25))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v7.5.1 ([#375](https://github.com/bakerkj/ha-weewx/issues/375)) ([bad1e24](https://github.com/bakerkj/ha-weewx/commit/bad1e248a28e24d2bb54b310c8f6d0a5b4486181))
+* **deps:** update pre-commit hooks ([#373](https://github.com/bakerkj/ha-weewx/issues/373)) ([c844685](https://github.com/bakerkj/ha-weewx/commit/c844685b74b3862d742443dbdce84969c37f89e0))
+
 ## [0.1.36](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.35...ha-weewx-v0.1.36) (2026-09-23)
 
 
