@@ -11,6 +11,7 @@ exists, so the data + report are already present by the time these run.
 """
 
 import os
+import re
 import time
 
 import pymysql
@@ -83,6 +84,39 @@ def test_celestial_report_served():
             last = repr(e)
         time.sleep(2)
     pytest.fail(f"celestial page never served 200 (last={last})")
+
+
+def test_celestial_report_has_dynamic_markers():
+    """/celestial/ must contain PANEL_MARK and a countdown data-ts epoch.
+
+    A 200 response only proves Cheetah opened the template; the panel
+    bodies (countdown, geocentric, dome, pass) emit
+    ``data-celestial="<ver>"`` (PANEL_MARK), and each countdown chip
+    carries ``data-ts="<epoch>"`` set by Skyfield's next-event
+    computation. Both being present proves the whole ``$celestial``
+    pipeline resolved, not just the template shell.
+
+    Retried like the sibling checks above: the weewx healthcheck only
+    proves an archive row exists, not that Skyfield's almanac finished
+    registering before the report tied to that row rendered.
+    """
+    last = None
+    for _ in range(20):
+        try:
+            r = requests.get(f"{WEEWX_URL}/celestial/", timeout=10)
+            if (
+                r.status_code == 200
+                and 'data-celestial="' in r.text
+                and re.search(r'data-ts="\d{10,}"', r.text)
+            ):
+                return
+            last = r.text
+        except requests.RequestException as e:
+            last = repr(e)
+        time.sleep(3)
+    pytest.fail(
+        f"celestial dynamic markers missing after retries (last body first 300 chars: {str(last)[:300]!r})"
+    )
 
 
 def test_marine_tables_created():

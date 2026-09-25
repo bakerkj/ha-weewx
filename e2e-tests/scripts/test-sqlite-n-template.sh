@@ -147,6 +147,28 @@ done
 [[ -n "$celestial_html" ]] && ok "celestial /celestial/ served on SQLite" || bad "celestial never served on SQLite"
 [[ -n "$skyfield_boot" ]] && ok "weewx-skyfield boot line in log" || bad "weewx-skyfield never logged its startup"
 
+# Dynamic-marker assertion: a page that served 200 only proves Cheetah
+# opened the template, not that the celestial_page panels rendered.
+# PANEL_MARK (data-celestial="<ver>") is only emitted by the panel bodies
+# (countdown, geocentric, dome, pass), and each countdown chip carries a
+# data-ts="<epoch>" set by Skyfield's next-event computation. Both being
+# present proves the whole $celestial pipeline resolved, not just Cheetah.
+# Retry: skyfield_boot=1 above only fires on the "almanac registered" log
+# line; a report cycle has to run after that for the panels to reach the
+# served page, and the flags above can trip in any order.
+dyn_start=$(date +%s)
+dyn_ok=""
+while [[ $(($(date +%s) - dyn_start)) -lt 60 ]]; do
+  celestial_body="$(curl -s "http://localhost:$PORT/celestial/" 2>/dev/null)"
+  if grep -qE 'data-celestial="' <<<"$celestial_body" && grep -qE 'data-ts="[0-9]{10,}"' <<<"$celestial_body"; then
+    dyn_ok=1
+    break
+  fi
+  sleep 3
+done
+[[ -n "$dyn_ok" ]] && ok "celestial dynamic markers present (PANEL_MARK + countdown data-ts)" ||
+  bad "celestial dynamic markers missing (PANEL_MARK or countdown data-ts absent)"
+
 # Let one more report cycle land so ERROR/CRITICAL guards see it.
 sleep 8
 
