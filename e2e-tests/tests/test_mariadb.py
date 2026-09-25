@@ -95,15 +95,27 @@ def test_celestial_report_has_dynamic_markers():
     carries ``data-ts="<epoch>"`` set by Skyfield's next-event
     computation. Both being present proves the whole ``$celestial``
     pipeline resolved, not just the template shell.
+
+    Retried like the sibling checks above: the weewx healthcheck only
+    proves an archive row exists, not that Skyfield's almanac finished
+    registering before the report tied to that row rendered.
     """
-    r = requests.get(f"{WEEWX_URL}/celestial/", timeout=10)
-    assert r.status_code == 200
-    assert 'data-celestial="' in r.text, (
-        f"celestial page missing PANEL_MARK (first 300 chars: {r.text[:300]!r})"
-    )
-    assert re.search(r'data-ts="\d{10,}"', r.text), (
-        "celestial page has no countdown chip with data-ts "
-        "(Skyfield next-event computation didn't render)"
+    last = None
+    for _ in range(20):
+        try:
+            r = requests.get(f"{WEEWX_URL}/celestial/", timeout=10)
+            if (
+                r.status_code == 200
+                and 'data-celestial="' in r.text
+                and re.search(r'data-ts="\d{10,}"', r.text)
+            ):
+                return
+            last = r.text
+        except requests.RequestException as e:
+            last = repr(e)
+        time.sleep(3)
+    pytest.fail(
+        f"celestial dynamic markers missing after retries (last body first 300 chars: {str(last)[:300]!r})"
     )
 
 
