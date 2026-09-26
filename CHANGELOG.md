@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.38](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.37...ha-weewx-v0.1.38) (2026-09-26)
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v7.5.2 ([#380](https://github.com/bakerkj/ha-weewx/issues/380)) ([c395e03](https://github.com/bakerkj/ha-weewx/commit/c395e03c8edf8a5d3ac45fbc6682b38a211c01f4))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.9 ([#381](https://github.com/bakerkj/ha-weewx/issues/381)) ([3319afa](https://github.com/bakerkj/ha-weewx/commit/3319afab1c9f442594725e741cfce94ceec8131c))
+* **deps:** update uv tool to v0.12.19 ([#377](https://github.com/bakerkj/ha-weewx/issues/377)) ([32f1d56](https://github.com/bakerkj/ha-weewx/commit/32f1d56bcf3862031d6bc1252812dc33e263784c))
+
+
+### Tests
+
+* **e2e:** assert celestial dynamic markers in sqlite + mariadb suites ([#379](https://github.com/bakerkj/ha-weewx/issues/379)) ([8fb9125](https://github.com/bakerkj/ha-weewx/commit/8fb9125d0706174fb43913268c6acbb3489f1637))
+
 ## [0.1.37](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.36...ha-weewx-v0.1.37) (2026-09-23)
 
 
