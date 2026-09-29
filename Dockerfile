@@ -144,7 +144,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
-    rsync=3.4.1+ds1-5+deb13u4 \
+    rsync=3.5.0+ds1-0+deb13u1 \
  && rm -rf /var/lib/apt/lists/*
 
 # Replace the distro nginx config with our ingress-port server. The user
