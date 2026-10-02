@@ -52,7 +52,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates=20250419 \
     g++=4:14.2.0-1 \
-    libpng-dev=1.6.48-1+deb13u5 \
+    libpng-dev=1.6.48-1+deb13u6 \
     make=4.4.1-2 \
     wget=1.25.0-2 \
     xz-utils=5.8.1-1+deb13u1 \
@@ -136,7 +136,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl=8.14.1-2+deb13u5 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
-    libpng16-16t64=1.6.48-1+deb13u5 \
+    libpng16-16t64=1.6.48-1+deb13u6 \
     librtlsdr0=2.0.2-2+b1 \
     libusb-1.0-0=2:1.0.28-1 \
     nginx-light=1.26.3-3+deb13u9 \
