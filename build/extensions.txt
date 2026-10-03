@@ -64,7 +64,7 @@ https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.7.1.zip
 # install: bin/user/celestial_page.py
 # install: bin/user/celestial_sky.py
 # install: skins/Celestial
-https://github.com/chaunceygardiner/weewx-celestial/archive/v9.7.zip
+https://github.com/chaunceygardiner/weewx-celestial/archive/v9.7.1.zip
 
 # install: bin/user/opensensemap.py
 https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip
