@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.1.38](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.37...ha-weewx-v0.1.38) (2026-10-03)
+
+
+### Miscellaneous Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.236 ([#385](https://github.com/bakerkj/ha-weewx/issues/385)) ([0cad7e6](https://github.com/bakerkj/ha-weewx/commit/0cad7e6c8f2f1b8d624ccb73f2301e797d7075f7))
+* **deps:** update anthropics/claude-code-action action to v1.0.237 ([#394](https://github.com/bakerkj/ha-weewx/issues/394)) ([74f70f7](https://github.com/bakerkj/ha-weewx/commit/74f70f7a5d0444a7b23d423e9bac109dfe66febe))
+* **deps:** update apt packages to v1.6.48-1+deb13u6 ([#386](https://github.com/bakerkj/ha-weewx/issues/386)) ([e7efaa9](https://github.com/bakerkj/ha-weewx/commit/e7efaa9ca39f4a6129c9d5951aa2bd6ecae8f784))
+* **deps:** update dependency chaunceygardiner/weewx-celestial to v9.7.1 ([#395](https://github.com/bakerkj/ha-weewx/issues/395)) ([12cd822](https://github.com/bakerkj/ha-weewx/commit/12cd82259df0cdd77915fcc3bcf250f9ab070430))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v7.5.2 ([#380](https://github.com/bakerkj/ha-weewx/issues/380)) ([c395e03](https://github.com/bakerkj/ha-weewx/commit/c395e03c8edf8a5d3ac45fbc6682b38a211c01f4))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v8 ([#384](https://github.com/bakerkj/ha-weewx/issues/384)) ([1aeeae2](https://github.com/bakerkj/ha-weewx/commit/1aeeae283ae550cc46a750fdf53a04673fcf2470))
+* **deps:** update dependency renovate to v44.118.0 ([#388](https://github.com/bakerkj/ha-weewx/issues/388)) ([1b450a5](https://github.com/bakerkj/ha-weewx/commit/1b450a56c2d614003b033e511157417070e638b4))
+* **deps:** update dependency renovate to v44.120.0 ([#389](https://github.com/bakerkj/ha-weewx/issues/389)) ([0d7ec69](https://github.com/bakerkj/ha-weewx/commit/0d7ec69ec1451dd656ce2f3ff444d9323c1a4555))
+* **deps:** update dependency renovate to v44.121.1 ([#391](https://github.com/bakerkj/ha-weewx/issues/391)) ([b133010](https://github.com/bakerkj/ha-weewx/commit/b133010678ad40cba50000c29182dbd98421e960))
+* **deps:** update dependency renovate to v44.121.2 ([#392](https://github.com/bakerkj/ha-weewx/issues/392)) ([21b828d](https://github.com/bakerkj/ha-weewx/commit/21b828d9199c855510045f5dcff58597634465ad))
+* **deps:** update dependency renovate to v44.121.3 ([#393](https://github.com/bakerkj/ha-weewx/issues/393)) ([eb4d6f1](https://github.com/bakerkj/ha-weewx/commit/eb4d6f140ef04f01174490c31168b175b542566b))
+* **deps:** update dependency rsync to v3.5.0+ds1-0+deb13u1 ([#383](https://github.com/bakerkj/ha-weewx/issues/383)) ([fd9e29a](https://github.com/bakerkj/ha-weewx/commit/fd9e29a969e1c00e9c1f4dd1fe4b37ff74de25a1))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.10 ([#390](https://github.com/bakerkj/ha-weewx/issues/390)) ([064e9ec](https://github.com/bakerkj/ha-weewx/commit/064e9ec1f2cdbd3822862a16676d832908636bfe))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.9 ([#381](https://github.com/bakerkj/ha-weewx/issues/381)) ([3319afa](https://github.com/bakerkj/ha-weewx/commit/3319afab1c9f442594725e741cfce94ceec8131c))
+* **deps:** update uv tool to v0.12.19 ([#377](https://github.com/bakerkj/ha-weewx/issues/377)) ([32f1d56](https://github.com/bakerkj/ha-weewx/commit/32f1d56bcf3862031d6bc1252812dc33e263784c))
+* **deps:** update uv tool to v0.12.21 ([#382](https://github.com/bakerkj/ha-weewx/issues/382)) ([5b597e9](https://github.com/bakerkj/ha-weewx/commit/5b597e9e2e1a0492d793a1bb467e4eb984166a97))
+* **deps:** update uv tool to v0.12.22 ([#387](https://github.com/bakerkj/ha-weewx/issues/387)) ([98fce4d](https://github.com/bakerkj/ha-weewx/commit/98fce4d962878f40465c17bbecd15779ab410426))
+
+
+### Tests
+
+* **e2e:** assert celestial dynamic markers in sqlite + mariadb suites ([#379](https://github.com/bakerkj/ha-weewx/issues/379)) ([8fb9125](https://github.com/bakerkj/ha-weewx/commit/8fb9125d0706174fb43913268c6acbb3489f1637))
+
 ## [0.1.37](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.36...ha-weewx-v0.1.37) (2026-09-23)
 
 
