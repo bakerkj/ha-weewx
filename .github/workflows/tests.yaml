@@ -28,7 +28,7 @@ jobs:
       - name: Run pytest
         run: uv run pytest --junit-xml=test-results/junit.xml
       - name: Upload unit-test results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: unit-test-results
@@ -154,7 +154,7 @@ jobs:
           docker save "$mariadb_image" -o /tmp/docker-images/mariadb.tar
           docker save ha-weewx-e2e:test -o /tmp/docker-images/e2e.tar
       - name: Upload mariadb e2e results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: e2e-mariadb-results
@@ -215,7 +215,7 @@ jobs:
           docker save "$mosquitto_image" -o /tmp/docker-images/mosquitto.tar
           docker save ha-weewx-e2e:test -o /tmp/docker-images/e2e.tar
       - name: Upload mqtt e2e results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: e2e-mqtt-results
