@@ -55,7 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev=1.6.48-1+deb13u6 \
     make=4.4.1-2 \
     wget=1.25.0-2 \
-    xz-utils=5.8.1-1+deb13u1 \
+    xz-utils=5.8.1-1+deb13u2 \
  && rm -rf /var/lib/apt/lists/*
 
 ARG LIBTCD_VERSION=2.2.7-r3
