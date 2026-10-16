@@ -54,7 +54,7 @@ https://github.com/chaunceygardiner/weewx-loopdata/archive/v8.0.3.zip
 # install: bin/user/wxskyfield_lines.dat
 # install: bin/user/wxskyfield_de421.bsp
 # install: skins/Skyfield
-https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.8.1.zip
+https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.10.zip
 
 # Live planetarium page. Requires weewx-loopdata 7.0+ and
 # weewx-skyfield 2.6+ (installer refuses older). Reads loop-data.txt from
@@ -64,7 +64,7 @@ https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.8.1.zip
 # install: bin/user/celestial_page.py
 # install: bin/user/celestial_sky.py
 # install: skins/Celestial
-https://github.com/chaunceygardiner/weewx-celestial/archive/v9.7.1.zip
+https://github.com/chaunceygardiner/weewx-celestial/archive/v9.7.2.zip
 
 # install: bin/user/opensensemap.py
 https://github.com/sbsrouteur/weewx-opensensemap/archive/V0.3.zip
