@@ -133,7 +133,7 @@ LABEL \
 # Every Python library is installed by uv below, as wheels - nothing compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash=5.2.37-2+b10 \
-    curl=8.14.1-2+deb13u5 \
+    curl=8.14.1-2+deb13u7 \
     libnginx-mod-http-brotli-filter=1.0.0~rc-6 \
     libnginx-mod-http-js=0.8.9-1 \
     libpng16-16t64=1.6.48-1+deb13u6 \
