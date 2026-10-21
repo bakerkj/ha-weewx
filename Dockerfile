@@ -12,7 +12,7 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie-2026.10.0@sha256:a7f262
 # ---------------------------------------------------------------------------
 FROM debian:13.7@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c AS rtldavis-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates=20250419 \
+    ca-certificates=20250419+deb13u1 \
     gcc=4:14.2.0-1 \
     git=1:2.47.3-0+deb13u1 \
     golang-go=2:1.24~2 \
@@ -50,7 +50,7 @@ FROM debian:13.7@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827
 # every piped RUN in the stage.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates=20250419 \
+    ca-certificates=20250419+deb13u1 \
     g++=4:14.2.0-1 \
     libpng-dev=1.6.48-1+deb13u6 \
     make=4.4.1-2 \
@@ -139,7 +139,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng16-16t64=1.6.48-1+deb13u6 \
     librtlsdr0=2.0.2-2+b1 \
     libusb-1.0-0=2:1.0.28-1 \
-    nginx-light=1.26.3-3+deb13u9 \
+    nginx-light=1.26.3-3+deb13u10 \
     openssh-client=1:10.0p1-7+deb13u4 \
     patch=2.8-2 \
     procps=2:4.0.4-9 \
