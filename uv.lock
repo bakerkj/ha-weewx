@@ -169,6 +169,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pyyaml" },
     { name = "requests" },
+    { name = "setuptools" },
     { name = "six" },
     { name = "skyfield" },
     { name = "weewx" },
@@ -187,10 +188,11 @@ requires-dist = [
     { name = "numpy" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.32" },
+    { name = "setuptools" },
     { name = "six", specifier = ">=1.16" },
     { name = "skyfield", specifier = ">=1.47" },
     { name = "weewx", specifier = "==5.5.2" },
-    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip" },
+    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.0.zip" },
 ]
 
 [package.metadata.requires-dev]
@@ -585,25 +587,23 @@ wheels = [
 
 [[package]]
 name = "weewx-home-assistant"
-version = "1.0.0"
-source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip" }
+version = "1.2.0"
+source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.0.zip" }
 dependencies = [
     { name = "paho-mqtt" },
     { name = "pydantic" },
-    { name = "setuptools" },
 ]
-sdist = { hash = "sha256:436f5b39782c2f82db637d12d55eb9549d0676def579e8c44da1dc0a109ff58f" }
+sdist = { hash = "sha256:f6e119594e50eff735260b6d7cc346fa5094af1dab16b551a9c5293d1fa09e12" }
 
 [package.metadata]
 requires-dist = [
     { name = "coverage", marker = "extra == 'test'" },
     { name = "coveralls", marker = "extra == 'test'" },
-    { name = "paho-mqtt" },
+    { name = "paho-mqtt", specifier = ">=2.0" },
     { name = "pre-commit", marker = "extra == 'test'" },
-    { name = "pydantic" },
+    { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "setuptools" },
-    { name = "weewx", marker = "extra == 'test'", specifier = "==5.1.0" },
+    { name = "weewx", marker = "extra == 'test'", specifier = "==5.5.2" },
 ]
 provides-extras = ["test"]

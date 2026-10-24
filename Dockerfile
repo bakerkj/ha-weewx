@@ -236,6 +236,20 @@ RUN curl --fail --silent --show-error --location \
     https://raw.githubusercontent.com/weewx/weewx/v5.5.2/src/weewx_data/examples/xstats/bin/user/xstats.py
 
 # ---------------------------------------------------------------------------
+# Bootstrap skin (fuzzy-archer) ephemeris. Its day/night shading loads
+# WEEWX_ROOT/SQLITE_ROOT/skyfield/de440s.bsp and downloads it (32 MB) at
+# report time if missing; ship it so reports work offline.
+# ---------------------------------------------------------------------------
+RUN mkdir -p /opt/weewx-data/skyfield && \
+    curl --fail --silent --show-error --location \
+      --retry 4 --retry-all-errors \
+      --output /opt/weewx-data/skyfield/de440s.bsp \
+      https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp && \
+    echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  /opt/weewx-data/skyfield/de440s.bsp" >/tmp/de440s.sha256 && \
+    sha256sum -c /tmp/de440s.sha256 && \
+    rm /tmp/de440s.sha256
+
+# ---------------------------------------------------------------------------
 # Apply patches. Each .patch is a unified diff applied with `patch -p1` in
 # lexical order; a single failure aborts the build. See patches/README.md.
 #   patches/extensions/*.patch -> /opt/weewx-data (bundled extensions installed

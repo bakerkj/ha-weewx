@@ -8,7 +8,7 @@ dependencies = [
     "weewx==5.5.2",
     # The MQTT publisher (by felddy) as a release zip (not git+) so uv
     # needs no git CLI.
-    "weewx-home-assistant @ https://github.com/felddy/weewx-home-assistant/archive/v1.0.0.zip",
+    "weewx-home-assistant @ https://github.com/felddy/weewx-home-assistant/archive/v1.2.0.zip",
     # weewx pulls PyMySQL itself for MariaDB/MySQL; no compiled mysqlclient.
     "configobj>=5.0.9",
     # Used by some bundled extensions (e.g. realtime-gauge-data) for Py2/3 compat.
@@ -25,6 +25,9 @@ dependencies = [
     # PyYAML: user.marine_data (inguy24/weewx-noaa_marine_API) imports yaml
     # at module scope to read its bundled marine_data_fields.yaml.
     "PyYAML>=6.0",
+    # setuptools: user.windy imports distutils, which Python 3.12+ only
+    # provides via setuptools' distutils shim.
+    "setuptools",
 ]
 
 [tool.uv]
