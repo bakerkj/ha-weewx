@@ -23,6 +23,12 @@ jobs:
           # cache reservation race logs "Failed to save: Unable to
           # reserve cache with key setup-uv-…" on parallel runs.
           cache-suffix: tests
+      # Renovate's regex manager bumps the felddy archive URL in
+      # pyproject.toml without re-locking, and the image build runs
+      # `uv sync --frozen`, which installs from uv.lock as-is. Fail here
+      # so a stale lock can't ship the old version behind a green build.
+      - name: Check uv.lock matches pyproject.toml
+        run: uv lock --check
       - name: Sync dev dependencies
         run: uv sync --group dev --frozen
       - name: Run pytest
