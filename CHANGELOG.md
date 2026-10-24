@@ -1,5 +1,85 @@
 # Changelog
 
+## [0.1.38](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.37...ha-weewx-v0.1.38) (2026-10-24)
+
+
+### Bug Fixes
+
+* **renovate:** drop minimumReleaseAge from lockFileMaintenance (no-op) ([#440](https://github.com/bakerkj/ha-weewx/issues/440)) ([3440fc2](https://github.com/bakerkj/ha-weewx/commit/3440fc20bbe143d66069acca226c01c376b59052))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#439](https://github.com/bakerkj/ha-weewx/issues/439)) ([401b548](https://github.com/bakerkj/ha-weewx/commit/401b54801efe93b7f9d2d5885039981f4e801b89))
+* **deps:** update anthropics/claude-code-action action to v1.0.236 ([#385](https://github.com/bakerkj/ha-weewx/issues/385)) ([0cad7e6](https://github.com/bakerkj/ha-weewx/commit/0cad7e6c8f2f1b8d624ccb73f2301e797d7075f7))
+* **deps:** update anthropics/claude-code-action action to v1.0.237 ([#394](https://github.com/bakerkj/ha-weewx/issues/394)) ([74f70f7](https://github.com/bakerkj/ha-weewx/commit/74f70f7a5d0444a7b23d423e9bac109dfe66febe))
+* **deps:** update anthropics/claude-code-action action to v1.0.251 ([#421](https://github.com/bakerkj/ha-weewx/issues/421)) ([499f45d](https://github.com/bakerkj/ha-weewx/commit/499f45db35da8aae116acafab7095a512c30d1f5))
+* **deps:** update anthropics/claude-code-action action to v1.0.252 ([#422](https://github.com/bakerkj/ha-weewx/issues/422)) ([64b866d](https://github.com/bakerkj/ha-weewx/commit/64b866d16cac2aac12ec89d81fc882bd62dff519))
+* **deps:** update apt packages ([#424](https://github.com/bakerkj/ha-weewx/issues/424)) ([5e9eb6c](https://github.com/bakerkj/ha-weewx/commit/5e9eb6c215002cb809402eca5342b0566a68d853))
+* **deps:** update apt packages to v1.6.48-1+deb13u6 ([#386](https://github.com/bakerkj/ha-weewx/issues/386)) ([e7efaa9](https://github.com/bakerkj/ha-weewx/commit/e7efaa9ca39f4a6129c9d5951aa2bd6ecae8f784))
+* **deps:** update dependency chaunceygardiner/weewx-celestial to v9.7.1 ([#395](https://github.com/bakerkj/ha-weewx/issues/395)) ([12cd822](https://github.com/bakerkj/ha-weewx/commit/12cd82259df0cdd77915fcc3bcf250f9ab070430))
+* **deps:** update dependency chaunceygardiner/weewx-forecast to v5.4 ([#420](https://github.com/bakerkj/ha-weewx/issues/420)) ([04dd79e](https://github.com/bakerkj/ha-weewx/commit/04dd79e264f0a3efb06cd3a8c66b4636b58db42e))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v7.5.2 ([#380](https://github.com/bakerkj/ha-weewx/issues/380)) ([c395e03](https://github.com/bakerkj/ha-weewx/commit/c395e03c8edf8a5d3ac45fbc6682b38a211c01f4))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v8 ([#384](https://github.com/bakerkj/ha-weewx/issues/384)) ([1aeeae2](https://github.com/bakerkj/ha-weewx/commit/1aeeae283ae550cc46a750fdf53a04673fcf2470))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v8.0.3 ([#396](https://github.com/bakerkj/ha-weewx/issues/396)) ([f19c504](https://github.com/bakerkj/ha-weewx/commit/f19c504d3a60096afd9cc5e98a8aa7e8c69bac0c))
+* **deps:** update dependency chaunceygardiner/weewx-skyfield to v2.8.1 ([#410](https://github.com/bakerkj/ha-weewx/issues/410)) ([f0baeb4](https://github.com/bakerkj/ha-weewx/commit/f0baeb458e4ccd715581511199cfa7a6c55ec5b9))
+* **deps:** update dependency curl to v8.14.1-2+deb13u7 ([#413](https://github.com/bakerkj/ha-weewx/issues/413)) ([39eb8c9](https://github.com/bakerkj/ha-weewx/commit/39eb8c937f5521ec0bbad00d4e3f9a9c7127eaab))
+* **deps:** update dependency renovate to v44.118.0 ([#388](https://github.com/bakerkj/ha-weewx/issues/388)) ([1b450a5](https://github.com/bakerkj/ha-weewx/commit/1b450a56c2d614003b033e511157417070e638b4))
+* **deps:** update dependency renovate to v44.120.0 ([#389](https://github.com/bakerkj/ha-weewx/issues/389)) ([0d7ec69](https://github.com/bakerkj/ha-weewx/commit/0d7ec69ec1451dd656ce2f3ff444d9323c1a4555))
+* **deps:** update dependency renovate to v44.121.1 ([#391](https://github.com/bakerkj/ha-weewx/issues/391)) ([b133010](https://github.com/bakerkj/ha-weewx/commit/b133010678ad40cba50000c29182dbd98421e960))
+* **deps:** update dependency renovate to v44.121.2 ([#392](https://github.com/bakerkj/ha-weewx/issues/392)) ([21b828d](https://github.com/bakerkj/ha-weewx/commit/21b828d9199c855510045f5dcff58597634465ad))
+* **deps:** update dependency renovate to v44.121.3 ([#393](https://github.com/bakerkj/ha-weewx/issues/393)) ([eb4d6f1](https://github.com/bakerkj/ha-weewx/commit/eb4d6f140ef04f01174490c31168b175b542566b))
+* **deps:** update dependency renovate to v44.138.0 ([#402](https://github.com/bakerkj/ha-weewx/issues/402)) ([9e21121](https://github.com/bakerkj/ha-weewx/commit/9e2112199c564ad9abb6c5c53e22ecd1b67ec1b3))
+* **deps:** update dependency renovate to v44.139.0 ([#403](https://github.com/bakerkj/ha-weewx/issues/403)) ([e28256d](https://github.com/bakerkj/ha-weewx/commit/e28256d1cd00e712d70d6cda1b9097c84f549c83))
+* **deps:** update dependency renovate to v44.140.0 ([#404](https://github.com/bakerkj/ha-weewx/issues/404)) ([a5ca139](https://github.com/bakerkj/ha-weewx/commit/a5ca13980f87eb491196547cef701fe70120ae35))
+* **deps:** update dependency renovate to v44.149.0 ([#408](https://github.com/bakerkj/ha-weewx/issues/408)) ([0442969](https://github.com/bakerkj/ha-weewx/commit/044296949e073fac0a06ca97cc3acd24a615ea8a))
+* **deps:** update dependency renovate to v44.149.1 ([#409](https://github.com/bakerkj/ha-weewx/issues/409)) ([c68cd8c](https://github.com/bakerkj/ha-weewx/commit/c68cd8c529733dd8f487c4faf1b9a47f6b2dcad1))
+* **deps:** update dependency renovate to v44.155.1 ([#416](https://github.com/bakerkj/ha-weewx/issues/416)) ([71975c6](https://github.com/bakerkj/ha-weewx/commit/71975c66a02a495a486116281cdcf93f2b86d07f))
+* **deps:** update dependency renovate to v44.155.5 ([#417](https://github.com/bakerkj/ha-weewx/issues/417)) ([fe1f045](https://github.com/bakerkj/ha-weewx/commit/fe1f0453473c606a9de70a12c55735c9910ee45e))
+* **deps:** update dependency renovate to v44.155.8 ([#419](https://github.com/bakerkj/ha-weewx/issues/419)) ([073c8cd](https://github.com/bakerkj/ha-weewx/commit/073c8cd379236b33d8abcf7c80480264030b5641))
+* **deps:** update dependency renovate to v44.171.1 ([#430](https://github.com/bakerkj/ha-weewx/issues/430)) ([e1bda71](https://github.com/bakerkj/ha-weewx/commit/e1bda71f078daae01bd0adbbd376c3a150c8a582))
+* **deps:** update dependency renovate to v44.171.7 ([#431](https://github.com/bakerkj/ha-weewx/issues/431)) ([7b1cdee](https://github.com/bakerkj/ha-weewx/commit/7b1cdeedd8b4f853cd039b39d54e7c55f0dafda6))
+* **deps:** update dependency renovate to v44.171.8 ([#432](https://github.com/bakerkj/ha-weewx/issues/432)) ([f651686](https://github.com/bakerkj/ha-weewx/commit/f651686e5ab32ac961cacdeca304ed0420be4602))
+* **deps:** update dependency renovate to v44.172.1 ([#433](https://github.com/bakerkj/ha-weewx/issues/433)) ([248c52c](https://github.com/bakerkj/ha-weewx/commit/248c52c4b1091ca41b5f41d483e54ef99cb67338))
+* **deps:** update dependency renovate to v44.181.0 ([#435](https://github.com/bakerkj/ha-weewx/issues/435)) ([b00eca8](https://github.com/bakerkj/ha-weewx/commit/b00eca831f78269335be82311dda02e739db428a))
+* **deps:** update dependency rsync to v3.5.0+ds1-0+deb13u1 ([#383](https://github.com/bakerkj/ha-weewx/issues/383)) ([fd9e29a](https://github.com/bakerkj/ha-weewx/commit/fd9e29a969e1c00e9c1f4dd1fe4b37ff74de25a1))
+* **deps:** update dependency xz-utils to v5.8.1-1+deb13u2 ([#401](https://github.com/bakerkj/ha-weewx/issues/401)) ([0309236](https://github.com/bakerkj/ha-weewx/commit/030923657917fb7987c6517f452de9c83816dd4f))
+* **deps:** update ghcr.io/home-assistant/base-debian docker tag to trixie-2026.10.0 ([#397](https://github.com/bakerkj/ha-weewx/issues/397)) ([26cd389](https://github.com/bakerkj/ha-weewx/commit/26cd38991aeab8a343ea86d2eae3b27c21d2367e))
+* **deps:** update ghcr.io/home-assistant/base-debian docker tag to trixie-2026.10.1 ([#427](https://github.com/bakerkj/ha-weewx/issues/427)) ([07d0f94](https://github.com/bakerkj/ha-weewx/commit/07d0f94d90a20cdbafc5a45ea76ea9031686fbbd))
+* **deps:** update github-actions ([#398](https://github.com/bakerkj/ha-weewx/issues/398)) ([8b9594b](https://github.com/bakerkj/ha-weewx/commit/8b9594be109015b57fb880eff382925d68705e2f))
+* **deps:** update github-actions ([#399](https://github.com/bakerkj/ha-weewx/issues/399)) ([579e94e](https://github.com/bakerkj/ha-weewx/commit/579e94ec7b4fa8f357f7604d01898b34a9c5ae04))
+* **deps:** update github-actions ([#406](https://github.com/bakerkj/ha-weewx/issues/406)) ([cfe2651](https://github.com/bakerkj/ha-weewx/commit/cfe265118908a15a236ee167fad2b40ecc189cf9))
+* **deps:** update github-actions ([#423](https://github.com/bakerkj/ha-weewx/issues/423)) ([a1999ec](https://github.com/bakerkj/ha-weewx/commit/a1999ec0fda6d36df4c51dd72253d922d6739c4f))
+* **deps:** update github-actions ([#425](https://github.com/bakerkj/ha-weewx/issues/425)) ([eb08039](https://github.com/bakerkj/ha-weewx/commit/eb08039672642bda98abe30b5358e7b7069dd84f))
+* **deps:** update github-actions ([#434](https://github.com/bakerkj/ha-weewx/issues/434)) ([c431226](https://github.com/bakerkj/ha-weewx/commit/c4312264ec290c6fb868a84a9aa9fcddca52a924))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.10 ([#390](https://github.com/bakerkj/ha-weewx/issues/390)) ([064e9ec](https://github.com/bakerkj/ha-weewx/commit/064e9ec1f2cdbd3822862a16676d832908636bfe))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.16.9 ([#381](https://github.com/bakerkj/ha-weewx/issues/381)) ([3319afa](https://github.com/bakerkj/ha-weewx/commit/3319afab1c9f442594725e741cfce94ceec8131c))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.17.0 ([#407](https://github.com/bakerkj/ha-weewx/issues/407)) ([c7f6800](https://github.com/bakerkj/ha-weewx/commit/c7f6800a865a21d4d84ec826fc0bd4c848ef510f))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.17.1 ([#418](https://github.com/bakerkj/ha-weewx/issues/418)) ([7699fde](https://github.com/bakerkj/ha-weewx/commit/7699fde1c2fd1468c911d30935072ba86eb44095))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.17.2 ([#429](https://github.com/bakerkj/ha-weewx/issues/429)) ([a2b176e](https://github.com/bakerkj/ha-weewx/commit/a2b176e79a29df9d3cfe4b3e9f10ce3d077eaad5))
+* **deps:** update pre-commit hook rbubley/mirrors-prettier to v3.9.10 ([#411](https://github.com/bakerkj/ha-weewx/issues/411)) ([df047d1](https://github.com/bakerkj/ha-weewx/commit/df047d1bb9e93bd7c5455c8b1b023e6617fa6208))
+* **deps:** update uv tool to v0.12.19 ([#377](https://github.com/bakerkj/ha-weewx/issues/377)) ([32f1d56](https://github.com/bakerkj/ha-weewx/commit/32f1d56bcf3862031d6bc1252812dc33e263784c))
+* **deps:** update uv tool to v0.12.21 ([#382](https://github.com/bakerkj/ha-weewx/issues/382)) ([5b597e9](https://github.com/bakerkj/ha-weewx/commit/5b597e9e2e1a0492d793a1bb467e4eb984166a97))
+* **deps:** update uv tool to v0.12.22 ([#387](https://github.com/bakerkj/ha-weewx/issues/387)) ([98fce4d](https://github.com/bakerkj/ha-weewx/commit/98fce4d962878f40465c17bbecd15779ab410426))
+* **deps:** update uv tool to v0.12.24 ([#400](https://github.com/bakerkj/ha-weewx/issues/400)) ([2da65eb](https://github.com/bakerkj/ha-weewx/commit/2da65ebd793bdfa60d0e4b3140e42b84bbb6e573))
+* **deps:** update uv tool to v0.13.0 ([#405](https://github.com/bakerkj/ha-weewx/issues/405)) ([186a9f5](https://github.com/bakerkj/ha-weewx/commit/186a9f53595ffadd5274241f6ee32bd52977cad7))
+* **deps:** update uv tool to v0.13.1 ([#414](https://github.com/bakerkj/ha-weewx/issues/414)) ([41e2fcd](https://github.com/bakerkj/ha-weewx/commit/41e2fcd610374389eb111df0a839557bd831fdbc))
+* **deps:** update uv tool to v0.13.4 ([#426](https://github.com/bakerkj/ha-weewx/issues/426)) ([c882c84](https://github.com/bakerkj/ha-weewx/commit/c882c84ee6b1c0726afb60212c7f9285bb22a0ef))
+* **deps:** update uv tool to v0.13.5 ([#428](https://github.com/bakerkj/ha-weewx/issues/428)) ([03b7adb](https://github.com/bakerkj/ha-weewx/commit/03b7adb6d0114463a31d6a4da54be91a739960c6))
+* **deps:** update weewx extensions ([#415](https://github.com/bakerkj/ha-weewx/issues/415)) ([8822564](https://github.com/bakerkj/ha-weewx/commit/88225640ef4aa9238e57c3f511cafcaa9b373d05))
+* **renovate:** enable lockFileMaintenance (manual review) ([#438](https://github.com/bakerkj/ha-weewx/issues/438)) ([38c1eeb](https://github.com/bakerkj/ha-weewx/commit/38c1eebeeecb76fdc32167ef39eb227c04be977b))
+
+
+### Tests
+
+* **e2e:** assert celestial dynamic markers in sqlite + mariadb suites ([#379](https://github.com/bakerkj/ha-weewx/issues/379)) ([8fb9125](https://github.com/bakerkj/ha-weewx/commit/8fb9125d0706174fb43913268c6acbb3489f1637))
+
+
+### Continuous Integration
+
+* **claude:** gate on-demand [@claude](https://github.com/claude) workflow to repo owner ([#412](https://github.com/bakerkj/ha-weewx/issues/412)) ([8e7ee91](https://github.com/bakerkj/ha-weewx/commit/8e7ee91f31d557e93564ac3ce547425d4faff6fd))
+* fail when uv.lock is out of sync with pyproject.toml ([#437](https://github.com/bakerkj/ha-weewx/issues/437)) ([7540605](https://github.com/bakerkj/ha-weewx/commit/7540605db637a9dbcdcb664e05ddd9c40b1f5093))
+
 ## [0.1.37](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.36...ha-weewx-v0.1.37) (2026-09-23)
 
 
