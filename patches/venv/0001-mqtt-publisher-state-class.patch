@@ -1,30 +1,33 @@
-# felddy (felddy/weewx-home-assistant v1.0.0) publishes HA MQTT discovery without
-# a state_class, so Home Assistant keeps NO long-term statistics for the sensors.
-# Inject state_class in publish_discovery: measurement for live readings,
-# total_increasing for resetting rain/ET accumulators, and omit it for
-# timestamps, enums, and *BatteryStatus codes (the None is dropped by the
-# existing None-filter right below). felddy is a pip package in the venv, so this
-# patch is applied to the weewx_ha package dir, not /opt/weewx-data (see venv/ in
-# patches/README.md).
+# felddy (felddy/weewx-home-assistant v1.2.0) sets state_class for most keys
+# in KEY_CONFIG but not all, and HA keeps no long-term statistics for a sensor
+# without one. In publish_discovery, keep KEY_CONFIG's state_class when set,
+# drop it for timestamps, enums and *BatteryStatus codes (the None is removed
+# by the existing None-filter), and default the rest to measurement. windrun
+# and lightning counts are per-interval values, not running totals, so force
+# measurement over felddy's total_increasing. felddy is
+# a pip package in the venv, so this patch is applied to the weewx_ha package
+# dir (see venv/ in patches/README.md).
 --- a/config_publisher.py
 +++ b/config_publisher.py
-@@ -153,6 +153,20 @@
+@@ -163,6 +163,21 @@
                  | self.device_description
              )
-
-+            # state_class drives Home Assistant long-term statistics:
-+            #   measurement       -> live instantaneous readings (most sensors)
-+            #   total_increasing  -> resetting accumulators (day/month/year rain & ET)
-+            #   (omitted)         -> timestamps, enums, *BatteryStatus codes
+ 
++            # state_class drives Home Assistant long-term statistics. Keep
++            # the state_class from KEY_CONFIG when it sets one; otherwise:
++            #   (omitted)    -> timestamps, enums, *BatteryStatus codes
++            #   measurement  -> windrun and lightning counts (per-interval,
++            #                   not running totals) and anything unset
 +            _dc = payload.get("device_class")
 +            if _dc in ("timestamp", "enum") or sensor_name.endswith("BatteryStatus"):
 +                payload["state_class"] = None
-+            elif sensor_name in (
-+                "dayRain", "monthRain", "yearRain", "dayET", "monthET", "yearET"
++            elif sensor_name == "windrun" or (
++                sensor_name.startswith("lightning_") and sensor_name.endswith("_count")
 +            ):
-+                payload["state_class"] = "total_increasing"
-+            else:
++                payload["state_class"] = "measurement"
++            elif "state_class" not in payload:
 +                payload["state_class"] = "measurement"
 +
              # Remove any keys with None values
              payload = {k: v for k, v in payload.items() if v is not None}
+ 

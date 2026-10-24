@@ -32,16 +32,15 @@ S6=/etc/s6-overlay/s6-rc.d
 # binary + import health
 check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
-check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp, user.loopdata, user.wxskyfield, user.wxskyfield_sky, user.celestial, user.celestial_page, user.celestial_sky, user.marine_data'
+check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp, user.windy, user.loopdata, user.wxskyfield, user.wxskyfield_sky, user.celestial, user.celestial_page, user.celestial_sky, user.marine_data'
 
 # MQTT publisher (by felddy) patches applied.
 #
-# The three highest-value patches (state_class, NO_UNIT_KEYS, NEW_ARCHIVE
-# bind) are verified by python behaviour assertions rather than literal
-# substring greps: importing the patched module / AST-parsing the patched
-# source proves the patch is structurally in place, not just that the
-# token appears somewhere in the file. The remaining six still use the
-# `has` substring check - they're lower-impact constants/keys where a
+# The two highest-value patches (state_class, NEW_ARCHIVE bind) are
+# verified by AST assertions rather than literal substring greps: parsing
+# the patched source proves the patch is structurally in place, not just
+# that the token appears somewhere in the file. The rest use the `has`
+# substring check - they're lower-impact constants/keys where a
 # token-match catches the realistic regression (an accidentally dropped
 # entry) without needing the heavier scaffolding.
 check "patch: MQTT publisher (by felddy): state_class injected in publish_discovery" \
@@ -63,14 +62,6 @@ ok = any(
 sys.exit(0 if ok else 1)
 "
 check "patch: MQTT publisher (by felddy): txBatteryStatus int" has 'int(packet["txBatteryStatus"])' "$WEEWX_HA/preprocessor.py"
-check "patch: MQTT publisher (by felddy): NO_UNIT_KEYS exported with forecast keys" \
-  python3 -c "
-from weewx_ha.utils import NO_UNIT_KEYS
-import sys
-sys.exit(0 if isinstance(NO_UNIT_KEYS, set) and {'forecastIcon', 'forecastRule'} <= NO_UNIT_KEYS else 1)
-"
-check "patch: MQTT publisher (by felddy): rainAlarm key" has '"rainAlarm"' "$WEEWX_HA/utils.py"
-check "patch: MQTT publisher (by felddy): windrun key" has '"windrun"' "$WEEWX_HA/utils.py"
 check "patch: MQTT publisher (by felddy): rain24h key" has '"rain24h"' "$WEEWX_HA/utils.py"
 check "patch: MQTT publisher (by felddy): NEW_ARCHIVE_RECORD bound to on_weewx_archive" \
   python3 -c "

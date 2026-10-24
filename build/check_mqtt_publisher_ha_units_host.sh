@@ -28,25 +28,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Extract the patched weewx_ha package and the bundled user modules from
-# the built image. weewx_ha carries patches/venv/* applied; user/
+# Extract the patched weewx_ha package (plus its dist-info, which
+# weewx_ha/__init__.py reads for __version__) and the bundled user modules
+# from the built image. weewx_ha carries patches/venv/* applied; user/
 # carries the bundled extensions (rain24h registers obs_group_dict at
 # import time, which check_mqtt_publisher_ha_units.py relies on).
 docker create --name "$CTR" "$IMAGE" >/dev/null
-docker cp "$CTR:/opt/weewx/lib/python3.13/site-packages/weewx_ha" "$WORK/weewx_ha"
+mkdir "$WORK/pkg"
+docker run --rm --entrypoint /bin/sh "$IMAGE" -c \
+  'cd /opt/weewx/lib/python3.13/site-packages && tar c weewx_ha weewx_home_assistant-*.dist-info' |
+  tar x -C "$WORK/pkg"
 docker cp "$CTR:/opt/weewx-data/bin/user" "$WORK/user"
 
 # Build a host venv with HA + stock weewx + the MQTT publisher's
 # runtime deps. The check doesn't touch any patched weewx core code (no
 # weedb, no schema), so unpatched weewx from PyPI is fine. paho-mqtt +
-# pydantic + setuptools are the MQTT publisher's (by felddy)
-# pyproject.toml deps — needed so the patched weewx_ha package overlay
-# (next step) can import.
+# pydantic are the MQTT publisher's (by felddy) pyproject.toml deps —
+# needed so the patched weewx_ha package overlay (next step) can import.
 uv venv "$WORK/venv" --python 3.13
 uv pip install --python "$WORK/venv/bin/python" \
   "homeassistant==${HA_VERSION}" \
   "weewx==${WEEWX_VERSION}" \
-  paho-mqtt pydantic setuptools
+  paho-mqtt pydantic
 
 # Overlay the patched weewx_ha on top of whatever weewx pulled in (if
 # anything — weewx doesn't depend on weewx_ha, so this is just a copy).
@@ -55,7 +58,7 @@ SITE="$(find "$WORK/venv/lib" -maxdepth 2 -name site-packages -type d | head -1)
   echo "FAIL: could not locate site-packages in $WORK/venv/lib"
   exit 1
 }
-cp -r "$WORK/weewx_ha" "$SITE/weewx_ha"
+cp -r "$WORK/pkg/." "$SITE/"
 
 # PYTHONPATH so `import user.rain24h` finds the bundled module.
 PYTHONPATH="$WORK" "$WORK/venv/bin/python" build/check_mqtt_publisher_ha_units.py

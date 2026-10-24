@@ -1,4 +1,4 @@
-# Add unit-lookup aliases in felddy (felddy/weewx-home-assistant v1.0.0)
+# Add unit-lookup aliases in felddy (felddy/weewx-home-assistant v1.2.0)
 # for the Davis Vantage LOOP2 fields whose base key is mapped in weewx
 # core's obs_group_dict but whose LOOP2-suffixed key is not.
 #
@@ -32,7 +32,7 @@
 # weewx_ha package dir (see venv/ in patches/README.md).
 --- a/utils.py
 +++ b/utils.py
-@@ -90,6 +90,17 @@
+@@ -66,6 +66,17 @@
              (target_unit, _) = getStandardUnitType(int(unit_system), "ET")
          elif measurement_name in {"sunrise", "sunset", "stormStart"}:
              (target_unit, _) = getStandardUnitType(int(unit_system), "dateTime")
@@ -47,6 +47,6 @@
 +            (target_unit, _) = getStandardUnitType(int(unit_system), "rain")
 +        elif measurement_name == "pressure_raw":
 +            (target_unit, _) = getStandardUnitType(int(unit_system), "pressure")
-         elif _key_has_no_unit(measurement_name):
-             pass  # binary_sensor / enum -- no unit by design, skip warning
          else:
+             logger.warning(
+                 "No unit found for measurement '%s' in unit system %s",
