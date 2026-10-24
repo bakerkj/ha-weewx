@@ -29,7 +29,7 @@ https://github.com/matthewwall/weewx-exfoliation/archive/9f77f4d.zip
 https://github.com/chaunceygardiner/weewx-forecast/archive/v5.4.zip
 
 # install: skins/Bootstrap
-https://github.com/brewster76/fuzzy-archer/archive/v4.4.zip
+https://github.com/brewster76/fuzzy-archer/archive/v4.5.zip
 
 # install: bin/user/MQTTSubscribe.py
 https://github.com/bellrichm/WeeWX-MQTTSubscribe/archive/v3.1.0.zip
@@ -54,7 +54,7 @@ https://github.com/chaunceygardiner/weewx-loopdata/archive/v8.0.3.zip
 # install: bin/user/wxskyfield_lines.dat
 # install: bin/user/wxskyfield_de421.bsp
 # install: skins/Skyfield
-https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.10.zip
+https://github.com/chaunceygardiner/weewx-skyfield/archive/v2.11.zip
 
 # Live planetarium page. Requires weewx-loopdata 7.0+ and
 # weewx-skyfield 2.6+ (installer refuses older). Reads loop-data.txt from
