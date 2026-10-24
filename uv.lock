@@ -180,6 +180,9 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
 ]
+test = [
+    { name = "pytest" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -198,6 +201,7 @@ dev = [
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "pytest", specifier = ">=9.0.3" },
 ]
+test = [{ name = "pytest", specifier = ">=9.0.3" }]
 
 [[package]]
 name = "idna"
