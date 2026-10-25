@@ -236,16 +236,19 @@ RUN curl --fail --silent --show-error --location \
     https://raw.githubusercontent.com/weewx/weewx/v5.5.2/src/weewx_data/examples/xstats/bin/user/xstats.py
 
 # ---------------------------------------------------------------------------
-# Bootstrap skin (fuzzy-archer) ephemeris. Its day/night shading loads
-# WEEWX_ROOT/SQLITE_ROOT/skyfield/de440s.bsp and downloads it (32 MB) at
-# report time if missing; ship it so reports work offline.
+# JPL ephemeris for the Bootstrap skin's (fuzzy-archer) day/night chart
+# shading. Patch 0019 points the skin at /opt/weewx-data/ephemeris, so this
+# file is used whatever SQLITE_ROOT is and nothing downloads at report time.
+# JPL and NAIF serve identical files; fall back to NAIF if JPL is unreachable.
 # ---------------------------------------------------------------------------
-RUN mkdir -p /opt/weewx-data/skyfield && \
-    curl --fail --silent --show-error --location \
-      --retry 4 --retry-all-errors \
-      --output /opt/weewx-data/skyfield/de440s.bsp \
-      https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp && \
-    echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  /opt/weewx-data/skyfield/de440s.bsp" >/tmp/de440s.sha256 && \
+RUN mkdir -p /opt/weewx-data/ephemeris && \
+    for url in https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp \
+               https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp; do \
+      curl --fail --silent --show-error --location \
+        --connect-timeout 20 --retry 3 --retry-all-errors \
+        --output /opt/weewx-data/ephemeris/de440s.bsp "$url" && break; \
+    done && \
+    echo "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2  /opt/weewx-data/ephemeris/de440s.bsp" >/tmp/de440s.sha256 && \
     sha256sum -c /tmp/de440s.sha256 && \
     rm /tmp/de440s.sha256
 

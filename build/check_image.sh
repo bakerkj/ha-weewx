@@ -32,8 +32,8 @@ S6=/etc/s6-overlay/s6-rc.d
 # binary + import health
 check "weewxd binary runs" weewxd --version
 check "runtime deps importable" python3 -c 'import weewx_ha, paho.mqtt.client, pydantic'
-check "Bootstrap skin.conf uses the preloaded ephemeris" has 'ephemeris = de440s.bsp' /opt/weewx-data/skins/Bootstrap/skin.conf
-check "Bootstrap skin ephemeris preloaded" sh -c 'test -s /opt/weewx-data/skyfield/de440s.bsp && python3 -c "from skyfield.api import Loader; Loader(\"/opt/weewx-data/skyfield\")(\"de440s.bsp\")[\"sun\"]"'
+check "Bootstrap skin.conf names the preloaded ephemeris" has 'ephemeris = de440s.bsp' /opt/weewx-data/skins/Bootstrap/skin.conf
+check "Bootstrap ephemeris preloaded and loadable" sh -c 'test -s /opt/weewx-data/ephemeris/de440s.bsp && python3 -c "from skyfield.api import Loader; Loader(\"/opt/weewx-data/ephemeris\")(\"de440s.bsp\")[\"sun\"]"'
 check "user.* modules importable" env PYTHONPATH=$WEEWX_BIN python3 -c 'import user.extensions, user.log_to_file, user.report_hook, user.refresh_stale_outputs, user.forecast, user.xstats, user.rain24h, user.xaggs, user.weatherflowudp, user.windy, user.loopdata, user.wxskyfield, user.wxskyfield_sky, user.celestial, user.celestial_page, user.celestial_sky, user.marine_data'
 
 # MQTT publisher (by felddy) patches applied.

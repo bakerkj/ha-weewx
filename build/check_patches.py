@@ -751,6 +751,43 @@ def check_0016_rtgd_buffer_source_guard() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 0019 — fuzzy-archer (Bootstrap skin) [Skyfield] data_dir
+# ---------------------------------------------------------------------------
+def check_0019_fuzzy_archer_ephemeris_data_dir() -> None:
+    """With the shipped Bootstrap skin.conf, the ephemeris directory must be
+    /opt/weewx-data/ephemeris (where the image ships de440s.bsp) even when
+    SQLITE_ROOT is absolute. Pre-0019 it resolved to
+    os.path.join(WEEWX_ROOT, SQLITE_ROOT, "skyfield") = /var/lib/weewx/skyfield
+    and os.mkdir raised FileNotFoundError because /var/lib/weewx is absent.
+    """
+    import configobj
+
+    jsonengine = _import("jsonengine")
+    seen: list[tuple[str, str]] = []
+
+    class FakeSunEvents:
+        def __init__(self, start, end, lon, lat, elev, path, ephemeris):
+            seen.append((path, ephemeris))
+
+        def get_transits(self, _angle):
+            return None
+
+    gen = object.__new__(jsonengine.JSONGenerator)
+    gen.show_daynight = True
+    gen.transition_angle = 8
+    gen.skin_dict = configobj.ConfigObj(
+        "/opt/weewx-data/skins/Bootstrap/skin.conf", encoding="utf-8"
+    )
+    gen.config_dict = {
+        "WEEWX_ROOT": "/opt/weewx-data",
+        "DatabaseTypes": {"SQLite": {"SQLITE_ROOT": "/var/lib/weewx"}},
+    }
+    with patch.object(jsonengine, "SunEvents", FakeSunEvents):
+        gen.get_day_night_events(0, 1, 0.0, 0.0, 0)
+    assert seen == [("/opt/weewx-data/ephemeris", "de440s.bsp")], seen
+
+
+# ---------------------------------------------------------------------------
 # Registry — name -> callable. Names mirror the patch filename stem.
 # ---------------------------------------------------------------------------
 CHECKS: list[tuple[str, Callable[[], None]]] = [
@@ -782,6 +819,10 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("0014-rtgd-tick-interval", check_0014_rtgd_tick_interval),
     ("0015-rtgd-skip-empty-source", check_0015_rtgd_skip_empty_source),
     ("0016-rtgd-buffer-source-guard", check_0016_rtgd_buffer_source_guard),
+    (
+        "0019-fuzzy-archer-ephemeris-data-dir",
+        check_0019_fuzzy_archer_ephemeris_data_dir,
+    ),
 ]
 
 
