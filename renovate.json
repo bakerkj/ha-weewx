@@ -12,6 +12,7 @@
   "pre-commit": {
     "enabled": true
   },
+  "gitIgnoredAuthors": ["bakerkj@users.noreply.github.com"],
   "customManagers": [
     {
       "customType": "regex",
