@@ -12,7 +12,7 @@
 # weewx_ha package dir (see venv/ in patches/README.md).
 --- a/utils.py
 +++ b/utils.py
-@@ -1102,4 +1102,11 @@
+@@ -1111,4 +1111,11 @@
              "state_class": "total_increasing",
          },
      },

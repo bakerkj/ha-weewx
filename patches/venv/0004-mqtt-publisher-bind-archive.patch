@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.2.0) only binds NEW_LOOP_PACKET, so
+# felddy (felddy/weewx-home-assistant v1.2.1) only binds NEW_LOOP_PACKET, so
 # archive-only aggregated fields (windrun, sunshineDur, etc.) never reach the
 # MQTT broker — felddy registers a discovery config for them on first sight
 # (because they show up briefly in the seed packet) but no state topic is ever
@@ -23,7 +23,7 @@
  from weewx.engine import StdEngine, StdService  # type: ignore
  
  from . import ConfigPublisher, PacketPreprocessor, StatePublisher
-@@ -85,8 +85,15 @@
+@@ -90,8 +90,15 @@
              retain=self.config.retain_state,
          )
  
@@ -40,7 +40,7 @@
  
      def init_mqtt_client(self, mqtt_config: MQTTConfig):
          """Initialize the MQTT client."""
-@@ -211,6 +218,25 @@
+@@ -216,6 +223,25 @@
          else:
              logger.warning("MQTT client is not connected, skipping packet processing")
  
