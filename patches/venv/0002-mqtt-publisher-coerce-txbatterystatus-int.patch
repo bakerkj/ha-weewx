@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.2.0) treats txBatteryStatus as an int
+# felddy (felddy/weewx-home-assistant v1.2.1) treats txBatteryStatus as an int
 # bitmask in PacketPreprocessor.process_packet -- it bit-ANDs against (1 << i)
 # to split each station's per-channel battery state into separate sensors.
 # When the upstream data source delivers the field as a *float* (e.g.

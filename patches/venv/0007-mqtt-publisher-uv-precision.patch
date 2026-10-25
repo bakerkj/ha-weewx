@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.2.0) sets UNIT_METADATA['uv_index']
+# felddy (felddy/weewx-home-assistant v1.2.1) sets UNIT_METADATA['uv_index']
 # to round(0) -- it strips ALL decimals from the UV index value when applied
 # as the discovery payload's value_template on HA's side. The underlying
 # weewx loop-packet value is a real float with 0.1 native precision from
@@ -19,7 +19,7 @@
 # weewx_ha package dir (see venv/ in patches/README.md).
 --- a/utils.py
 +++ b/utils.py
-@@ -227,7 +227,7 @@
+@@ -236,7 +236,7 @@
      "unix_epoch": {"unit_of_measurement": None},
      "uv_index": {
          "unit_of_measurement": None,
