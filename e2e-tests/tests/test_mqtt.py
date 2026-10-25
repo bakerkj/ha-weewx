@@ -131,6 +131,26 @@ def test_outTemp_discovery_has_state_class_measurement(mqtt_messages):
     assert cfg.get("state_class") == "measurement", cfg
 
 
+def test_unclassified_key_defaults_to_measurement(mqtt_messages):
+    """windDir has no state_class in felddy's KEY_CONFIG; patch 0001 fills it."""
+    cfg = next(
+        (p for t, p in mqtt_messages.items() if t.endswith("/windDir/config")),
+        None,
+    )
+    assert cfg is not None, "no windDir discovery config"
+    assert json.loads(cfg).get("state_class") == "measurement", cfg
+
+
+def test_windrun_overrides_upstream_total_increasing(mqtt_messages):
+    """windrun is per-interval; patch 0001 replaces felddy's total_increasing."""
+    cfg = next(
+        (p for t, p in mqtt_messages.items() if t.endswith("/windrun/config")),
+        None,
+    )
+    assert cfg is not None, "no windrun discovery config"
+    assert json.loads(cfg).get("state_class") == "measurement", cfg
+
+
 def test_non_measurement_keys_omit_state_class(mqtt_messages):
     """Battery/enum/timestamp keys must NOT carry a state_class — that's
     the contract patches/venv/0001 (MQTT publisher state_class) enforces."""
