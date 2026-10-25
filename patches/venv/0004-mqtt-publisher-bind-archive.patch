@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.0.0) only binds NEW_LOOP_PACKET, so
+# felddy (felddy/weewx-home-assistant v1.2.0) only binds NEW_LOOP_PACKET, so
 # archive-only aggregated fields (windrun, sunshineDur, etc.) never reach the
 # MQTT broker — felddy registers a discovery config for them on first sight
 # (because they show up briefly in the seed packet) but no state topic is ever
@@ -15,18 +15,18 @@
 --- a/controller.py
 +++ b/controller.py
 @@ -13,7 +13,7 @@
-
+ 
  # Third-Party Libraries
  import paho.mqtt.client as mqtt
 -from weewx import NEW_LOOP_PACKET  # type: ignore
 +from weewx import NEW_ARCHIVE_RECORD, NEW_LOOP_PACKET  # type: ignore
  from weewx.engine import StdEngine, StdService  # type: ignore
-
+ 
  from . import ConfigPublisher, PacketPreprocessor, StatePublisher
-@@ -83,8 +83,15 @@
-             self.config.unit_system,
+@@ -85,8 +85,15 @@
+             retain=self.config.retain_state,
          )
-
+ 
 -        # Register the callbacks for loop packets
 +        # Register the callbacks for loop packets and archive records.
 +        # Loop packets carry fast-changing measurements (every ~2.5s on
@@ -37,13 +37,13 @@
 +        # for fields present in both (loop publishes are more recent and win).
          self.bind(NEW_LOOP_PACKET, self.on_weewx_loop)
 +        self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)
-
+ 
      def init_mqtt_client(self, mqtt_config: MQTTConfig):
          """Initialize the MQTT client."""
-@@ -208,6 +215,25 @@
+@@ -211,6 +218,25 @@
          else:
              logger.warning("MQTT client is not connected, skipping packet processing")
-
+ 
 +    def on_weewx_archive(self, event):
 +        """Handle callback for WeeWX archive records.
 +
@@ -57,7 +57,7 @@
 +        logger.debug("Received WeeWX archive record")
 +        if self.mqtt_client.is_connected():
 +            preprocessor_future = self.executor.submit(
-+                self.packet_preprocessor.process_packet, event.record
++                self.packet_preprocessor.process_packet, event.record.copy()
 +            )
 +            preprocessor_future.add_done_callback(self.preprocessor_complete)
 +        else:
@@ -65,3 +65,4 @@
 +
      def shutDown(self):
          """Shutdown the controller.
+ 

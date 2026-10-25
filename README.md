@@ -331,7 +331,7 @@ configuration section to `weewx.conf`.
 | report_hook           | `user.report_hook.ReportHook`                    | _(skin `generator_list`)_ | Post-report shell hook — see below                                  |
 | exfoliation           | _(skin only)_                                    | —                         | Replacement skin                                                    |
 | forecast              | `user.forecast.NWSForecast` (etc.)               | `archive_services`        | Multiple forecast providers, chaunceygardiner                       |
-| fuzzy-archer          | _(skin only)_                                    | —                         | Bootstrap-themed skin                                               |
+| fuzzy-archer          | _(skin only)_                                    | —                         | Bootstrap-themed skin — see below                                   |
 | MQTTSubscribe         | `user.MQTTSubscribe.MQTTSubscribeService`        | `data_services`           | Ingest data from MQTT topics, bellrichm                             |
 | opensensemap          | `user.opensensemap.OpenSenseMap`                 | `restful_services`        | sbsrouteur                                                          |
 | owm                   | `user.owm.OpenWeatherMap`                        | `restful_services`        | matthewwall                                                         |
@@ -348,6 +348,29 @@ configuration section to `weewx.conf`.
 | windguru              | `user.windguru.WindGuru`                         | `restful_services`        | claudobahn                                                          |
 | windy                 | `user.windy.Windy`                               | `restful_services`        | matthewwall                                                         |
 | xaggs                 | `user.xaggs.XAggsService`                        | `xtype_services`          | Historical-day aggregation tags for skins, tkeffer                  |
+
+### Bootstrap skin ephemeris (fuzzy-archer)
+
+The Bootstrap skin shades its charts by day and night. It computes sunrise and
+sunset with the skyfield Python library from a JPL ephemeris file named in the
+skin's `[Skyfield]` section (`ephemeris = de440s.bsp`). That section belongs to
+the Bootstrap skin; it has nothing to do with the separate weewx-skyfield
+extension (`user.wxskyfield`), which ships its own ephemeris.
+
+The image ships `de440s.bsp` in `/opt/weewx-data/ephemeris`, and the add-on's
+Bootstrap `skin.conf` sets `data_dir = ephemeris` in `[Skyfield]`. The skin
+reads the file from `os.path.join(WEEWX_ROOT, data_dir)`, which is
+`/opt/weewx-data/ephemeris`, so reports need no download and work offline,
+whatever `SQLITE_ROOT` is set to. To use a different directory, override it in
+`weewx.conf` (an absolute path is used as-is; the skin downloads the file there
+if it is missing):
+
+```ini
+[StdReport]
+    [[Bootstrap]]
+        [[[Skyfield]]]
+            data_dir = /config/ephemeris
+```
 
 ### Post-report shell hook (`report_hook`)
 
