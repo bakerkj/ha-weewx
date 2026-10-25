@@ -29,10 +29,12 @@ jobs:
       # so a stale lock can't ship the old version behind a green build.
       - name: Check uv.lock matches pyproject.toml
         run: uv lock --check
-      - name: Sync dev dependencies
-        run: uv sync --group dev --frozen
+      # --no-default-groups: uv treats `dev` as a default group, so plain
+      # `--group test` would still pull mypy into the test env.
+      - name: Sync test dependencies
+        run: uv sync --no-default-groups --group test --frozen
       - name: Run pytest
-        run: uv run pytest --junit-xml=test-results/junit.xml
+        run: uv run --no-sync pytest --junit-xml=test-results/junit.xml
       - name: Upload unit-test results
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}

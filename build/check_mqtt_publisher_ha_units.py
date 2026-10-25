@@ -47,7 +47,6 @@ TEMPLATE_BASE_KEYS = {
     "leafWet",
     "soilMoist",
     "soilTemp",
-    "windburn",
 }
 
 # Known upstream bugs in the MQTT publisher (by felddy) that are out of

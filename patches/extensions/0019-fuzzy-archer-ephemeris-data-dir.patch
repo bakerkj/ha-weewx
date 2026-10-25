@@ -1,0 +1,65 @@
+fuzzy-archer (the Bootstrap skin) 4.5 shades its charts by day/night using
+the skyfield Python library and a JPL ephemeris file named by the skin's
+[Skyfield] ephemeris option (de440s.bsp). Despite the section name, this is
+fuzzy-archer's own setting; it is unrelated to the weewx-skyfield extension
+(user.wxskyfield), which ships its own ephemeris.
+
+Upstream locates the file at
+    os.path.join(WEEWX_ROOT, SQLITE_ROOT, 'skyfield')
+falling back to SQLITE_ROOT = '.' when unset. An absolute SQLITE_ROOT
+discards WEEWX_ROOT, so the directory depends on the database settings:
+    no SQLITE_ROOT (add-on template)  -> /opt/weewx-data/skyfield
+    SQLITE_ROOT = archive (stock)     -> /opt/weewx-data/archive/skyfield
+    SQLITE_ROOT = /var/lib/weewx      -> /var/lib/weewx/skyfield
+It then downloads the file there (32 MB) if missing, and creates the
+directory with os.mkdir, which raises FileNotFoundError when the parent
+(e.g. /var/lib/weewx) does not exist.
+
+Add a [Skyfield] data_dir option, joined to WEEWX_ROOT with os.path.join
+(an absolute value is used as-is), and set it in the Bootstrap skin.conf
+to the directory the image ships the ephemeris in:
+    os.path.join('/opt/weewx-data', 'ephemeris') = /opt/weewx-data/ephemeris
+Unset keeps upstream's location. Create the directory with os.makedirs.
+
+--- a/bin/user/jsonengine.py
++++ b/bin/user/jsonengine.py
+@@ -270,13 +270,20 @@
+         if 'skyfield' not in sys.modules or not self.show_daynight:
+             return []
+ 
+-        sqlite_root = self.config_dict.get('DatabaseTypes',configobj.ConfigObj()).get('SQLite',configobj.ConfigObj()).get('SQLITE_ROOT','.')
+-        path = os.path.join(
+-            self.config_dict.get('WEEWX_ROOT','.'),
+-            sqlite_root,
+-            'skyfield'
+-        )
+-        if not os.path.isdir(path): os.mkdir(path)
++        # [Skyfield] data_dir: directory holding the ephemeris, joined to
++        # WEEWX_ROOT (an absolute value is used as-is). Unset keeps upstream's
++        # SQLITE_ROOT-based location.
++        data_dir = self.skin_dict['Skyfield'].get('data_dir')
++        if data_dir:
++            path = os.path.join(self.config_dict.get('WEEWX_ROOT','.'), data_dir)
++        else:
++            sqlite_root = self.config_dict.get('DatabaseTypes',configobj.ConfigObj()).get('SQLite',configobj.ConfigObj()).get('SQLITE_ROOT','.')
++            path = os.path.join(
++                self.config_dict.get('WEEWX_ROOT','.'),
++                sqlite_root,
++                'skyfield'
++            )
++        os.makedirs(path, exist_ok=True)
+ 
+         events = SunEvents(start, end, lon, lat, int(altitude_m), path, self.skin_dict['Skyfield']['ephemeris']).get_transits(self.transition_angle)
+         if events is None:
+--- a/skins/Bootstrap/skin.conf
++++ b/skins/Bootstrap/skin.conf
+@@ -19,6 +19,9 @@
+ 
+ [Skyfield]
+     ephemeris = de440s.bsp # https://rhodesmill.org/skyfield/planets.html#choosing-an-ephemeris
++    # ha-weewx: os.path.join(WEEWX_ROOT, data_dir) = /opt/weewx-data/ephemeris,
++    # where the add-on image ships de440s.bsp (no download at report time).
++    data_dir = ephemeris
+ 
+ [Units]
+     [[TimeFormats]]
