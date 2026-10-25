@@ -1,31 +1,22 @@
 name: renovate-relock
 
-# When Renovate bumps a dep in pyproject.toml, its regex customManagers do
-# plain text substitution and leave uv.lock out of sync. This job runs
-# `uv lock` on the PR branch and pushes the refreshed uv.lock back, so
-# tests (which gate on `uv lock --check`) can go green.
+# Renovate's regex customManagers do text substitution in pyproject.toml
+# without touching uv.lock, failing `uv lock --check`. Relock on the PR
+# branch and push back so tests go green.
 #
-# Push auth uses RENOVATE_RELOCK_TOKEN (fine-grained PAT with contents:write
-# on this repo), not GITHUB_TOKEN - per GitHub's docs, events from pushes
-# authenticated with GITHUB_TOKEN do not create new workflow runs, so a
-# relock pushed with GITHUB_TOKEN would never re-run tests on the new HEAD.
-# A PAT-authored push does re-trigger pull_request jobs, which is the point.
+# PAT (not GITHUB_TOKEN) because GITHUB_TOKEN pushes don't re-trigger
+# workflows. `persist-credentials: false` keeps the write-scoped PAT out
+# of .git/config while `uv lock` runs the archive-URL dep's PEP 517
+# build backend (untrusted upstream code).
 #
-# No-loop guarantee: this workflow fires only when github.actor is
-# renovate[bot]. Our own push is authored by the PAT owner (not renovate),
-# so this job won't fire on the commit it just made. The paths filter is
-# belt-and-suspenders - we only touch uv.lock, not pyproject.toml.
+# Loop guard: the actor check. The paths filter does NOT help here -
+# pull_request paths match the cumulative three-dot diff, so relock
+# synchronize events still match pyproject.toml.
 
 on:
   pull_request:
     paths:
       - pyproject.toml
-
-# Renovate can rebase or add commits to the same PR in quick succession.
-# Without this, two runs race on `git push` and the loser gets non-FF.
-concurrency:
-  group: renovate-relock-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -33,16 +24,24 @@ permissions:
 jobs:
   relock:
     if: github.actor == 'renovate[bot]'
+    # Job-level so human pushes (skipped by `if:`) don't cancel in-flight relocks.
+    concurrency:
+      group: renovate-relock-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.RENOVATE_RELOCK_TOKEN }}
+          persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - run: uv lock
       - name: Commit and push if uv.lock changed
+        env:
+          RELOCK_TOKEN: ${{ secrets.RENOVATE_RELOCK_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
         run: |
           if git diff --quiet uv.lock; then
             echo "uv.lock already in sync; nothing to do."
@@ -52,4 +51,4 @@ jobs:
           git config user.email "${{ github.repository_owner }}@users.noreply.github.com"
           git add uv.lock
           git commit -m "chore(uv): relock after Renovate dep bump"
-          git push
+          git push "https://x-access-token:${RELOCK_TOKEN}@github.com/${REPO}.git" "HEAD:${HEAD_REF}"
