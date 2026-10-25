@@ -195,7 +195,7 @@ requires-dist = [
     { name = "six", specifier = ">=1.16" },
     { name = "skyfield", specifier = ">=1.47" },
     { name = "weewx", specifier = "==5.5.2" },
-    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.0.zip" },
+    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.1.zip" },
 ]
 
 [package.metadata.requires-dev]
@@ -591,13 +591,13 @@ wheels = [
 
 [[package]]
 name = "weewx-home-assistant"
-version = "1.2.0"
-source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.0.zip" }
+version = "1.2.1"
+source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.1.zip" }
 dependencies = [
     { name = "paho-mqtt" },
     { name = "pydantic" },
 ]
-sdist = { hash = "sha256:f6e119594e50eff735260b6d7cc346fa5094af1dab16b551a9c5293d1fa09e12" }
+sdist = { hash = "sha256:a1e97a9ebcbf0933f67fd36a5fd2ec0fe70694994c2cbc4796a4aeb247db064c" }
 
 [package.metadata]
 requires-dist = [
