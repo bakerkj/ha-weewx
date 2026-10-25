@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.2.0) sets state_class for most keys
+# felddy (felddy/weewx-home-assistant v1.2.1) sets state_class for most keys
 # in KEY_CONFIG but not all, and HA keeps no long-term statistics for a sensor
 # without one. In publish_discovery, keep KEY_CONFIG's state_class when set,
 # drop it for timestamps, enums and *BatteryStatus codes (the None is removed

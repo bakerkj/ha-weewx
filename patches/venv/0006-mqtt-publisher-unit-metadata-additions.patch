@@ -1,4 +1,4 @@
-# felddy (felddy/weewx-home-assistant v1.2.0) maps weewx unit names to HA
+# felddy (felddy/weewx-home-assistant v1.2.1) maps weewx unit names to HA
 # unit_of_measurement strings via UNIT_METADATA in utils.py. HA drops the
 # discovery message (entity stays unavailable) when the unit isn't valid for
 # the entity's device_class. Checked against HA's DEVICE_CLASS_UNITS
@@ -17,7 +17,7 @@
 # weewx_ha package dir (see venv/ in patches/README.md).
 --- a/utils.py
 +++ b/utils.py
-@@ -137,8 +137,8 @@
+@@ -146,8 +146,8 @@
  UNIT_METADATA: dict[str, dict[str, Optional[str]]] = {
      "cm": {"unit_of_measurement": "cm", "value_template": "{{ value | round(2) }}"},
      "cm_per_hour": {
@@ -28,7 +28,7 @@
      },
      "degree_C": {
          "unit_of_measurement": "°C",
-@@ -199,6 +199,11 @@
+@@ -208,6 +208,11 @@
          "unit_of_measurement": "m/s",
          "value_template": "{{ value | round(1) }}",
      },
