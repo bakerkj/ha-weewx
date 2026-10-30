@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.39](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.38...ha-weewx-v0.1.39) (2026-10-30)
+
+
+### Features
+
+* **ci:** auto-relock uv.lock on Renovate PRs ([#448](https://github.com/bakerkj/ha-weewx/issues/448)) ([189e3bc](https://github.com/bakerkj/ha-weewx/commit/189e3bc9d7815b218cbd800da8f2ac68c17bf660))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#460](https://github.com/bakerkj/ha-weewx/issues/460)) ([fa4e538](https://github.com/bakerkj/ha-weewx/commit/fa4e538ce72717f7115948f514479b608109ba3c))
+* **deps:** update anthropics/claude-code-action action to v1.0.263 ([#457](https://github.com/bakerkj/ha-weewx/issues/457)) ([051badd](https://github.com/bakerkj/ha-weewx/commit/051badddc0bd4d9664d009f58ea1fe57af7254bf))
+* **deps:** update dependency node to v26 ([#453](https://github.com/bakerkj/ha-weewx/issues/453)) ([313e47f](https://github.com/bakerkj/ha-weewx/commit/313e47f1a80719712eb4c815bd36b97a8d8a0c6e))
+* **deps:** update dependency pytest to v9.2.0 ([#454](https://github.com/bakerkj/ha-weewx/issues/454)) ([4a3eeed](https://github.com/bakerkj/ha-weewx/commit/4a3eeed7d186647a8be6055d0037e1bfa41814b7))
+* **deps:** update dependency renovate to v44.186.4 ([#459](https://github.com/bakerkj/ha-weewx/issues/459)) ([62d4347](https://github.com/bakerkj/ha-weewx/commit/62d4347b010c90e4e95d0115edee0e539003cbf9))
+* **deps:** update dependency renovate to v44.186.6 ([#461](https://github.com/bakerkj/ha-weewx/issues/461)) ([6dbcf2e](https://github.com/bakerkj/ha-weewx/commit/6dbcf2ed8b32af62b95ef9e76cc5fb2965b390ed))
+* **deps:** update dependency renovate to v44.186.7 ([#462](https://github.com/bakerkj/ha-weewx/issues/462)) ([3cf36ba](https://github.com/bakerkj/ha-weewx/commit/3cf36ba83bbfd7d545269bb53183177ceb4ea5e3))
+* **deps:** update dependency renovate to v44.188.2 ([#463](https://github.com/bakerkj/ha-weewx/issues/463)) ([e606516](https://github.com/bakerkj/ha-weewx/commit/e606516862cd37a18537cafb757a32c20076ec54))
+* **deps:** update dependency renovate to v44.188.4 ([#464](https://github.com/bakerkj/ha-weewx/issues/464)) ([9cbb8f1](https://github.com/bakerkj/ha-weewx/commit/9cbb8f11a355c41a115aa3427abcc5701d53d71e))
+* **deps:** update dependency renovate to v44.190.0 ([#465](https://github.com/bakerkj/ha-weewx/issues/465)) ([0425240](https://github.com/bakerkj/ha-weewx/commit/0425240e341b8ad7ca173e11e85b4f1c5d7ec7a2))
+* **deps:** update ghcr.io/home-assistant/base-debian docker tag to trixie-2026.10.3 ([#455](https://github.com/bakerkj/ha-weewx/issues/455)) ([8e1c70b](https://github.com/bakerkj/ha-weewx/commit/8e1c70b1e20432d4b800f77c9752af52a76e8061))
+* **deps:** update github-actions ([#458](https://github.com/bakerkj/ha-weewx/issues/458)) ([b211221](https://github.com/bakerkj/ha-weewx/commit/b2112212593ab2f47d18d0aab4823b3136f41daf))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.17.3 ([#452](https://github.com/bakerkj/ha-weewx/issues/452)) ([0050b9a](https://github.com/bakerkj/ha-weewx/commit/0050b9a8182e30fb54ab09f5f5017c7e4cdb6f84))
+* **deps:** update pre-commit hook python-jsonschema/check-jsonschema to v0.39.0 ([#451](https://github.com/bakerkj/ha-weewx/issues/451)) ([b812178](https://github.com/bakerkj/ha-weewx/commit/b8121781cf22f2fdbcb20c0809626b8e917f7e54))
+* **deps:** update uv tool to v0.13.6 ([#456](https://github.com/bakerkj/ha-weewx/issues/456)) ([e1ab46c](https://github.com/bakerkj/ha-weewx/commit/e1ab46ca1a20c0de348c0e27c0994dda9e95dea9))
+* **deps:** update weewx extensions ([#450](https://github.com/bakerkj/ha-weewx/issues/450)) ([ce26b4d](https://github.com/bakerkj/ha-weewx/commit/ce26b4d00bb2ecc34207ae076e102e1c4f2d296c))
+
 ## [0.1.38](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.37...ha-weewx-v0.1.38) (2026-10-25)
 
 
