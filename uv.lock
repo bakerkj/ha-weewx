@@ -195,7 +195,7 @@ requires-dist = [
     { name = "six", specifier = ">=1.16" },
     { name = "skyfield", specifier = ">=1.47" },
     { name = "weewx", specifier = "==5.5.2" },
-    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.1.zip" },
+    { name = "weewx-home-assistant", url = "https://github.com/felddy/weewx-home-assistant/archive/v1.3.1.zip" },
 ]
 
 [package.metadata.requires-dev]
@@ -591,23 +591,16 @@ wheels = [
 
 [[package]]
 name = "weewx-home-assistant"
-version = "1.2.1"
-source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.2.1.zip" }
+version = "1.3.1"
+source = { url = "https://github.com/felddy/weewx-home-assistant/archive/v1.3.1.zip" }
 dependencies = [
     { name = "paho-mqtt" },
     { name = "pydantic" },
 ]
-sdist = { hash = "sha256:a1e97a9ebcbf0933f67fd36a5fd2ec0fe70694994c2cbc4796a4aeb247db064c" }
+sdist = { hash = "sha256:2c547c0797b01134fbdc5ad848b1191c8058064e3a3c4f774018316fc9a8a72f" }
 
 [package.metadata]
 requires-dist = [
-    { name = "coverage", marker = "extra == 'test'" },
-    { name = "coveralls", marker = "extra == 'test'" },
     { name = "paho-mqtt", specifier = ">=2.0" },
-    { name = "pre-commit", marker = "extra == 'test'" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-cov", marker = "extra == 'test'" },
-    { name = "weewx", marker = "extra == 'test'", specifier = "==5.5.2" },
 ]
-provides-extras = ["test"]
