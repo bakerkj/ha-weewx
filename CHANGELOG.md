@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.40](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.39...ha-weewx-v0.1.40) (2026-11-13)
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v8.0.7 ([#474](https://github.com/bakerkj/ha-weewx/issues/474)) ([9533472](https://github.com/bakerkj/ha-weewx/commit/9533472fc98b0a417f662d81a6f14708cf7b2a5b))
+* **deps:** update dependency pymysql to v1.2.4 ([#475](https://github.com/bakerkj/ha-weewx/issues/475)) ([4d2fcc1](https://github.com/bakerkj/ha-weewx/commit/4d2fcc1eef184a93198528da319af8c4f6502f5d))
+* **deps:** update dependency renovate to v44.226.1 ([#480](https://github.com/bakerkj/ha-weewx/issues/480)) ([b3660dd](https://github.com/bakerkj/ha-weewx/commit/b3660dde2e3d11fccf453b5feacc6ce2048e09cf))
+* **deps:** update dependency renovate to v44.226.3 ([#481](https://github.com/bakerkj/ha-weewx/issues/481)) ([92734db](https://github.com/bakerkj/ha-weewx/commit/92734db4ea36d22940880780f9554a91cf7fd9e3))
+* **deps:** update dependency renovate to v44.227.2 ([#484](https://github.com/bakerkj/ha-weewx/issues/484)) ([4479359](https://github.com/bakerkj/ha-weewx/commit/4479359169569eea7624d59250cb827220a15b0a))
+* **deps:** update github-actions ([#477](https://github.com/bakerkj/ha-weewx/issues/477)) ([c5af918](https://github.com/bakerkj/ha-weewx/commit/c5af918a9b60e6756d11a250ef4d144a1774a77d))
+* **deps:** update pre-commit hook kjanat/actionlint to v1.17.1 ([#478](https://github.com/bakerkj/ha-weewx/issues/478)) ([abeb9f7](https://github.com/bakerkj/ha-weewx/commit/abeb9f78fea53531130c586b6a64b75c1da409ff))
+* **deps:** update pre-commit hooks ([#482](https://github.com/bakerkj/ha-weewx/issues/482)) ([536034b](https://github.com/bakerkj/ha-weewx/commit/536034ba63d01b9f4aa9ea3c56ef18429ef91112))
+* **deps:** update uv tool to v0.13.8 ([#479](https://github.com/bakerkj/ha-weewx/issues/479)) ([6e7a2cb](https://github.com/bakerkj/ha-weewx/commit/6e7a2cba6414a668ae44871335238c409b656b3d))
+
 ## [0.1.39](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.38...ha-weewx-v0.1.39) (2026-11-07)
 
 
