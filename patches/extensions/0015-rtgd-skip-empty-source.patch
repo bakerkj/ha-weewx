@@ -13,25 +13,23 @@
 #
 # Two sites: the emit loop in calculate() (skip the field), AND the
 # constructor's defaults-to-ValueTuple loop (skip entirely, otherwise
-# _getUnitGroup('') -> None and self.units_dict[None] KeyErrors at boot
+# get_unit_group('') -> None and _group_map[None] KeyErrors at boot
 # before any LOOP packet has arrived).
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -1592,6 +1592,13 @@
-         # convert any defaults to ValueTuples
-         for field in list(_field_map.items()):
-             field_config = field[1]
-+            # Operator may have pruned a field by setting its `source =`
-+            # to empty in [[FieldMapExtensions]]; _getUnitGroup('') returns
-+            # None which then KeyErrors self.units_dict[None]. Skip these
-+            # entries entirely so the populate loop can skip them later
-+            # (see 0015-rtgd-skip-empty-source.patch).
+@@ -1297,6 +1297,11 @@
+         # iterate over each field map config entry and convert any default
+         # values in the field map to ValueTuples
+         for field, field_config in six.iteritems(_field_map):
++            # A field whose `source =` is empty in [[FieldMapExtensions]] is
++            # dropped from gauge-data.txt; get_unit_group('') returns None,
++            # which would KeyError _group_map, so skip it here as well.
 +            if not field_config.get('source'):
 +                continue
-             _group = _getUnitGroup(field_config['source'])
-             _default = weeutil.weeutil.to_list(field_config.get('default', None))
-             if _default is None:
-@@ -2448,6 +2455,12 @@
+             # obtain the unit group for this field
+             _group = self.get_unit_group(field_config['source'],
+                                          field_config.get('aggregate'))
+@@ -2180,6 +2185,12 @@
  
          # now populate all fields in the field map
          for field in self.field_map:

@@ -1,11 +1,11 @@
-# rtgd (hoetzgit/weewx-realtime_gauge-data v0.6.0) catches the worker thread's
+# rtgd (weewx-contrib/weewx-realtime_gauge-data v0.6.7) catches the worker thread's
 # unhandled exception and logs the type, but sends the traceback to log.debug
 # — so we can never see WHICH key triggered a KeyError without bumping the
 # whole logger to debug. Promote that one traceback to log.critical so the
 # stack actually surfaces in the addon log.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -1834,7 +1834,7 @@
+@@ -1560,7 +1560,7 @@
                                  # Some unknown exception occurred. This is probably
                                  # a serious problem. Exit.
                                  log.critical("Unexpected exception of type %s" % (type(e),))

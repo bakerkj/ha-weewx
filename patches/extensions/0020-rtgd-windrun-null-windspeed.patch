@@ -1,0 +1,45 @@
+rtgd: skip the loop windrun update when a packet has no wind speed.
+
+Buffer.add_wind_value() extends windrun from windSpeed whenever a LOOP
+packet has no windrun value. Since 0.6.5 that includes packets where
+windrun is present but None, which is what StdWXCalculate sets on every
+LOOP packet when windrun = prefer_hardware (weewx cannot calculate it
+without an archive interval). calc_windrun() then multiplies
+packet['windSpeed'] by the elapsed time; the Vantage driver decodes a
+missing wind reading (0xff) as None, so a single wind dropout raises
+
+  TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+
+and the rtgd thread exits, freezing gauge-data.txt until a restart.
+
+Skip the update for a None wind speed and reset last_windSpeed_ts, so
+the next valid speed starts a new interval rather than being applied
+across the gap.
+
+--- a/bin/user/rtgd.py
++++ b/bin/user/rtgd.py
+@@ -2621,12 +2621,18 @@
+                 self['windrun'] = init_dict.get(obs, ScalarBuffer)(stats=None,
+                                                                    units=packet['usUnits'],
+                                                                    history=obs in HIST_MANIFEST)
+-            # to calculate windrun we need a speed over a period of time, are
+-            # we able to calculate the length of the time period?
+-            if self.last_windSpeed_ts is not None:
+-                windrun = self.calc_windrun(packet)
+-                self['windrun'].add_value(windrun, packet['dateTime'])
+-            self.last_windSpeed_ts = packet['dateTime']
++            # A packet without a wind speed (e.g. the Vantage driver decodes
++            # 0xff as None) cannot extend windrun; restart the interval so
++            # the next speed is not applied across the gap.
++            if packet['windSpeed'] is None:
++                self.last_windSpeed_ts = None
++            else:
++                # to calculate windrun we need a speed over a period of time,
++                # are we able to calculate the length of the time period?
++                if self.last_windSpeed_ts is not None:
++                    windrun = self.calc_windrun(packet)
++                    self['windrun'].add_value(windrun, packet['dateTime'])
++                self.last_windSpeed_ts = packet['dateTime']
+
+         # now add it as the special vector 'wind'
+         if obs == 'windSpeed':

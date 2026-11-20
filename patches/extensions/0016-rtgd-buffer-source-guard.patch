@@ -29,7 +29,7 @@
 # aggregate types, not just the numeric ones.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -2105,7 +2105,17 @@
+@@ -1822,7 +1822,17 @@
                      aggregate_period = None
                  # obtain the raw aggregate value, any unit conversion and
                  # formatting will be done later
@@ -48,7 +48,7 @@
                      # if no aggregate period was specified default to 3600 seconds
                      trend_period = aggregate_period if aggregate_period is not None else 3600
                      # the largest difference in time that is acceptable when
-@@ -2222,7 +2232,18 @@
+@@ -1939,7 +1949,18 @@
                      # we have a default, defaults are already a ValueTuple so we can just use it as is
                      _conv_default = weewx.units.convert(this_field_map['default'],
                                                          result_units).value

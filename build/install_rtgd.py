@@ -3,9 +3,9 @@
 
 """Manual install of the realtime-gauge-data extension.
 
-Its ``install.py`` uses ``distutils`` (removed in Python 3.12) and the old
-WeeWX 3/4 ``ExtensionInstaller`` API, so ``weectl extension install``
-chokes on it. We just unpack the two pieces directly:
+Its ``install.py`` installs only ``bin/user/rtgd.py``, not the
+RealtimeGauges skin, so ``weectl extension install`` would leave the skin
+out. We unpack both pieces directly:
 
   - ``bin/user/rtgd.py``
   - ``skins/RealtimeGauges/`` (whole directory tree)
@@ -24,7 +24,7 @@ import urllib.error
 import urllib.request
 import zipfile
 
-URL = "https://github.com/hoetzgit/weewx-realtime_gauge-data/archive/v0.6.0.zip"
+URL = "https://github.com/weewx-contrib/weewx-realtime_gauge-data/archive/df86d26a6d82c247c40b1b1f5c9a1f87e1d28b27.zip"
 DEST_ROOT = "/opt/weewx-data"
 
 # urllib has no built-in retry. GitHub 5xx hiccups on the archive URL surface
