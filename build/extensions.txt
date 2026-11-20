@@ -14,9 +14,9 @@
 #   bin/user/<module>.py    a python module under user/
 #   skins/<name>            a skin directory
 #
-# Realtime-gauge-data is NOT here: its install.py uses distutils + the
-# old WeeWX 3/4 ExtensionInstaller API, so weectl can't install it.
-# See build/install_rtgd.py for the manual unpack.
+# Realtime-gauge-data is NOT here: its install.py installs only
+# bin/user/rtgd.py, not the RealtimeGauges skin. See
+# build/install_rtgd.py for the manual unpack.
 
 # install: bin/user/emoncms.py
 https://github.com/matthewwall/weewx-emoncms/archive/7c04113.zip

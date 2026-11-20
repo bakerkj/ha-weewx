@@ -349,6 +349,35 @@ configuration section to `weewx.conf`.
 | windy                 | `user.windy.Windy`                               | `restful_services`        | matthewwall                                                         |
 | xaggs                 | `user.xaggs.XAggsService`                        | `xtype_services`          | Historical-day aggregation tags for skins, tkeffer                  |
 
+### Realtime gauge data number formats
+
+`gauge-data.txt` formats each field by its output unit: the unit chosen for the
+field's unit group in `[RealtimeGaugeData] [[Groups]]` (metric by default, e.g.
+`km_per_hour`, `hPa`, `mm`). rtgd has a built-in format per unit (for example
+`%.0f` for `km_per_hour`, `mile_per_hour` and `knot`, `%.3f` for `inHg`). To
+change a unit's format for every field in that unit, set it in
+`[[StringFormats]]`:
+
+```ini
+[RealtimeGaugeData]
+    [[StringFormats]]
+        km_per_hour = %.1f
+```
+
+To change one field, give it a `format` in `[[FieldMapExtensions]]`. An
+extension entry replaces the field's default entry entirely, so repeat its
+`source`, `group` and any aggregate settings from `DEFAULT_FIELD_MAP` in
+`bin/user/rtgd.py`:
+
+```ini
+[RealtimeGaugeData]
+    [[FieldMapExtensions]]
+        [[[CurrentSolarMax]]]
+            source = maxSolarRad
+            group = group_radiation
+            format = %.1f
+```
+
 ### Bootstrap skin ephemeris (fuzzy-archer)
 
 The Bootstrap skin shades its charts by day and night. It computes sunrise and

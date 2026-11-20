@@ -1,4 +1,4 @@
-# rtgd (hoetzgit/weewx-realtime_gauge-data v0.6.0) Buffer.start_of_day_reset()
+# rtgd (weewx-contrib/weewx-realtime_gauge-data v0.6.7) Buffer.start_of_day_reset()
 # resets every obs in the static MANIFEST, but the Buffer (a dict) is only
 # populated with obs that actually appear in day_stats / loop packets. When a
 # station does not report a manifest obs — e.g. humidex when StdWXCalculate is
@@ -8,7 +8,7 @@
 # guards used elsewhere in this class).
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -2824,7 +2824,8 @@
+@@ -2564,7 +2564,8 @@
          """
 
          for obs in self.manifest:

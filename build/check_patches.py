@@ -298,56 +298,6 @@ def check_0010_rtldavis_transmitters_override() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 0011 — rtgd history_max None guard
-# ---------------------------------------------------------------------------
-def _rtgd_wgust_slice():
-    rtgd = _import("rtgd")
-    src = inspect.getsource(rtgd.RealtimeGaugeDataThread.calculate)
-    body_start = src.index("# wgust - 10 minute high gust")
-    line_start = src.rfind("\n", 0, body_start) + 1
-    end = src.index("#        # avgbearing", line_start)
-    return rtgd, textwrap.dedent(src[line_start:end])
-
-
-def check_0011_rtgd_history_max_none_guard() -> None:
-    rtgd, body = _rtgd_wgust_slice()
-    # Branch A: buffer has windGust, history_max returns None.
-    self_mock = Mock()
-    self_mock.buffer = {"windGust": Mock()}
-    self_mock.buffer["windGust"].history_max = Mock(return_value=None)
-    self_mock.packet_unit_dict = {
-        "windSpeed": {"units": "km_per_hour", "group": "group_speed"}
-    }
-    self_mock.wind_group = "km_per_hour"
-    self_mock.wind_format = "%.1f"
-    data: dict = {}
-    ts = 1_700_000_000
-    g = dict(vars(rtgd))
-    g.update({"self": self_mock, "data": data, "ts": ts})
-    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
-    assert data["wgust"] == "0.0", (
-        "patched wgust branch must fall back to 0.0 when history_max returns "
-        "None; unpatched code raises AttributeError on .value and kills the "
-        "rtgd thread on every LOOP packet"
-    )
-
-    # Branch B: buffer has only windSpeed, history_max returns None.
-    self_mock = Mock()
-    self_mock.buffer = {"windSpeed": Mock()}
-    self_mock.buffer["windSpeed"].history_max = Mock(return_value=None)
-    self_mock.packet_unit_dict = {
-        "windSpeed": {"units": "km_per_hour", "group": "group_speed"}
-    }
-    self_mock.wind_group = "km_per_hour"
-    self_mock.wind_format = "%.1f"
-    data = {}
-    g = dict(vars(rtgd))
-    g.update({"self": self_mock, "data": data, "ts": ts})
-    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
-    assert data["wgust"] == "0.0"
-
-
-# ---------------------------------------------------------------------------
 # 0012 — rtldavis merge _last_seen
 # ---------------------------------------------------------------------------
 def check_0012_rtldavis_merge_last_seen() -> None:
@@ -379,46 +329,68 @@ def check_0012_rtldavis_merge_last_seen() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 0013 — rtgd FieldMap deepcopy
+# 0013 — rtgd field map copied into plain dicts before deepcopy
 # ---------------------------------------------------------------------------
-def _rtgd_fieldmap_slice():
-    rtgd = _import("rtgd")
+def _rtgd_fieldmap_body(rtgd) -> str:
+    """The constructor's field-map block, _group_map through self.field_map."""
     src = inspect.getsource(rtgd.RealtimeGaugeDataThread.__init__)
-    needle = "_src_map = rtgd_config_dict.get('FieldMap'"
-    body_start = src.index(needle)
-    line_start = src.rfind("\n", 0, body_start) + 1
-    end = src.index("self.field_map = _field_map", line_start)
-    end = src.index("\n", end) + 1
-    return rtgd, textwrap.dedent(src[line_start:end])
-
-
-def _run_fieldmap(rtgd, body, rtgd_config_dict):
-    self_mock = Mock()
-
-    class _UnitsDict(dict):
-        def __missing__(self, key):
-            return "degree_compass"
-
-    self_mock.units_dict = _UnitsDict()
-    g = dict(vars(rtgd))
-    g.update({"self": self_mock, "rtgd_config_dict": rtgd_config_dict})
-    exec(body, g)  # noqa: S102  # patch verifier: exec of extracted snippet
-    return self_mock.field_map
+    s = src.index("_group_map = copy.deepcopy(DEFAULT_GROUP_MAP)")
+    line_start = src.rfind("\n", 0, s) + 1
+    e = src.index("self.field_map = updated_field_map", line_start)
+    e = src.index("\n", e) + 1
+    return textwrap.dedent(src[line_start:e])
 
 
 def check_0013_rtgd_fieldmap_deepcopy() -> None:
-    rtgd, body = _rtgd_fieldmap_slice()
-    cfg: dict = {}
-    fm1 = _run_fieldmap(rtgd, body, cfg)
-    # Second run must not crash because DEFAULT_FIELD_MAP was not mutated.
-    fm2 = _run_fieldmap(rtgd, body, cfg)
-    assert "bearing" in fm1 and "bearing" in fm2
-    assert isinstance(fm1["bearing"]["default"], rtgd.ValueTuple)
-    assert isinstance(fm2["bearing"]["default"], rtgd.ValueTuple)
-    assert rtgd.DEFAULT_FIELD_MAP["bearing"]["default"] == 0, (
-        "patched __init__ must not mutate the module-global DEFAULT_FIELD_MAP; "
-        "a leaked ValueTuple default trips a TypeError in the second "
-        "in-process __init__ via the weewxd engine retry loop"
+    """A weewx.conf read the way weewxd reads it (ConfigParser interpolation)
+    with a [Logging] formatter and [[FieldMapExtensions]] must build the field
+    map, twice in one process (weewxd's engine retry loop), without mutating
+    DEFAULT_FIELD_MAP. Pre-0013, deep-copying the configobj sections raised
+    MissingInterpolationOption on %(asctime)s.
+    """
+    import copy
+    import tempfile
+
+    import weecfg
+
+    rtgd = _import("rtgd")
+    body = _rtgd_fieldmap_body(rtgd)
+    conf = textwrap.dedent(
+        """\
+        WEEWX_ROOT = /opt/weewx-data
+        [RealtimeGaugeData]
+            [[FieldMapExtensions]]
+                [[[rrate]]]
+                    source = rainRate
+                    format = %.2f
+        [Logging]
+            [[formatters]]
+                [[[standard]]]
+                    format = '%(asctime)s %(levelname)s %(message)s'
+        """
+    )
+    before = copy.deepcopy(rtgd.DEFAULT_FIELD_MAP)
+    with tempfile.NamedTemporaryFile("w", suffix=".conf") as f:
+        f.write(conf)
+        f.flush()
+        _, config_dict = weecfg.read_config(f.name)
+    for run in (1, 2):
+        self_mock = Mock()
+        self_mock.get_unit_group = rtgd.RealtimeGaugeDataThread.get_unit_group
+        g = dict(vars(rtgd))
+        g.update(
+            {"self": self_mock, "rtgd_config_dict": config_dict["RealtimeGaugeData"]}
+        )
+        exec(body, g)  # noqa: S102 -- patch verifier
+        fm = self_mock.field_map
+        assert isinstance(fm["temp"]["default"], rtgd.ValueTuple), (
+            f"run {run}: defaults must be converted to ValueTuples"
+        )
+        assert fm["rrate"]["format"] == "%.2f", (
+            f"run {run}: the FieldMapExtensions entry must be merged"
+        )
+    assert rtgd.DEFAULT_FIELD_MAP == before, (
+        "building the field map must not mutate the module-global DEFAULT_FIELD_MAP"
     )
 
 
@@ -511,33 +483,13 @@ def check_0015_rtgd_skip_empty_source() -> None:
     )
 
     # --- constructor site (in __init__): empty-source fields skipped too ---
-    # Without this, _getUnitGroup('') returns None and self.units_dict[None]
-    # KeyErrors at boot. Confirm by exec'ing the same slice 0013's check
-    # uses but with an empty-source FieldMapExtensions entry.
-    init_src = inspect.getsource(rtgd.RealtimeGaugeDataThread.__init__)
-    needle = "_src_map = rtgd_config_dict.get('FieldMap'"
-    s = init_src.index(needle)
-    line_start = init_src.rfind("\n", 0, s) + 1
-    e = init_src.index("self.field_map = _field_map", line_start)
-    e = init_src.index("\n", e) + 1
-    body = textwrap.dedent(init_src[line_start:e])
+    # Without this, get_unit_group('') returns None and _group_map[None]
+    # KeyErrors at boot. Confirm by exec'ing the constructor's field-map
+    # block with an empty-source FieldMapExtensions entry.
+    body = _rtgd_fieldmap_body(rtgd)
 
     self2 = Mock()
-
-    class _UnitsDict(dict):
-        def __missing__(self, key):
-            if key is None:
-                # Reproduces the upstream-pre-0015 boot crash: an empty
-                # source -> None group -> self.units_dict[None] KeyError.
-                # The patched constructor must SKIP empty-source entries
-                # before this lookup ever happens.
-                raise AssertionError(
-                    "constructor must not look up self.units_dict[None] for "
-                    "an empty-source FieldMapExtensions entry"
-                )
-            return "degree_compass"
-
-    self2.units_dict = _UnitsDict()
+    self2.get_unit_group = rtgd.RealtimeGaugeDataThread.get_unit_group
     cfg = {
         "FieldMapExtensions": {
             "inhum": {"source": ""},
@@ -545,7 +497,14 @@ def check_0015_rtgd_skip_empty_source() -> None:
     }
     g = dict(vars(rtgd))
     g.update({"self": self2, "rtgd_config_dict": cfg})
-    exec(body, g)  # must NOT raise  # noqa: S102 -- patch verifier
+    try:
+        exec(body, g)  # noqa: S102 -- patch verifier
+    except KeyError as exc:
+        raise AssertionError(
+            "constructor must skip an empty-source FieldMapExtensions entry "
+            "before get_unit_group('') -> None reaches _group_map[None] "
+            f"(got KeyError {exc!r})"
+        ) from exc
     assert "inhum" in self2.field_map, (
         "empty-source override should still land in self.field_map so the "
         "calculate() emit-loop skips it (rather than processing it and "
@@ -586,7 +545,13 @@ def check_0016_rtgd_buffer_source_guard() -> None:
     out_temp.lasttime = 1781508000
     out_temp.count = 42
     thr.buffer = {"outTemp": out_temp}
-    thr.units_dict = {"group_temperature": "degree_F"}
+    # rtgd's default output groups (as in production), in degree_F to match
+    # the packet units. get_unit_group(source, 'count') resolves to
+    # group_count, which DEFAULT_GROUP_MAP lacks; add it so the count
+    # aggregate is covered.
+    thr.group_map = dict(
+        rtgd.DEFAULT_GROUP_MAP, group_temperature="degree_F", group_count="count"
+    )
     thr.packet_unit_dict = {
         "outTemp": {"units": "degree_F", "group": "group_temperature"}
     }
@@ -602,6 +567,11 @@ def check_0016_rtgd_buffer_source_guard() -> None:
         "aggregate_period": "day",
         "default": rtgd.ValueTuple(0, "degree_F", "group_temperature"),
     }
+    # Time aggregates resolve to group_time, so the constructor builds their
+    # defaults in unix_epoch; mirror that here.
+    base_time = {**base, "default": rtgd.ValueTuple(0, "unix_epoch", "group_time")}
+    # Likewise count resolves to group_count (needs group_count in [[Groups]]).
+    base_count = {**base, "default": rtgd.ValueTuple(0, "count", "group_count")}
     thr.field_map = {
         # numeric-format aggregates (value-producing)
         "tempTH": {"source": "outTemp", "format": "%.1f", "aggregate": "max", **base},
@@ -617,7 +587,7 @@ def check_0016_rtgd_buffer_source_guard() -> None:
             "source": "outTemp",
             "format": "%.0f",
             "aggregate": "count",
-            **base,
+            **base_count,
         },
         # strftime-format aggregates (time-producing) — these are the
         # T* fields (TtempTH, TapptempTH, TwgustTM, etc.) that crashed
@@ -627,19 +597,19 @@ def check_0016_rtgd_buffer_source_guard() -> None:
             "source": "outTemp",
             "format": "%H:%M",
             "aggregate": "maxtime",
-            **base,
+            **base_time,
         },
         "TtempTL": {
             "source": "outTemp",
             "format": "%H:%M",
             "aggregate": "mintime",
-            **base,
+            **base_time,
         },
         "Ttemplast": {
             "source": "outTemp",
             "format": "%H:%M",
             "aggregate": "lasttime",
-            **base,
+            **base_time,
         },
         # missing-source counterparts of each — the actual race
         "apptempTH": {
@@ -658,25 +628,25 @@ def check_0016_rtgd_buffer_source_guard() -> None:
             "source": "appTemp",
             "format": "%H:%M",
             "aggregate": "maxtime",
-            **base,
+            **base_time,
         },
         "TapptempTL": {
             "source": "appTemp",
             "format": "%H:%M",
             "aggregate": "mintime",
-            **base,
+            **base_time,
         },
         "Tapptemplast": {
             "source": "appTemp",
             "format": "%H:%M",
             "aggregate": "lasttime",
-            **base,
+            **base_time,
         },
         "apptempcount": {
             "source": "appTemp",
             "format": "%.0f",
             "aggregate": "count",
-            **base,
+            **base_count,
         },
     }
     packet = {"dateTime": 1781508000, "usUnits": 1}
@@ -788,6 +758,46 @@ def check_0019_fuzzy_archer_ephemeris_data_dir() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 0020 — rtgd windrun skips LOOP packets without a wind speed
+# ---------------------------------------------------------------------------
+def check_0020_rtgd_windrun_null_windspeed() -> None:
+    """A Vantage LOOP packet with windSpeed=None (0xff) and windrun=None (set
+    by StdWXCalculate with windrun = prefer_hardware) must not raise in
+    calc_windrun; windrun must restart on the next valid speed rather than
+    span the gap. Pre-0020 this raised TypeError and killed the rtgd thread.
+    """
+    rtgd = _import("rtgd")
+    buf = rtgd.Buffer(rtgd.MANIFEST, {}, None)
+
+    def pkt(ts, speed):
+        return {
+            "dateTime": ts,
+            "usUnits": 1,
+            "windSpeed": speed,
+            "windDir": 90.0 if speed is not None else None,
+            "windrun": None,
+        }
+
+    buf.add_packet(pkt(1000, 6.0))
+    try:
+        buf.add_packet(pkt(1002, None))
+    except TypeError as exc:
+        raise AssertionError(
+            f"a None windSpeed must not reach calc_windrun (got {exc!r})"
+        ) from exc
+    buf.add_packet(pkt(1004, 6.0))
+    assert buf["windrun"].last is None, (
+        "the first speed after a gap must restart the interval, not add a "
+        "windrun value spanning the gap"
+    )
+    buf.add_packet(pkt(1006, 6.0))
+    windrun = buf["windrun"].last
+    assert windrun is not None and abs(windrun - 6.0 * 2 / 3600.0) < 1e-9, (
+        "windrun must resume from the restarted interval (6 mph for 2 s)"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Registry — name -> callable. Names mirror the patch filename stem.
 # ---------------------------------------------------------------------------
 CHECKS: list[tuple[str, Callable[[], None]]] = [
@@ -813,12 +823,15 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("0008-rtldavis-low-battery-regex", check_0008_rtldavis_low_battery_regex),
     ("0009-rtldavis-python313-rstrings", check_0009_rtldavis_python313_rstrings),
     ("0010-rtldavis-transmitters-override", check_0010_rtldavis_transmitters_override),
-    ("0011-rtgd-history-max-none-guard", check_0011_rtgd_history_max_none_guard),
     ("0012-rtldavis-merge-last-seen", check_0012_rtldavis_merge_last_seen),
     ("0013-rtgd-fieldmap-deepcopy", check_0013_rtgd_fieldmap_deepcopy),
     ("0014-rtgd-tick-interval", check_0014_rtgd_tick_interval),
     ("0015-rtgd-skip-empty-source", check_0015_rtgd_skip_empty_source),
     ("0016-rtgd-buffer-source-guard", check_0016_rtgd_buffer_source_guard),
+    (
+        "0020-rtgd-windrun-null-windspeed",
+        check_0020_rtgd_windrun_null_windspeed,
+    ),
     (
         "0019-fuzzy-archer-ephemeris-data-dir",
         check_0019_fuzzy_archer_ephemeris_data_dir,

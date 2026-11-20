@@ -95,7 +95,11 @@
     {
       "customType": "regex",
       "description": "SHA-pinned WeeWX deps on default branch 'master'. None of these repos tag releases; tracked via git-refs against the branch HEAD. Renovate writes the full 40-char SHA on bump (GitHub archive URLs accept either 7 or 40). The companion rule below handles repos whose default branch is 'main'.",
-      "managerFilePatterns": ["/Dockerfile$/", "/build/extensions\\.txt$/"],
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/build/extensions\\.txt$/",
+        "/build/install_rtgd\\.py$/"
+      ],
       "matchStrings": [
         "github\\.com/(?<depName>matthewwall/weewx-emoncms)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>matthewwall/weewx-exfoliation)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
@@ -106,7 +110,8 @@
         "github\\.com/(?<depName>matthewwall/weewx-windfinder)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>claudobahn/weewx-windguru)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
         "github\\.com/(?<depName>tkeffer/weewx-xaggs)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
-        "github\\.com/(?<depName>captain-coredump/weatherflow-udp)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
+        "github\\.com/(?<depName>captain-coredump/weatherflow-udp)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip",
+        "github\\.com/(?<depName>weewx-contrib/weewx-realtime_gauge-data)/archive/(?<currentValue>)(?<currentDigest>[0-9a-f]{7,40})\\.zip"
       ],
       "packageNameTemplate": "https://github.com/{{depName}}",
       "currentValueTemplate": "master",

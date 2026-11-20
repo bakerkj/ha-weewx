@@ -11,7 +11,7 @@
 # [RealtimeGaugeData] to enable.
 --- a/bin/user/rtgd.py
 +++ b/bin/user/rtgd.py
-@@ -1487,6 +1487,16 @@
+@@ -1208,6 +1208,16 @@
 
          # setup file generation timing
          self.min_interval = rtgd_config_dict.get('min_interval', None)
@@ -28,7 +28,7 @@
          self.last_write = 0  # ts (actual) of last generation
 
          # get our file paths and names
-@@ -1801,8 +1811,11 @@
+@@ -1521,8 +1531,11 @@
                          # received throw queue.Empty
                          _package = self.control_queue.get(True, 1.0)
                      except queue.Empty:
@@ -42,10 +42,11 @@
                      else:
                          # a None record is our signal to exit
                          if _package is None:
-@@ -1858,6 +1871,43 @@
+@@ -1577,6 +1590,43 @@
+             weeutil.logger.log_traceback(log.debug, 'rtgdthread: **** ')
              log.critical("Thread exiting. Reason: %s" % (e, ))
              return
-
++
 +    def _emit_tick(self):
 +        """Emit a synthetic gauge-data.txt write using cached values
 +        with the current time as dateTime. Called from the run loop's
@@ -82,6 +83,6 @@
 +        self.last_write = now
 +        if self.exporter:
 +            self.exporter.export(data, ts)
-+
+
      def process_packet(self, packet):
          """Process incoming loop packets and generate gauge-data.txt.
