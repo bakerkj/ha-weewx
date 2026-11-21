@@ -22,7 +22,7 @@
 # weewx_ha package dir (see venv/ in patches/README.md).
 --- a/utils.py
 +++ b/utils.py
-@@ -1046,10 +1046,23 @@
+@@ -1044,10 +1044,23 @@
              "state_class": "measurement",
          },
      },
@@ -46,7 +46,7 @@
          },
      },
      "windSpeed": {
-@@ -1060,6 +1073,13 @@
+@@ -1058,6 +1071,13 @@
              "state_class": "measurement",
          },
      },
