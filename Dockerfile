@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc=4:14.2.0-1 \
     git=1:2.47.3-0+deb13u1 \
     golang-go=2:1.24~2 \
-    libc6-dev=2.41-12+deb13u4 \
+    libc6-dev=2.41-12+deb13u5 \
     librtlsdr-dev=2.0.2-2+b1 \
     libusb-1.0-0-dev=2:1.0.28-1 \
     pkg-config=1.8.1-4 \
@@ -141,10 +141,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libusb-1.0-0=2:1.0.28-1 \
     nginx-light=1.26.3-3+deb13u11 \
     openssh-client=1:10.0p1-7+deb13u4 \
-    patch=2.8-2 \
+    patch=2.8-2+deb13u1 \
     procps=2:4.0.4-9 \
     python3=3.13.5-1 \
-    rsync=3.5.0+ds1-0+deb13u1 \
+    rsync=3.5.0+ds1-0+deb13u2 \
  && rm -rf /var/lib/apt/lists/*
 
 # Replace the distro nginx config with our ingress-port server. The user
