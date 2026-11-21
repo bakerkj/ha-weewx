@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.40](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.39...ha-weewx-v0.1.40) (2026-11-21)
+
+
+### Bug Fixes
+
+* **build:** fetch realtime-gauge-data from weewx-contrib (v0.6.7) ([#489](https://github.com/bakerkj/ha-weewx/issues/489)) ([4e51b84](https://github.com/bakerkj/ha-weewx/commit/4e51b84f58d29fee87cf286fb126bf0e023cbe62))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#483](https://github.com/bakerkj/ha-weewx/issues/483)) ([d9644be](https://github.com/bakerkj/ha-weewx/commit/d9644befe100e0aa69fa990ce42068ecddd6a23f))
+* **deps:** lock file maintenance ([#494](https://github.com/bakerkj/ha-weewx/issues/494)) ([800161b](https://github.com/bakerkj/ha-weewx/commit/800161b3aa27d3d93bf2503a004db3d69423c564))
+* **deps:** update anthropics/claude-code-action action to v1.0.280 ([#491](https://github.com/bakerkj/ha-weewx/issues/491)) ([b478ab3](https://github.com/bakerkj/ha-weewx/commit/b478ab3b2bea6af22b1ea15e8fa0458357ee2faa))
+* **deps:** update dependency chaunceygardiner/weewx-loopdata to v8.0.7 ([#474](https://github.com/bakerkj/ha-weewx/issues/474)) ([9533472](https://github.com/bakerkj/ha-weewx/commit/9533472fc98b0a417f662d81a6f14708cf7b2a5b))
+* **deps:** update dependency felddy/weewx-home-assistant to v1.3.2 ([#493](https://github.com/bakerkj/ha-weewx/issues/493)) ([96bc6f6](https://github.com/bakerkj/ha-weewx/commit/96bc6f6b63f3aaa7fb08d9cf8cbd2b90aa94210f))
+* **deps:** update dependency pymysql to v1.2.4 ([#475](https://github.com/bakerkj/ha-weewx/issues/475)) ([4d2fcc1](https://github.com/bakerkj/ha-weewx/commit/4d2fcc1eef184a93198528da319af8c4f6502f5d))
+* **deps:** update dependency renovate to v44.226.1 ([#480](https://github.com/bakerkj/ha-weewx/issues/480)) ([b3660dd](https://github.com/bakerkj/ha-weewx/commit/b3660dde2e3d11fccf453b5feacc6ce2048e09cf))
+* **deps:** update dependency renovate to v44.226.3 ([#481](https://github.com/bakerkj/ha-weewx/issues/481)) ([92734db](https://github.com/bakerkj/ha-weewx/commit/92734db4ea36d22940880780f9554a91cf7fd9e3))
+* **deps:** update dependency renovate to v44.227.2 ([#484](https://github.com/bakerkj/ha-weewx/issues/484)) ([4479359](https://github.com/bakerkj/ha-weewx/commit/4479359169569eea7624d59250cb827220a15b0a))
+* **deps:** update dependency renovate to v44.249.3 ([#488](https://github.com/bakerkj/ha-weewx/issues/488)) ([a1d3952](https://github.com/bakerkj/ha-weewx/commit/a1d39522266bb31c945b24ab11ceeae260de4fc1))
+* **deps:** update github-actions ([#477](https://github.com/bakerkj/ha-weewx/issues/477)) ([c5af918](https://github.com/bakerkj/ha-weewx/commit/c5af918a9b60e6756d11a250ef4d144a1774a77d))
+* **deps:** update github-actions ([#486](https://github.com/bakerkj/ha-weewx/issues/486)) ([a0c39f5](https://github.com/bakerkj/ha-weewx/commit/a0c39f58fcdb42b0b4289bb3f700bef909bedc34))
+* **deps:** update github-actions ([#492](https://github.com/bakerkj/ha-weewx/issues/492)) ([a4197a8](https://github.com/bakerkj/ha-weewx/commit/a4197a8e4fc4f9ebc39a7911984da6dae9c2cf7e))
+* **deps:** update pre-commit hook astral-sh/ruff-pre-commit to v0.17.6 ([#490](https://github.com/bakerkj/ha-weewx/issues/490)) ([9ba2c3c](https://github.com/bakerkj/ha-weewx/commit/9ba2c3c693062e02ec4910fd9fd10f00d000e95b))
+* **deps:** update pre-commit hook kjanat/actionlint to v1.17.1 ([#478](https://github.com/bakerkj/ha-weewx/issues/478)) ([abeb9f7](https://github.com/bakerkj/ha-weewx/commit/abeb9f78fea53531130c586b6a64b75c1da409ff))
+* **deps:** update pre-commit hooks ([#482](https://github.com/bakerkj/ha-weewx/issues/482)) ([536034b](https://github.com/bakerkj/ha-weewx/commit/536034ba63d01b9f4aa9ea3c56ef18429ef91112))
+* **deps:** update uv tool to v0.13.8 ([#479](https://github.com/bakerkj/ha-weewx/issues/479)) ([6e7a2cb](https://github.com/bakerkj/ha-weewx/commit/6e7a2cba6414a668ae44871335238c409b656b3d))
+* **deps:** update uv tool to v0.13.9 ([#487](https://github.com/bakerkj/ha-weewx/issues/487)) ([d1ac7ad](https://github.com/bakerkj/ha-weewx/commit/d1ac7ad99cde21f6286ffabded44b740265c25a5))
+
 ## [0.1.39](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.38...ha-weewx-v0.1.39) (2026-11-07)
 
 
