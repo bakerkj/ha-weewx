@@ -38,9 +38,9 @@
          self.bind(NEW_LOOP_PACKET, self.on_weewx_loop)
 +        self.bind(NEW_ARCHIVE_RECORD, self.on_weewx_archive)
  
-     def init_mqtt_client(self, mqtt_config: MQTTConfig):
-         """Initialize the MQTT client."""
-@@ -216,6 +223,25 @@
+         # Connect only once everything used by the MQTT callbacks exists
+         self.mqtt_client.loop_start()
+@@ -222,6 +229,25 @@
          else:
              logger.warning("MQTT client is not connected, skipping packet processing")
  
