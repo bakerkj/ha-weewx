@@ -14,7 +14,7 @@
 # companion patches/0004-forecast-uppercase-zambretti-sql.patch.
 --- a/weedb/mysql.py
 +++ b/weedb/mysql.py
-@@ -259,8 +259,11 @@
+@@ -300,8 +300,11 @@
 
          # MySQL uses '%s' as placeholders, so replace the ?'s with %s
          mysql_string = sql_string.replace('?', '%s')
