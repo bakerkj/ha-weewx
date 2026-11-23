@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.41](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.40...ha-weewx-v0.1.41) (2026-11-23)
+
+
+### Bug Fixes
+
+* **deps:** update weewx to v5.6.0 ([#496](https://github.com/bakerkj/ha-weewx/issues/496)) ([f8a918f](https://github.com/bakerkj/ha-weewx/commit/f8a918fec03d070c1e15d9330acc70c08b140b43))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#497](https://github.com/bakerkj/ha-weewx/issues/497)) ([1d1d75f](https://github.com/bakerkj/ha-weewx/commit/1d1d75fddcd32d94264cbb04b39f3c29b9221d42))
+* **deps:** update apt packages ([#485](https://github.com/bakerkj/ha-weewx/issues/485)) ([8104dad](https://github.com/bakerkj/ha-weewx/commit/8104dad0af3a881c39a12c8c43e1bf54a5749b57))
+
 ## [0.1.40](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.39...ha-weewx-v0.1.40) (2026-11-21)
 
 
