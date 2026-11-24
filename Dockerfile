@@ -10,7 +10,7 @@ ARG BUILD_FROM=ghcr.io/home-assistant/base-debian:trixie-2026.11.0@sha256:d996c8
 # under the same debian_13/<pkg> Renovate manager that governs the
 # runtime stage.
 # ---------------------------------------------------------------------------
-FROM debian:13.7@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c AS rtldavis-builder
+FROM debian:13.8@sha256:3cda3ca472ce45507a5109c6a3907093e24d9ae67d55954c9a07a45665dafba2 AS rtldavis-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates=20250419+deb13u1 \
     gcc=4:14.2.0-1 \
@@ -44,7 +44,7 @@ RUN git checkout "$RTLDAVIS_REF" && git submodule update --init --recursive \
 # libtcd.so is not needed at runtime. xtide is built --without-x (headless,
 # no X11) and dynamically links libpng16 (added to the runtime apt list).
 # ---------------------------------------------------------------------------
-FROM debian:13.7@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c AS xtide-builder
+FROM debian:13.8@sha256:3cda3ca472ce45507a5109c6a3907093e24d9ae67d55954c9a07a45665dafba2 AS xtide-builder
 # `-o pipefail` propagates a curl/wget failure through `| sha256sum -c -`;
 # without it the pipeline masks the fetch error and hadolint (DL4006) flags
 # every piped RUN in the stage.
