@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.42](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.41...ha-weewx-v0.1.42) (2026-11-26)
+
+
+### Miscellaneous Chores
+
+* **deps:** update debian docker tag to v13.8 ([#498](https://github.com/bakerkj/ha-weewx/issues/498)) ([082c9ee](https://github.com/bakerkj/ha-weewx/commit/082c9ee8198d120578410500e4517212f1500620))
+* **deps:** update ghcr.io/home-assistant/base-debian docker tag to trixie-2026.11.1 ([#501](https://github.com/bakerkj/ha-weewx/issues/501)) ([c01cc78](https://github.com/bakerkj/ha-weewx/commit/c01cc78e5a2d8d2fba108a15d2d903e8c17179f0))
+* **deps:** update github-actions ([#500](https://github.com/bakerkj/ha-weewx/issues/500)) ([ca500d0](https://github.com/bakerkj/ha-weewx/commit/ca500d096ab258061baebaca6e50b123e262d08e))
+* **deps:** update uv tool to v0.13.10 ([#502](https://github.com/bakerkj/ha-weewx/issues/502)) ([b95c42e](https://github.com/bakerkj/ha-weewx/commit/b95c42e2e26f7ee57c9883e9af84c57da4f32c07))
+
 ## [0.1.41](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.40...ha-weewx-v0.1.41) (2026-11-23)
 
 
