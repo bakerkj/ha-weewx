@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.43](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.42...ha-weewx-v0.1.43) (2026-11-27)
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#509](https://github.com/bakerkj/ha-weewx/issues/509)) ([152543b](https://github.com/bakerkj/ha-weewx/commit/152543b2102accb3fc28ebc4e40d279b14177ae1))
+* **deps:** update dependency frenck/action-addon-linter to v2.21.3 ([#503](https://github.com/bakerkj/ha-weewx/issues/503)) ([63760c5](https://github.com/bakerkj/ha-weewx/commit/63760c57b25e7cf5ad86e16d2acea9428f70a1f8))
+* **deps:** update dependency renovate to v44.259.1 ([#504](https://github.com/bakerkj/ha-weewx/issues/504)) ([ce10624](https://github.com/bakerkj/ha-weewx/commit/ce10624733bb9bf1149d572eb7f5334f0c0f4f49))
+* **deps:** update dependency renovate to v44.260.3 ([#506](https://github.com/bakerkj/ha-weewx/issues/506)) ([137dd32](https://github.com/bakerkj/ha-weewx/commit/137dd324399167d3826e3b8be3ec33883ebd117b))
+* **deps:** update dependency renovate to v44.261.0 ([#508](https://github.com/bakerkj/ha-weewx/issues/508)) ([e8c0918](https://github.com/bakerkj/ha-weewx/commit/e8c0918cf84efac9cdcfe9658061c465858f4f35))
+* **deps:** update dependency renovate to v45 ([#507](https://github.com/bakerkj/ha-weewx/issues/507)) ([68c7d6f](https://github.com/bakerkj/ha-weewx/commit/68c7d6fba405f07329eb19788d3dac53568897c0))
+* **deps:** update frenck/action-addon-linter action to v2.21.3 ([#510](https://github.com/bakerkj/ha-weewx/issues/510)) ([0d2ca0f](https://github.com/bakerkj/ha-weewx/commit/0d2ca0f8c8a887e72af86c37b047186367ec8094))
+
 ## [0.1.42](https://github.com/bakerkj/ha-weewx/compare/ha-weewx-v0.1.41...ha-weewx-v0.1.42) (2026-11-26)
 
 
